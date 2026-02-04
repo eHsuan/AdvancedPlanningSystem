@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net452</TargetFramework>
+    <RootNamespace>AdvancedPlanningSystem</RootNamespace>
+    <AssemblyName>AdvancedPlanningSystem</AssemblyName>
+    <UseWindowsForms>true</UseWindowsForms>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- 避免 .NET Framework 4.5.2 在新版 MSBuild 下的還原錯誤 -->
+    <RuntimeIdentifier>win</RuntimeIdentifier>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="FormMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="FormMain.Designer.cs">
+      <DependentUpon>FormMain.cs</DependentUpon>
+    </Compile>
+    <Compile Update="PortControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="PortControl.Designer.cs">
+      <DependentUpon>PortControl.cs</DependentUpon>
+    </Compile>
+    <Compile Update="GlobalMonitorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="GlobalMonitorForm.Designer.cs">
+      <DependentUpon>GlobalMonitorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Update="CassetteDetailForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="CassetteDetailForm.Designer.cs">
+      <DependentUpon>CassetteDetailForm.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="FormMain.resx">
+      <DependentUpon>FormMain.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="log4net" Version="2.0.15" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
+  </ItemGroup>
+</Project>

@@ -66,12 +66,20 @@ namespace AdvancedPlanningSystem
                         var data = portDict[portCtrl.PortID];
                         portCtrl.CassetteID = data.CarrierId ?? "";
                         portCtrl.WorkNo = data.LotId ?? "";
+                        portCtrl.TargetEqpId = data.TargetEqpId ?? ""; // 傳入目標機台
                         
-                        // 轉換狀態字串為 Enum
-                        // [Fix] 優先檢查是否為派貨中 (Dispatching)
+                        // 狀態判斷優先權:
+                        // 1. 已派貨 (Dispatching) -> MOVE
+                        // 2. 完工 (NextStep == END) -> FINISH -> DONE
+                        // 3. 一般有貨 -> OCCUPIED -> WAIT
+                        
                         if (!string.IsNullOrEmpty(data.DispatchTime))
                         {
                             portCtrl.Status = PortStatus.Dispatching;
+                        }
+                        else if (data.NextStepId == "END")
+                        {
+                            portCtrl.Status = PortStatus.Finish;
                         }
                         else if (Enum.TryParse(data.Status, true, out PortStatus statusEnum))
                         {
@@ -79,7 +87,7 @@ namespace AdvancedPlanningSystem
                         }
                         else
                         {
-                            portCtrl.Status = PortStatus.Occupied; // Default occupied
+                            portCtrl.Status = PortStatus.Occupied;
                         }
                     }
                     else
@@ -95,6 +103,22 @@ namespace AdvancedPlanningSystem
 
         private void FormMain_Load(object sender, EventArgs e)
         {
+            // [Dev/Test] Reset State Prompt
+            if (AppConfig.MesMockEnabled)
+            {
+                var result = MessageBox.Show(
+                    "檢測到模擬模式 (Mock Mode)。\n是否要清空所有綁定與狀態資料 (Reset DB)?", 
+                    "系統初始化", 
+                    MessageBoxButtons.YesNo, 
+                    MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
+                {
+                    _repo.ClearAllStates();
+                    AddLog("已清空所有系統狀態資料 (User Request)。");
+                }
+            }
+
             // 初始載入：根據總 Port 數自動計算行列
             int totalPorts = AppConfig.TotalPortCount;
             int cols = (int)Math.Ceiling(Math.Sqrt(totalPorts));
@@ -323,8 +347,9 @@ namespace AdvancedPlanningSystem
                 lstLog.Invoke(new Action(() => AddLog(msg)));
                 return;
             }
-            lstLog.Items.Insert(0, log);
-            if (lstLog.Items.Count > 100) lstLog.Items.RemoveAt(100);
+            lstLog.Items.Add(log); // 新訊息在下方
+            if (lstLog.Items.Count > 100) lstLog.Items.RemoveAt(0); // 移除最舊的 (上方)
+            lstLog.TopIndex = lstLog.Items.Count - 1; // 自動捲動
         }
 
         private void UpdatePortStatus(string portId, string cassetteId, string workNo, PortStatus status)

@@ -10,6 +10,7 @@ namespace APSSimulator
         public event EventHandler<int> OnWipChange;
 
         private string _eqpId;
+        public string EqpId => _eqpId;
 
         public MachineControl()
         {

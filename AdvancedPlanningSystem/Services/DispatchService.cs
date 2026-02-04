@@ -72,17 +72,117 @@ namespace AdvancedPlanningSystem.Services
                     string nextStep = group.Key;
                     var cassetteList = group.ToList(); 
                     
+                    // [New] 處理完工項目 (END)
+                    if (nextStep == "END")
+                    {
+                        await ProcessFinishDispatchAsync(cassetteList);
+                        continue;
+                    }
+
                     var availableEqps = _stepEqpMapping.Where(m => m.StepId == nextStep).Select(m => m.EqpId).ToList();
+
+                    // --- [Wait Analysis] Step 1: Analyze Equipment Status for this group ---
+                    int totalEqp = availableEqps.Count;
+                    int downCount = 0;
+                    int fullCount = 0;
 
                     foreach (var eqpId in availableEqps)
                     {
+                        bool isDown = false;
+                        bool isFull = false;
+
+                        // Check Status
+                        if (statusDict.ContainsKey(eqpId))
+                        {
+                            var s = statusDict[eqpId];
+                            if (s.status != "RUN" && s.status != "IDLE") isDown = true;
+                        }
+                        else { isDown = true; } // Unknown status treated as down
+
+                        // Check Capacity (only if not down)
+                        if (!isDown)
+                        {
+                            var eqpConfig = _repo.GetEqpConfig(eqpId);
+                            int maxWip = wipDict.ContainsKey(eqpId) ? wipDict[eqpId].max_wip_qty : (eqpConfig?.MaxWipQty ?? 10);
+                            int mesWip = wipDict.ContainsKey(eqpId) ? wipDict[eqpId].current_wip_qty : 0;
+                            int transitCount = allTransits.Count(t => t.TargetEqpId == eqpId);
+                            if ((mesWip + transitCount) >= maxWip) isFull = true;
+                        }
+
+                        if (isDown) downCount++;
+                        else if (isFull) fullCount++;
+                    }
+
+                    // --- [Dispatch Execution] Step 2: Try to dispatch ---
+                    foreach (var eqpId in availableEqps)
+                    {
                         await ProcessEqpDispatchAsync(eqpId, cassetteList, wipDict, statusDict, allTransits, qTimeConfigs);
+                    }
+
+                    // --- [Wait Reason Update] Step 3: Update reason for items still waiting ---
+                    // 重新從清單中檢查哪些還沒被派 (因為 ProcessEqpDispatchAsync 是傳參考，若派貨會更新 DispatchTime)
+                    // 但這裡 cassetteList 是從 DB 讀出來的物件，ProcessEqpDispatchAsync 修改的是這個物件的屬性
+                    // 所以我們可以檢查 cassetteList 中 DispatchTime 仍為空的項目
+                    
+                    string reason = "Queueing (Batch/Score)";
+                    if (totalEqp == 0) reason = "No Route Defined";
+                    else if (downCount == totalEqp) reason = "All Eqp DOWN";
+                    else if (downCount + fullCount == totalEqp) reason = "All Eqp FULL";
+
+                    foreach (var c in cassetteList)
+                    {
+                        // 若未派貨 (DispatchTime is null/empty)
+                        if (string.IsNullOrEmpty(c.DispatchTime))
+                        {
+                            // 只有當原因改變時才更新 DB，減少 I/O
+                            if (c.WaitReason != reason)
+                            {
+                                c.WaitReason = reason;
+                                _repo.InsertBinding(c); 
+                            }
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
                 LogHelper.Logger.Error("ExecuteDispatchAsync Error", ex);
+            }
+        }
+
+        /// <summary>
+        /// 處理已完工項目的派貨 (直接出庫)
+        /// </summary>
+        private async Task ProcessFinishDispatchAsync(List<StateBinding> finishList)
+        {
+            try
+            {
+                // 過濾已派送的
+                var available = finishList.Where(c => string.IsNullOrEmpty(c.DispatchTime)).ToList();
+                if (available.Count == 0) return;
+
+                foreach (var cassette in available)
+                {
+                    if (!string.IsNullOrEmpty(cassette.PortId))
+                    {
+                        // 1. 發送開門指令
+                        string cmd = $"OPEN,{cassette.PortId}";
+                        await _tcpServer.SendCommand(cmd);
+
+                        // 2. 更新狀態 (Target = STOCK)
+                        cassette.DispatchTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                        cassette.TargetEqpId = "STOCK"; // 虛擬目標
+                        _repo.InsertBinding(cassette);
+
+                        // 3. Log
+                        _cloudRepo.InsertGenericLog(cassette.CarrierId, cassette.LotId, "完工出庫 -> STOCK");
+                        LogHelper.Logger.Info($"[Dispatch] Finish -> {cmd} -> STOCK");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.Logger.Error($"[Dispatch Finish Error] {ex.Message}", ex);
             }
         }
 
@@ -189,26 +289,59 @@ namespace AdvancedPlanningSystem.Services
                 // [執行執行] 執行開門與記錄 (Execution)
                 if (shouldDispatch)
                 {
-                    // 依照分數由高至低選取 N 個卡匣 (N = BatchSize)
-                    var dispatchList = availableForThisEqp.Take(batchSize).ToList();
+                    int availableSpace = maxWip - currentTotalWip;
+                    int dispatchCount = 0;
 
-                    foreach (var cassette in dispatchList)
+                    if (triggerReason == "FullBatch")
                     {
-                        if (!string.IsNullOrEmpty(cassette.PortId))
+                        // 嚴格湊批邏輯 (Strict Batching)
+                        // 1. 計算候選數量可湊幾批
+                        int candidateBatches = availableForThisEqp.Count / batchSize;
+
+                        // 2. 計算可用空間可容納幾批
+                        // 若空間不足一批，則無法派貨
+                        if (availableSpace < batchSize)
                         {
-                            // 1. 下達硬體指令：發送 OPEN 指令開啟貨架電子鎖
-                            string cmd = $"OPEN,{cassette.PortId}";
-                            await _tcpServer.SendCommand(cmd);
-                            
-                            // 2. 更新資料庫狀態：標記 DispatchTime 與目標機台，正式轉為 DISPATCHING 狀態
-                            cassette.DispatchTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                            cassette.TargetEqpId = eqpId;
-                            _repo.InsertBinding(cassette); 
-                            
-                            // 3. 歷史紀錄：將派貨原因與決策結果寫入 CloudDB
-                            _cloudRepo.InsertGenericLog(cassette.CarrierId, cassette.LotId, $"派貨執行: {triggerReason} -> {eqpId}");
-                            
-                            LogHelper.Logger.Info($"[Dispatch] {triggerReason} -> {cmd} (Score: {cassette.DispatchScore}) -> {eqpId}");
+                            LogHelper.Logger.Warn($"[Dispatch] Skip {eqpId}: FullBatch triggered but space ({availableSpace}) < batchSize ({batchSize})");
+                            return;
+                        }
+                        int spaceBatches = availableSpace / batchSize;
+
+                        // 3. 取最小值作為最終批數
+                        int finalBatches = Math.Min(candidateBatches, spaceBatches);
+                        dispatchCount = finalBatches * batchSize;
+                    }
+                    else
+                    {
+                        // 強制派貨 (Force Logic)
+                        // 規則：無視批次限制，盡量填滿空間 (Best Effort)
+                        // 例如：剩 3 個空位，候選 5 個 -> 派 3 個
+                        dispatchCount = Math.Min(availableForThisEqp.Count, availableSpace);
+                    }
+
+                    if (dispatchCount > 0)
+                    {
+                        // 依照分數由高至低選取 N 個卡匣
+                        var dispatchList = availableForThisEqp.Take(dispatchCount).ToList();
+
+                        foreach (var cassette in dispatchList)
+                        {
+                            if (!string.IsNullOrEmpty(cassette.PortId))
+                            {
+                                // 1. 下達硬體指令：發送 OPEN 指令開啟貨架電子鎖
+                                string cmd = $"OPEN,{cassette.PortId}";
+                                await _tcpServer.SendCommand(cmd);
+                                
+                                // 2. 更新資料庫狀態：標記 DispatchTime 與目標機台，正式轉為 DISPATCHING 狀態
+                                cassette.DispatchTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                                cassette.TargetEqpId = eqpId;
+                                _repo.InsertBinding(cassette); 
+                                
+                                // 3. 歷史紀錄：將派貨原因與決策結果寫入 CloudDB
+                                _cloudRepo.InsertGenericLog(cassette.CarrierId, cassette.LotId, $"派貨執行: {triggerReason} -> {eqpId}");
+                                
+                                LogHelper.Logger.Info($"[Dispatch] {triggerReason} -> {cmd} (Score: {cassette.DispatchScore}) -> {eqpId}");
+                            }
                         }
                     }
                 }

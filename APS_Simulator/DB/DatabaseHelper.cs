@@ -11,6 +11,10 @@ namespace APSSimulator.DB
         public static string DbPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _dbName);
         public static string ConnectionString => $"Data Source={DbPath};Version=3;";
 
+        // 從 AppConfig 讀取路徑
+        public static string ExternalDbPath => AppConfig.ExternalDbPath;
+        public static string ExternalDbConnectionString => $"Data Source={ExternalDbPath};Version=3;";
+
         public static void InitializeDatabase()
         {
             if (!File.Exists(DbPath))
@@ -19,6 +23,52 @@ namespace APSSimulator.DB
             }
 
             ResetDatabase();
+        }
+
+        public static void SyncExternalDbFromMesOrders()
+        {
+            // 1. 確保外部資料庫存在
+            if (!File.Exists(ExternalDbPath))
+            {
+                SQLiteConnection.CreateFile(ExternalDbPath);
+            }
+
+            using (var extConn = new SQLiteConnection(ExternalDbConnectionString))
+            {
+                extConn.Open();
+                // 確保 Table 存在 (Schema: CstID, WorkNo)
+                string createTableSql = "CREATE TABLE IF NOT EXISTS CstID2WorkNo (CstID TEXT PRIMARY KEY, WorkNo TEXT);";
+                using (var cmd = new SQLiteCommand(createTableSql, extConn)) { cmd.ExecuteNonQuery(); }
+
+                // 清空
+                using (var cmd = new SQLiteCommand("DELETE FROM CstID2WorkNo", extConn)) { cmd.ExecuteNonQuery(); }
+
+                // 2. 從 Mock MES 讀取並寫入
+                using (var mesConn = new SQLiteConnection(ConnectionString))
+                {
+                    mesConn.Open();
+                    using (var readCmd = new SQLiteCommand("SELECT carrier_id, work_no FROM mock_mes_orders", mesConn))
+                    using (var reader = readCmd.ExecuteReader())
+                    {
+                        using (var trans = extConn.BeginTransaction())
+                        {
+                            while (reader.Read())
+                            {
+                                string cst = reader["carrier_id"].ToString();
+                                string wn = reader["work_no"].ToString();
+                                string insSql = "INSERT INTO CstID2WorkNo (CstID, WorkNo) VALUES (@c, @w)";
+                                using (var insCmd = new SQLiteCommand(insSql, extConn))
+                                {
+                                    insCmd.Parameters.AddWithValue("@c", cst);
+                                    insCmd.Parameters.AddWithValue("@w", wn);
+                                    insCmd.ExecuteNonQuery();
+                                }
+                            }
+                            trans.Commit();
+                        }
+                    }
+                }
+            }
         }
 
         public static void ResetDatabase()
@@ -422,12 +472,35 @@ namespace APSSimulator.DB
             return @"
                 INSERT INTO mock_mes_orders 
                 (work_no, carrier_id, step_id, next_step_id, prev_out_time, priority_type, due_date, route_id, current_seq_no) VALUES
-                ('2P25521UP124', 'P63X31', 'UPET002', 'PN-A', '03SEC', 2, 'UPPA008', 'UPDB002', 2),
-                ('2P25407UP111', 'C13D66', 'L002', 'PN-B', '03SEC', 1500, 'UPCL001', 'UPOV006', 0),
-                ('2P25521UP166', 'X9D655', 'L003', 'PN-C', '03SEC', 100, 'UPPA008', 'UPBO002', 1);
+                ('2P25521UP124', 'P63X31', 'UPET002', 'UPET003', '202602031201', 2, '202602230501', '03SEC', 5400),
+                ('2P23527UP111', 'A3TE69', 'UPOV026', 'UPPR002', '202602010401', 0, '202602230501', '03SEC', 11000),
+                ('2P25127UP131', 'A9W6WE', 'UPMS030', 'UPCL028', '202602010401', 0, '202602230501', '03SEC', 13700),
+                ('2P25407UP412', 'GW9531', 'UPO2001', 'UPET016', '202602010401', 0, '202602230501', '03SEC', 3750),
+                ('2P25423UP864', 'L9W661', 'UPMS017', 'UPSC001', '202602010401', 0, '202602230501', '03SEC', 3901),
+                ('2P23498UP223', 'O932Q1', 'UPMS036', 'UPSC040', '202602010401', 0, '202602230501', '03SEC', 14800),
+                ('2P22245UP113', 'Y46193', 'UPQC008', 'END', '202602010401', 0, '202602230501', '03SEC', 17400),
+                ('2P29148UP877', 'TXC6CC', 'UPPR003', 'UPOV030', '202602010401', 0, '202602230501', '03SEC', 12300),
+                ('2P26469UP349', 'K691H1', 'UPPA008', 'UPDB002', '202602010401', 0, '202602230501', '03SEC', 2),
+                ('2P29741UP121', 'H89U87', 'UPDR003', 'UPCL001', '202602010401', 0, '202602230501', '03SEC', 1301),
+                ('2P25331UP666', 'X9D655', 'UPOV025', 'UPPL010', '202602020801', 1, '202602230501', '03SEC', 10000);
             ";
+            //return @"
+            //    INSERT INTO mock_mes_orders 
+            //    (work_no, carrier_id, step_id, next_step_id, prev_out_time, priority_type, due_date, route_id, current_seq_no) VALUES
+            //    ('2P25521UP124', 'P63X31', 'UPET002', 'UPET003', '202602031201', 2, '202602230501', '03SEC', 5400),
+            //    ('2P23527UP111', 'A3TE69', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
+            //    ('2P25127UP131', 'A9W6WE', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
+            //    ('2P25407UP412', 'GW9531', 'UPET002', 'UPET003', '202602031201', 2, '202602230501', '03SEC', 5400),
+            //    ('2P25423UP864', 'L9W661', 'UPET002', 'UPET003', '202602031201', 1, '202602230501', '03SEC', 5400),
+            //    ('2P23498UP223', 'O932Q1', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
+            //    ('2P22245UP113', 'Y46193', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
+            //    ('2P29148UP877', 'TXC6CC', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
+            //    ('2P26469UP349', 'K691H1', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
+            //    ('2P29741UP121', 'H89U87', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
+            //    ('2P25331UP666', 'X9D655', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
+            //";
         }
-        
+
         private static string GetExtraConfigSeedSql()
         {
             // 預設 Steptime (for existing API compatibility)

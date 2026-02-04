@@ -248,7 +248,9 @@ namespace AdvancedPlanningSystem.Services
 
                 // 5. 觸發派貨決策服務 (Step 4 & 5)
                 // DispatchService 將會呼叫 GetCachedWip() 存取剛更新的資料
+                LogAndUI(">>> 派貨決策檢查開始...");
                 await _dispatchService.ExecuteDispatchAsync();
+                LogAndUI("<<< 派貨決策檢查結束。");
             }
             catch (Exception ex)
             {
@@ -342,13 +344,39 @@ namespace AdvancedPlanningSystem.Services
 
             // 3. 加權評分 (Step 3: Scoring)
             double score = 0;
+            double s_qtime = 0, s_urgent = 0, s_eng = 0, s_due = 0, s_lead = 0;
+
             if (isHold == 0) 
             {
-                if (tSafe < 99999) score += 1000000.0 / Math.Max(0.1, tSafe);
-                if (orderInfo.priority_type == 2) score += 100000.0;
-                if (orderInfo.priority_type == 1) score += 50000.0;
-                if (dueDate.HasValue) score += (240.0 - (dueDate.Value - DateTime.Now).TotalHours) * 100.0 + 10000.0;
-                if (prevOut.HasValue) score += (DateTime.Now - prevOut.Value).TotalMinutes * 10.0;
+                if (tSafe < 99999) 
+                {
+                    s_qtime = 1000000.0 / Math.Max(0.1, tSafe);
+                    score += s_qtime;
+                }
+                
+                if (orderInfo.priority_type == 2) 
+                {
+                    s_urgent = 100000.0;
+                    score += s_urgent;
+                }
+                
+                if (orderInfo.priority_type == 1) // Phase 2: Engineering is Type 1
+                {
+                    s_eng = 50000.0;
+                    score += s_eng;
+                }
+                
+                if (dueDate.HasValue) 
+                {
+                    s_due = (240.0 - (dueDate.Value - DateTime.Now).TotalHours) * 100.0 + 10000.0;
+                    score += s_due;
+                }
+                
+                if (prevOut.HasValue) 
+                {
+                    s_lead = (DateTime.Now - prevOut.Value).TotalMinutes * 10.0;
+                    score += s_lead;
+                }
             }
 
             var existing = _repo.GetBinding(port.CarrierId);
@@ -363,6 +391,14 @@ namespace AdvancedPlanningSystem.Services
                 TargetEqpId = existing?.TargetEqpId ?? "",
                 QTimeDeadline = qTimeDeadline,
                 DispatchScore = Math.Round(score, 2),
+                
+                // 儲存細項
+                ScoreQTime = Math.Round(s_qtime, 2),
+                ScoreUrgent = Math.Round(s_urgent, 2),
+                ScoreEng = Math.Round(s_eng, 2),
+                ScoreDue = Math.Round(s_due, 2),
+                ScoreLead = Math.Round(s_lead, 2),
+
                 PriorityType = orderInfo.priority_type,
                 IsHold = isHold,
                 BindTime = existing?.BindTime ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),

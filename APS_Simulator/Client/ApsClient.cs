@@ -17,6 +17,7 @@ namespace APSSimulator.Client
 
         public event Action<bool> OnConnectionChanged;
         public event Action<string> OnLog;
+        public event Action<string> OnMessageReceived;
 
         public bool IsConnected => _client != null && _client.Connected;
 
@@ -28,7 +29,7 @@ namespace APSSimulator.Client
             _isRunning = true;
             _cts = new CancellationTokenSource();
             Task.Run(() => ConnectLoop(_cts.Token));
-            Task.Run(() => HeartbeatLoop(_cts.Token));
+            // Heartbeat moved to separate logic if needed, but simple loop inside Connect is safer
         }
 
         public void Stop()
@@ -40,7 +41,7 @@ namespace APSSimulator.Client
 
         private void Disconnect()
         {
-            _client?.Close();
+            try { _client?.Close(); } catch { }
             _client = null;
             OnConnectionChanged?.Invoke(false);
         }
@@ -58,10 +59,13 @@ namespace APSSimulator.Client
                         _stream = _client.GetStream();
                         OnConnectionChanged?.Invoke(true);
                         Log($"Connected to APS at {_host}:{_port}");
+
+                        // Start Reader and Heartbeat
+                        _ = ReadLoop(token);
+                        _ = HeartbeatLoop(token);
                     }
                     catch
                     {
-                        // Log("Connection failed, retrying in 3s...");
                         await Task.Delay(3000, token);
                     }
                 }
@@ -69,6 +73,55 @@ namespace APSSimulator.Client
                 {
                     await Task.Delay(1000, token);
                 }
+            }
+        }
+
+        private async Task ReadLoop(CancellationToken token)
+        {
+            byte[] buffer = new byte[1024];
+            StringBuilder sb = new StringBuilder();
+
+            try
+            {
+                while (IsConnected && !token.IsCancellationRequested)
+                {
+                    int bytesRead = await _stream.ReadAsync(buffer, 0, buffer.Length, token);
+                    if (bytesRead == 0) break; // Disconnected
+
+                    string chunk = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    sb.Append(chunk);
+
+                    // Process messages delimited by ';'
+                    string content = sb.ToString();
+                    if (content.Contains(";"))
+                    {
+                        string[] msgs = content.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                        // If last char is not ';', the last part is incomplete
+                        bool incomplete = !content.EndsWith(";");
+                        int count = incomplete ? msgs.Length - 1 : msgs.Length;
+
+                        for (int i = 0; i < count; i++)
+                        {
+                            string msg = msgs[i].Trim();
+                            if (!string.IsNullOrEmpty(msg))
+                            {
+                                Log($"Received: {msg}");
+                                OnMessageReceived?.Invoke(msg);
+                            }
+                        }
+
+                        sb.Clear();
+                        if (incomplete) sb.Append(msgs[msgs.Length - 1]);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Read Error: {ex.Message}");
+            }
+            finally
+            {
+                Disconnect();
             }
         }
 

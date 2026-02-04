@@ -28,10 +28,25 @@ namespace APSSimulator
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.tabControlMain = new System.Windows.Forms.TabControl();
             this.tabPageDispatch = new System.Windows.Forms.TabPage();
             this.tabPagePerson = new System.Windows.Forms.TabPage();
+            this.dgvTestList = new System.Windows.Forms.DataGridView();
+            this.colSelect = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.colPortId = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colCassetteId = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colWorkNo = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colCurrentStep = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colNextStep = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colStatus = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colAction = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.txtClientLog = new System.Windows.Forms.TextBox();
             this.grpPersonOp = new System.Windows.Forms.GroupBox();
+            this.btnEnterEq = new System.Windows.Forms.Button();
+            this.btnBatchPick = new System.Windows.Forms.Button();
+            this.btnBatchScan = new System.Windows.Forms.Button();
+            this.btnLoadDefault = new System.Windows.Forms.Button();
             this.grpClientConfig = new System.Windows.Forms.GroupBox();
             this.btnClientDisconnect = new System.Windows.Forms.Button();
             this.btnClientConnect = new System.Windows.Forms.Button();
@@ -39,15 +54,12 @@ namespace APSSimulator
             this.lblClientPort = new System.Windows.Forms.Label();
             this.txtClientIp = new System.Windows.Forms.TextBox();
             this.lblClientIp = new System.Windows.Forms.Label();
-            this.btnPick = new System.Windows.Forms.Button();
-            this.btnScan = new System.Windows.Forms.Button();
-            this.txtBarcode = new System.Windows.Forms.TextBox();
-            this.lblBarcode = new System.Windows.Forms.Label();
-            this.txtPortId = new System.Windows.Forms.TextBox();
-            this.lblPortId = new System.Windows.Forms.Label();
-            this.txtClientLog = new System.Windows.Forms.TextBox();
             this.tabPageMachine = new System.Windows.Forms.TabPage();
             this.flowLayoutPanelMachines = new System.Windows.Forms.FlowLayoutPanel();
+            this.panelMachineTool = new System.Windows.Forms.Panel();
+            this.btnDoSearch = new System.Windows.Forms.Button();
+            this.lblSearch = new System.Windows.Forms.Label();
+            this.txtSearchMachine = new System.Windows.Forms.TextBox();
             this.btnRefreshMachines = new System.Windows.Forms.Button();
             this.tabPageMES = new System.Windows.Forms.TabPage();
             this.txtMesLog = new System.Windows.Forms.TextBox();
@@ -59,10 +71,12 @@ namespace APSSimulator
             this.lblMesStatus = new System.Windows.Forms.Label();
             this.tabControlMain.SuspendLayout();
             this.tabPagePerson.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvTestList)).BeginInit();
             this.grpPersonOp.SuspendLayout();
             this.grpClientConfig.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numClientPort)).BeginInit();
             this.tabPageMachine.SuspendLayout();
+            this.panelMachineTool.SuspendLayout();
             this.tabPageMES.SuspendLayout();
             this.panelMesControl.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numMesPort)).BeginInit();
@@ -93,6 +107,7 @@ namespace APSSimulator
             // 
             // tabPagePerson
             // 
+            this.tabPagePerson.Controls.Add(this.dgvTestList);
             this.tabPagePerson.Controls.Add(this.txtClientLog);
             this.tabPagePerson.Controls.Add(this.grpPersonOp);
             this.tabPagePerson.Location = new System.Drawing.Point(4, 22);
@@ -103,22 +118,137 @@ namespace APSSimulator
             this.tabPagePerson.Text = "人員模擬 (OP)";
             this.tabPagePerson.UseVisualStyleBackColor = true;
             // 
+            // dgvTestList
+            // 
+            this.dgvTestList.AllowUserToAddRows = false;
+            this.dgvTestList.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvTestList.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colSelect,
+            this.colPortId,
+            this.colCassetteId,
+            this.colWorkNo,
+            this.colCurrentStep,
+            this.colNextStep,
+            this.colStatus,
+            this.colAction});
+            this.dgvTestList.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvTestList.Location = new System.Drawing.Point(3, 103);
+            this.dgvTestList.Name = "dgvTestList";
+            this.dgvTestList.RowTemplate.Height = 24;
+            this.dgvTestList.Size = new System.Drawing.Size(994, 497);
+            this.dgvTestList.TabIndex = 1;
+            // 
+            // colSelect
+            // 
+            this.colSelect.HeaderText = "選取";
+            this.colSelect.Name = "colSelect";
+            this.colSelect.Width = 50;
+            // 
+            // colPortId
+            // 
+            this.colPortId.HeaderText = "Port ID";
+            this.colPortId.Name = "colPortId";
+            this.colPortId.Width = 80;
+            // 
+            // colCassetteId
+            // 
+            this.colCassetteId.HeaderText = "Cassette ID";
+            this.colCassetteId.Name = "colCassetteId";
+            this.colCassetteId.Width = 120;
+            // 
+            // colWorkNo
+            // 
+            this.colWorkNo.HeaderText = "工單號 (WorkNo)";
+            this.colWorkNo.Name = "colWorkNo";
+            this.colWorkNo.Width = 150;
+            // 
+            // colCurrentStep
+            // 
+            this.colCurrentStep.HeaderText = "當前站點";
+            this.colCurrentStep.Name = "colCurrentStep";
+            this.colCurrentStep.Width = 100;
+            // 
+            // colNextStep
+            // 
+            this.colNextStep.HeaderText = "下一站";
+            this.colNextStep.Name = "colNextStep";
+            this.colNextStep.Width = 100;
+            // 
+            // colStatus
+            // 
+            this.colStatus.HeaderText = "目前狀態";
+            this.colStatus.Name = "colStatus";
+            this.colStatus.Width = 150;
+            // 
+            // colAction
+            // 
+            this.colAction.HeaderText = "指令紀錄";
+            this.colAction.Name = "colAction";
+            this.colAction.Width = 200;
+            // 
+            // txtClientLog
+            // 
+            this.txtClientLog.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.txtClientLog.Location = new System.Drawing.Point(3, 600);
+            this.txtClientLog.Multiline = true;
+            this.txtClientLog.Name = "txtClientLog";
+            this.txtClientLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtClientLog.Size = new System.Drawing.Size(994, 100);
+            this.txtClientLog.TabIndex = 2;
+            // 
             // grpPersonOp
             // 
+            this.grpPersonOp.Controls.Add(this.btnEnterEq);
+            this.grpPersonOp.Controls.Add(this.btnBatchPick);
+            this.grpPersonOp.Controls.Add(this.btnBatchScan);
+            this.grpPersonOp.Controls.Add(this.btnLoadDefault);
             this.grpPersonOp.Controls.Add(this.grpClientConfig);
-            this.grpPersonOp.Controls.Add(this.btnPick);
-            this.grpPersonOp.Controls.Add(this.btnScan);
-            this.grpPersonOp.Controls.Add(this.txtBarcode);
-            this.grpPersonOp.Controls.Add(this.lblBarcode);
-            this.grpPersonOp.Controls.Add(this.txtPortId);
-            this.grpPersonOp.Controls.Add(this.lblPortId);
             this.grpPersonOp.Dock = System.Windows.Forms.DockStyle.Top;
             this.grpPersonOp.Location = new System.Drawing.Point(3, 3);
             this.grpPersonOp.Name = "grpPersonOp";
-            this.grpPersonOp.Size = new System.Drawing.Size(994, 150);
+            this.grpPersonOp.Size = new System.Drawing.Size(994, 100);
             this.grpPersonOp.TabIndex = 0;
             this.grpPersonOp.TabStop = false;
-            this.grpPersonOp.Text = "操作區";
+            this.grpPersonOp.Text = "批量測試控制";
+            // 
+            // btnEnterEq
+            // 
+            this.btnEnterEq.BackColor = System.Drawing.Color.Orange;
+            this.btnEnterEq.Location = new System.Drawing.Point(410, 30);
+            this.btnEnterEq.Name = "btnEnterEq";
+            this.btnEnterEq.Size = new System.Drawing.Size(120, 40);
+            this.btnEnterEq.TabIndex = 10;
+            this.btnEnterEq.Text = "進入機台 (ENTER EQ)";
+            this.btnEnterEq.UseVisualStyleBackColor = false;
+            // 
+            // btnBatchPick
+            // 
+            this.btnBatchPick.BackColor = System.Drawing.Color.LightGreen;
+            this.btnBatchPick.Location = new System.Drawing.Point(280, 30);
+            this.btnBatchPick.Name = "btnBatchPick";
+            this.btnBatchPick.Size = new System.Drawing.Size(120, 40);
+            this.btnBatchPick.TabIndex = 9;
+            this.btnBatchPick.Text = "批量取走 (PICK)";
+            this.btnBatchPick.UseVisualStyleBackColor = false;
+            // 
+            // btnBatchScan
+            // 
+            this.btnBatchScan.BackColor = System.Drawing.Color.LightBlue;
+            this.btnBatchScan.Location = new System.Drawing.Point(150, 30);
+            this.btnBatchScan.Name = "btnBatchScan";
+            this.btnBatchScan.Size = new System.Drawing.Size(120, 40);
+            this.btnBatchScan.TabIndex = 8;
+            this.btnBatchScan.Text = "批量入庫 (SCAN)";
+            this.btnBatchScan.UseVisualStyleBackColor = false;
+            // 
+            // btnLoadDefault
+            // 
+            this.btnLoadDefault.Location = new System.Drawing.Point(20, 30);
+            this.btnLoadDefault.Name = "btnLoadDefault";
+            this.btnLoadDefault.Size = new System.Drawing.Size(120, 40);
+            this.btnLoadDefault.TabIndex = 7;
+            this.btnLoadDefault.Text = "載入預設測試清單";
+            this.btnLoadDefault.UseVisualStyleBackColor = true;
             // 
             // grpClientConfig
             // 
@@ -128,34 +258,34 @@ namespace APSSimulator
             this.grpClientConfig.Controls.Add(this.lblClientPort);
             this.grpClientConfig.Controls.Add(this.txtClientIp);
             this.grpClientConfig.Controls.Add(this.lblClientIp);
-            this.grpClientConfig.Location = new System.Drawing.Point(400, 15);
+            this.grpClientConfig.Location = new System.Drawing.Point(550, 15);
             this.grpClientConfig.Name = "grpClientConfig";
-            this.grpClientConfig.Size = new System.Drawing.Size(500, 80);
+            this.grpClientConfig.Size = new System.Drawing.Size(430, 80);
             this.grpClientConfig.TabIndex = 6;
             this.grpClientConfig.TabStop = false;
             this.grpClientConfig.Text = "APS 連線設定";
             // 
             // btnClientDisconnect
             // 
-            this.btnClientDisconnect.Location = new System.Drawing.Point(340, 20);
+            this.btnClientDisconnect.Location = new System.Drawing.Point(340, 25);
             this.btnClientDisconnect.Name = "btnClientDisconnect";
-            this.btnClientDisconnect.Size = new System.Drawing.Size(75, 25);
+            this.btnClientDisconnect.Size = new System.Drawing.Size(75, 30);
             this.btnClientDisconnect.TabIndex = 5;
             this.btnClientDisconnect.Text = "斷線";
             this.btnClientDisconnect.UseVisualStyleBackColor = true;
             // 
             // btnClientConnect
             // 
-            this.btnClientConnect.Location = new System.Drawing.Point(260, 20);
+            this.btnClientConnect.Location = new System.Drawing.Point(260, 25);
             this.btnClientConnect.Name = "btnClientConnect";
-            this.btnClientConnect.Size = new System.Drawing.Size(75, 25);
+            this.btnClientConnect.Size = new System.Drawing.Size(75, 30);
             this.btnClientConnect.TabIndex = 4;
             this.btnClientConnect.Text = "連線";
             this.btnClientConnect.UseVisualStyleBackColor = true;
             // 
             // numClientPort
             // 
-            this.numClientPort.Location = new System.Drawing.Point(180, 22);
+            this.numClientPort.Location = new System.Drawing.Point(180, 27);
             this.numClientPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             this.numClientPort.Name = "numClientPort";
             this.numClientPort.Size = new System.Drawing.Size(60, 22);
@@ -165,7 +295,7 @@ namespace APSSimulator
             // lblClientPort
             // 
             this.lblClientPort.AutoSize = true;
-            this.lblClientPort.Location = new System.Drawing.Point(150, 25);
+            this.lblClientPort.Location = new System.Drawing.Point(150, 30);
             this.lblClientPort.Name = "lblClientPort";
             this.lblClientPort.Size = new System.Drawing.Size(27, 12);
             this.lblClientPort.TabIndex = 2;
@@ -173,7 +303,7 @@ namespace APSSimulator
             // 
             // txtClientIp
             // 
-            this.txtClientIp.Location = new System.Drawing.Point(40, 22);
+            this.txtClientIp.Location = new System.Drawing.Point(40, 27);
             this.txtClientIp.Name = "txtClientIp";
             this.txtClientIp.Size = new System.Drawing.Size(100, 22);
             this.txtClientIp.TabIndex = 1;
@@ -182,76 +312,16 @@ namespace APSSimulator
             // lblClientIp
             // 
             this.lblClientIp.AutoSize = true;
-            this.lblClientIp.Location = new System.Drawing.Point(15, 25);
+            this.lblClientIp.Location = new System.Drawing.Point(15, 30);
             this.lblClientIp.Name = "lblClientIp";
             this.lblClientIp.Size = new System.Drawing.Size(18, 12);
             this.lblClientIp.TabIndex = 0;
             this.lblClientIp.Text = "IP:";
             // 
-            // btnPick
-            // 
-            this.btnPick.Location = new System.Drawing.Point(250, 56);
-            this.btnPick.Name = "btnPick";
-            this.btnPick.Size = new System.Drawing.Size(100, 30);
-            this.btnPick.TabIndex = 5;
-            this.btnPick.Text = "取走 (PICK)";
-            this.btnPick.UseVisualStyleBackColor = true;
-            // 
-            // btnScan
-            // 
-            this.btnScan.Location = new System.Drawing.Point(250, 20);
-            this.btnScan.Name = "btnScan";
-            this.btnScan.Size = new System.Drawing.Size(100, 30);
-            this.btnScan.TabIndex = 4;
-            this.btnScan.Text = "進料 (SCAN)";
-            this.btnScan.UseVisualStyleBackColor = true;
-            // 
-            // txtBarcode
-            // 
-            this.txtBarcode.Location = new System.Drawing.Point(80, 25);
-            this.txtBarcode.Name = "txtBarcode";
-            this.txtBarcode.Size = new System.Drawing.Size(150, 22);
-            this.txtBarcode.TabIndex = 3;
-            // 
-            // lblBarcode
-            // 
-            this.lblBarcode.AutoSize = true;
-            this.lblBarcode.Location = new System.Drawing.Point(20, 28);
-            this.lblBarcode.Name = "lblBarcode";
-            this.lblBarcode.Size = new System.Drawing.Size(47, 12);
-            this.lblBarcode.TabIndex = 2;
-            this.lblBarcode.Text = "Barcode:";
-            // 
-            // txtPortId
-            // 
-            this.txtPortId.Location = new System.Drawing.Point(80, 61);
-            this.txtPortId.Name = "txtPortId";
-            this.txtPortId.Size = new System.Drawing.Size(150, 22);
-            this.txtPortId.TabIndex = 1;
-            // 
-            // lblPortId
-            // 
-            this.lblPortId.AutoSize = true;
-            this.lblPortId.Location = new System.Drawing.Point(20, 64);
-            this.lblPortId.Name = "lblPortId";
-            this.lblPortId.Size = new System.Drawing.Size(41, 12);
-            this.lblPortId.TabIndex = 0;
-            this.lblPortId.Text = "Port ID:";
-            // 
-            // txtClientLog
-            // 
-            this.txtClientLog.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtClientLog.Location = new System.Drawing.Point(3, 153);
-            this.txtClientLog.Multiline = true;
-            this.txtClientLog.Name = "txtClientLog";
-            this.txtClientLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtClientLog.Size = new System.Drawing.Size(994, 547);
-            this.txtClientLog.TabIndex = 1;
-            // 
             // tabPageMachine
             // 
             this.tabPageMachine.Controls.Add(this.flowLayoutPanelMachines);
-            this.tabPageMachine.Controls.Add(this.btnRefreshMachines);
+            this.tabPageMachine.Controls.Add(this.panelMachineTool);
             this.tabPageMachine.Location = new System.Drawing.Point(4, 22);
             this.tabPageMachine.Name = "tabPageMachine";
             this.tabPageMachine.Size = new System.Drawing.Size(1000, 703);
@@ -268,14 +338,50 @@ namespace APSSimulator
             this.flowLayoutPanelMachines.Size = new System.Drawing.Size(1000, 663);
             this.flowLayoutPanelMachines.TabIndex = 1;
             // 
+            // panelMachineTool
+            // 
+            this.panelMachineTool.Controls.Add(this.btnDoSearch);
+            this.panelMachineTool.Controls.Add(this.lblSearch);
+            this.panelMachineTool.Controls.Add(this.txtSearchMachine);
+            this.panelMachineTool.Controls.Add(this.btnRefreshMachines);
+            this.panelMachineTool.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panelMachineTool.Location = new System.Drawing.Point(0, 0);
+            this.panelMachineTool.Name = "panelMachineTool";
+            this.panelMachineTool.Size = new System.Drawing.Size(1000, 40);
+            this.panelMachineTool.TabIndex = 2;
+            // 
+            // btnDoSearch
+            // 
+            this.btnDoSearch.Location = new System.Drawing.Point(380, 7);
+            this.btnDoSearch.Name = "btnDoSearch";
+            this.btnDoSearch.Size = new System.Drawing.Size(75, 25);
+            this.btnDoSearch.TabIndex = 3;
+            this.btnDoSearch.Text = "搜尋";
+            this.btnDoSearch.UseVisualStyleBackColor = true;
+            // 
+            // lblSearch
+            // 
+            this.lblSearch.AutoSize = true;
+            this.lblSearch.Location = new System.Drawing.Point(160, 14);
+            this.lblSearch.Name = "lblSearch";
+            this.lblSearch.Size = new System.Drawing.Size(56, 12);
+            this.lblSearch.TabIndex = 2;
+            this.lblSearch.Text = "設備搜尋:";
+            // 
+            // txtSearchMachine
+            // 
+            this.txtSearchMachine.Location = new System.Drawing.Point(220, 9);
+            this.txtSearchMachine.Name = "txtSearchMachine";
+            this.txtSearchMachine.Size = new System.Drawing.Size(150, 22);
+            this.txtSearchMachine.TabIndex = 1;
+            // 
             // btnRefreshMachines
             // 
-            this.btnRefreshMachines.Dock = System.Windows.Forms.DockStyle.Top;
             this.btnRefreshMachines.Location = new System.Drawing.Point(0, 0);
             this.btnRefreshMachines.Name = "btnRefreshMachines";
-            this.btnRefreshMachines.Size = new System.Drawing.Size(1000, 40);
+            this.btnRefreshMachines.Size = new System.Drawing.Size(150, 40);
             this.btnRefreshMachines.TabIndex = 0;
-            this.btnRefreshMachines.Text = "重新整理機台列表";
+            this.btnRefreshMachines.Text = "重新整理列表";
             this.btnRefreshMachines.UseVisualStyleBackColor = true;
             // 
             // tabPageMES
@@ -368,12 +474,14 @@ namespace APSSimulator
             this.tabControlMain.ResumeLayout(false);
             this.tabPagePerson.ResumeLayout(false);
             this.tabPagePerson.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvTestList)).EndInit();
             this.grpPersonOp.ResumeLayout(false);
-            this.grpPersonOp.PerformLayout();
             this.grpClientConfig.ResumeLayout(false);
             this.grpClientConfig.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numClientPort)).EndInit();
             this.tabPageMachine.ResumeLayout(false);
+            this.panelMachineTool.ResumeLayout(false);
+            this.panelMachineTool.PerformLayout();
             this.tabPageMES.ResumeLayout(false);
             this.tabPageMES.PerformLayout();
             this.panelMesControl.ResumeLayout(false);
@@ -392,14 +500,22 @@ namespace APSSimulator
         private System.Windows.Forms.TabPage tabPageMES;
         
         // Person
-        private System.Windows.Forms.GroupBox grpPersonOp;
-        private System.Windows.Forms.Button btnPick;
-        private System.Windows.Forms.Button btnScan;
-        private System.Windows.Forms.TextBox txtBarcode;
-        private System.Windows.Forms.Label lblBarcode;
-        private System.Windows.Forms.TextBox txtPortId;
-        private System.Windows.Forms.Label lblPortId;
+        private System.Windows.Forms.DataGridView dgvTestList;
+        private System.Windows.Forms.DataGridViewCheckBoxColumn colSelect;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colPortId;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colCassetteId;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colWorkNo;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colCurrentStep;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colNextStep;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colStatus;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colAction;
         private System.Windows.Forms.TextBox txtClientLog;
+        
+        private System.Windows.Forms.GroupBox grpPersonOp;
+        private System.Windows.Forms.Button btnLoadDefault;
+        private System.Windows.Forms.Button btnBatchScan;
+        private System.Windows.Forms.Button btnBatchPick;
+        private System.Windows.Forms.Button btnEnterEq;
         
         // Client Config
         private System.Windows.Forms.GroupBox grpClientConfig;
@@ -413,6 +529,10 @@ namespace APSSimulator
         // Machine
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanelMachines;
         private System.Windows.Forms.Button btnRefreshMachines;
+        private System.Windows.Forms.Panel panelMachineTool;
+        private System.Windows.Forms.Label lblSearch;
+        private System.Windows.Forms.TextBox txtSearchMachine;
+        private System.Windows.Forms.Button btnDoSearch;
 
         // MES
         private System.Windows.Forms.Panel panelMesControl;

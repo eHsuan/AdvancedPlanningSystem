@@ -6,15 +6,15 @@ namespace AdvancedPlanningSystem
         /// <summary>
         /// Port 總數量
         /// </summary>
-        public static int TotalPortCount = 20;
+        public static int TotalPortCount = 12;
 
         // 資料庫設定
         public static bool UseMockExternalDb = false; // 預設為 true (模擬模式)
-        public static string ExternalDbConnectionString = $"Data Source=D:\\SourceCode\\CS\\Advanced Planning System\\ExternalDB.db;Version=3;";
+        public static string ExternalDbConnectionString = $"Data Source=D:\\SourceCode\\CS\\AdvancedPlanningSystem\\ExternalDB.db;Version=3;";
 
         // Cloud DB 設定
         public static bool UseCloudDb = false; // 預設使用 Local APSCloudDB.db
-        public static string CloudDbConnectionString = $"Data Source=D:\\SourceCode\\CS\\Advanced Planning System\\APSCloudDB.db;Version=3;";
+        public static string CloudDbConnectionString = $"Data Source=D:\\SourceCode\\CS\\AdvancedPlanningSystem\\APSCloudDB.db;Version=3;";
 
         // 模擬器 (硬體) 連線設定
         public static bool SimulatorEnabled = true; // 是否啟用模擬器連線

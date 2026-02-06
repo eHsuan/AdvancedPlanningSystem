@@ -1,105 +1,163 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using AdvancedPlanningSystem.Repositories;
+using AdvancedPlanningSystem.Models;
+using AdvancedPlanningSystem.Services;
 
 namespace AdvancedPlanningSystem
 {
     public class EqpMonitorForm : Form
     {
         private ApsLocalDbRepository _repo;
-        private FlowLayoutPanel _mainPanel;
-        private Timer _timer;
+        private FlowLayoutPanel flowLayoutPanelMachines;
+        private TextBox txtSearchMachine;
+        private Button btnRefresh;
+        private Label lblLastUpdate;
 
         public EqpMonitorForm()
         {
             InitializeComponent();
             _repo = new ApsLocalDbRepository();
             
-            _timer = new Timer();
-            _timer.Interval = 5000;
-            _timer.Tick += (s, e) => RefreshData();
-            _timer.Start();
-            
-            RefreshData();
+            // Initial forced update when opening
+            this.Load += async (s, e) => {
+                var mainForm = Application.OpenForms.OfType<FormMain>().FirstOrDefault();
+                if (mainForm != null && mainForm.SyncService != null)
+                {
+                    await mainForm.SyncService.ForceUpdateCacheAsync();
+                }
+                LoadMachines();
+            };
         }
 
         private void InitializeComponent()
         {
-            this.Text = "機台狀態看板 (Equipment Monitor)";
-            this.Size = new Size(1000, 600);
-            this.AutoScroll = true;
+            this.txtSearchMachine = new TextBox();
+            this.btnRefresh = new Button();
+            this.lblLastUpdate = new Label();
+            this.flowLayoutPanelMachines = new FlowLayoutPanel();
+            Panel pnlTop = new Panel();
+            Label lblSearch = new Label();
 
-            _mainPanel = new FlowLayoutPanel();
-            _mainPanel.Dock = DockStyle.Fill;
-            _mainPanel.AutoScroll = true;
-            _mainPanel.FlowDirection = FlowDirection.TopDown;
-            _mainPanel.WrapContents = false;
+            this.SuspendLayout();
 
-            this.Controls.Add(_mainPanel);
+            // pnlTop
+            pnlTop.Dock = DockStyle.Top;
+            pnlTop.Height = 50;
+            pnlTop.Controls.Add(lblSearch);
+            pnlTop.Controls.Add(this.txtSearchMachine);
+            pnlTop.Controls.Add(this.btnRefresh);
+            pnlTop.Controls.Add(this.lblLastUpdate);
+
+            // lblSearch
+            lblSearch.Text = "Search Machine ID:";
+            lblSearch.Location = new Point(12, 17);
+            lblSearch.AutoSize = true;
+
+            // txtSearchMachine
+            this.txtSearchMachine.Location = new Point(140, 14);
+            this.txtSearchMachine.Size = new Size(200, 25);
+            this.txtSearchMachine.TextChanged += (s, e) => FilterMachines(txtSearchMachine.Text.Trim());
+
+            // btnRefresh
+            this.btnRefresh.Location = new Point(350, 12);
+            this.btnRefresh.Size = new Size(100, 30);
+            this.btnRefresh.Text = "Refresh";
+            this.btnRefresh.Click += async (s, e) => {
+                btnRefresh.Enabled = false;
+                btnRefresh.Text = "Updating...";
+                
+                var mainForm = Application.OpenForms.OfType<FormMain>().FirstOrDefault();
+                if (mainForm != null && mainForm.SyncService != null)
+                {
+                    await mainForm.SyncService.ForceUpdateCacheAsync();
+                }
+                
+                LoadMachines();
+                
+                btnRefresh.Text = "Refresh";
+                btnRefresh.Enabled = true;
+            };
+
+            // lblLastUpdate
+            this.lblLastUpdate.Location = new Point(460, 17);
+            this.lblLastUpdate.Size = new Size(300, 25);
+            this.lblLastUpdate.Text = "Last Update: -";
+
+            // flowLayoutPanelMachines
+            this.flowLayoutPanelMachines.Dock = DockStyle.Fill;
+            this.flowLayoutPanelMachines.AutoScroll = true;
+            this.flowLayoutPanelMachines.Padding = new Padding(10);
+
+            // EqpMonitorForm
+            this.ClientSize = new Size(1100, 700);
+            this.Controls.Add(this.flowLayoutPanelMachines);
+            this.Controls.Add(pnlTop);
+            this.Text = "Equipment Real-time Monitor";
+            this.StartPosition = FormStartPosition.CenterScreen;
+
+            this.ResumeLayout(false);
         }
 
-        private void RefreshData()
+        private void LoadMachines()
         {
-            // 1. 取得資料
-            var stepMap = _repo.GetStepEqpMappings();
+            flowLayoutPanelMachines.SuspendLayout();
+            flowLayoutPanelMachines.Controls.Clear();
+
+            // 1. Get Static Configs from DB
             var eqpConfigs = _repo.GetAllEqpConfigs();
-            var transits = _repo.GetAllTransits(); // 用來算 InTransit WIP
+            var stepMap = _repo.GetStepEqpMappings();
+            var transits = _repo.GetAllTransits();
+            var bindings = _repo.GetAllBindings();
 
-            // Group by Step
-            var stepGroups = stepMap.GroupBy(x => x.StepId);
+            // 2. Get Real-time Status from Cache
+            Dictionary<string, EqStatusResponse> statusDict = new Dictionary<string, EqStatusResponse>();
+            Dictionary<string, WipInfoResponse> wipDict = new Dictionary<string, WipInfoResponse>();
 
-            _mainPanel.SuspendLayout();
-            _mainPanel.Controls.Clear();
-
-            foreach (var group in stepGroups)
+            var mainForm = Application.OpenForms.OfType<FormMain>().FirstOrDefault();
+            if (mainForm != null && mainForm.SyncService != null)
             {
-                // Step Container
-                var stepBox = new GroupBox();
-                stepBox.Text = $"Step: {group.Key}";
-                stepBox.Size = new Size(950, 150); // Fixed height for now
-                stepBox.Padding = new Padding(10);
-
-                var eqpFlow = new FlowLayoutPanel();
-                eqpFlow.Dock = DockStyle.Fill;
-                eqpFlow.FlowDirection = FlowDirection.LeftToRight;
-                
-                foreach (var item in group)
-                {
-                    // Eqp Panel
-                    var eqpId = item.EqpId;
-                    var config = eqpConfigs.FirstOrDefault(c => c.EqpId == eqpId);
-                    int maxWip = config?.MaxWipQty ?? 0;
-                    
-                    // WIP Calc (Note: Current WIP is not in Config table unless synced? 
-                    // Actually SyncService updates MaxWip, but not CurrentWip into DB?
-                    // Ah, DispatchService gets CurrentWip from MES but doesn't save it to DB.
-                    // This is a gap. UI cannot show current WIP unless it calls MES or SyncService saves it.
-                    // 暫時顯示 MaxWip 與 InTransit
-                    int inTransit = transits.Count(t => t.TargetEqpId == eqpId);
-
-                    var pnl = new Panel();
-                    pnl.Size = new Size(120, 100);
-                    pnl.BorderStyle = BorderStyle.FixedSingle;
-                    pnl.BackColor = Color.WhiteSmoke;
-
-                    var lblId = new Label { Text = eqpId, Font = new Font(FontFamily.GenericSansSerif, 12, FontStyle.Bold), Location = new Point(5, 5), AutoSize = true };
-                    var lblWip = new Label { Text = $"WIP Limit: {maxWip}", Location = new Point(5, 30), AutoSize = true };
-                    var lblTransit = new Label { Text = $"In Transit: {inTransit}", Location = new Point(5, 50), AutoSize = true, ForeColor = Color.Blue };
-
-                    pnl.Controls.Add(lblId);
-                    pnl.Controls.Add(lblWip);
-                    pnl.Controls.Add(lblTransit);
-                    
-                    eqpFlow.Controls.Add(pnl);
-                }
-
-                stepBox.Controls.Add(eqpFlow);
-                _mainPanel.Controls.Add(stepBox);
+                statusDict = mainForm.SyncService.GetCachedEqStatus();
+                wipDict = mainForm.SyncService.GetCachedWip();
             }
 
-            _mainPanel.ResumeLayout();
+            foreach (var config in eqpConfigs.OrderBy(c => c.EqpId))
+            {
+                var control = new MachineControl();
+                string stepId = stepMap.FirstOrDefault(m => m.EqpId == config.EqpId)?.StepId ?? "N/A";
+                
+                // Real-time Status
+                string status = "UNKNOWN";
+                if (statusDict.ContainsKey(config.EqpId)) status = statusDict[config.EqpId].status;
+
+                // WIP Calc: Pure MES WIP (Physical only to match Simulator)
+                int mesWip = 0;
+                if (wipDict.ContainsKey(config.EqpId)) mesWip = wipDict[config.EqpId].current_wip_qty;
+                
+                control.BindData(config.EqpId, stepId, status, mesWip, config.MaxWipQty);
+                control.Margin = new Padding(10);
+                flowLayoutPanelMachines.Controls.Add(control);
+            }
+
+            FilterMachines(txtSearchMachine.Text.Trim());
+            lblLastUpdate.Text = $"Last Update: {DateTime.Now:HH:mm:ss}";
+            flowLayoutPanelMachines.ResumeLayout();
+        }
+
+        private void FilterMachines(string keyword)
+        {
+            keyword = keyword.ToUpper();
+            foreach (Control c in flowLayoutPanelMachines.Controls)
+            {
+                if (c is MachineControl mc)
+                {
+                    bool match = string.IsNullOrEmpty(keyword) || mc.EqpId.ToUpper().Contains(keyword);
+                    mc.Visible = match;
+                }
+            }
         }
     }
 }

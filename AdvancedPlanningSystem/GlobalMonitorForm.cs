@@ -35,16 +35,16 @@ namespace AdvancedPlanningSystem
             {
                 _allMappings = _repo.GetStepEqpMappings();
                 
-                // 1. 初始化站點選單
+                // 1. Initialize Step Menu
                 cmbStep.Items.Clear();
-                cmbStep.Items.Add("全部站點");
+                cmbStep.Items.Add("All Steps");
                 var steps = _allMappings.Select(m => m.StepId).Distinct().OrderBy(s => s).ToList();
                 foreach (var s in steps) cmbStep.Items.Add(s);
                 cmbStep.SelectedIndex = 0;
 
-                // 2. 初始化設備選單
+                // 2. Initialize Equipment Menu
                 cmbEqp.Items.Clear();
-                cmbEqp.Items.Add("全部設備");
+                cmbEqp.Items.Add("All Equipment");
                 cmbEqp.SelectedIndex = 0;
             }
             catch (Exception ex)
@@ -58,9 +58,9 @@ namespace AdvancedPlanningSystem
             string selectedStep = cmbStep.SelectedItem?.ToString();
             
             cmbEqp.Items.Clear();
-            cmbEqp.Items.Add("全部設備");
+            cmbEqp.Items.Add("All Equipment");
 
-            if (!string.IsNullOrEmpty(selectedStep) && selectedStep != "全部站點")
+            if (!string.IsNullOrEmpty(selectedStep) && selectedStep != "All Steps")
             {
                 var eqps = _allMappings.Where(m => m.StepId == selectedStep)
                                        .Select(m => m.EqpId)
@@ -76,24 +76,24 @@ namespace AdvancedPlanningSystem
         private void InitializeLogs()
         {
             lstSystemLog.Items.Clear();
-            lstSystemLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] 監控視窗已啟動。");
-            lstSystemLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] 模式: 手動刷新");
+            lstSystemLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] Monitor Window Started.");
+            lstSystemLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] Mode: Manual Refresh");
         }
 
         private void btnRefresh_Click(object sender, EventArgs e)
         {
             RefreshLeaderboard();
-            lstSystemLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] 資料已手動刷新。");
+            lstSystemLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] Data refreshed manually.");
             if (lstSystemLog.Items.Count > 50) lstSystemLog.Items.RemoveAt(0);
             lstSystemLog.SelectedIndex = lstSystemLog.Items.Count - 1;
         }
 
         private void RefreshLeaderboard()
         {
-            // 從 DB 讀取真實資料 (包含已派出的卡匣)
+            // Read from DB
             var bindings = _repo.GetSortedWaitBindings();
 
-            // 1. 優先級過濾
+            // 1. Priority Filtering
             if (rbUrgent.Checked)
             {
                 bindings = bindings.Where(b => b.PriorityType == 2).ToList();
@@ -103,18 +103,17 @@ namespace AdvancedPlanningSystem
                 bindings = bindings.Where(b => b.PriorityType == 1).ToList();
             }
 
-            // 2. 站點過濾
+            // 2. Step Filtering
             string selectedStep = cmbStep.SelectedItem?.ToString();
-            if (!string.IsNullOrEmpty(selectedStep) && selectedStep != "全部站點")
+            if (!string.IsNullOrEmpty(selectedStep) && selectedStep != "All Steps")
             {
                 bindings = bindings.Where(b => b.NextStepId == selectedStep).ToList();
             }
 
-            // 3. 設備過濾
+            // 3. Equipment Filtering
             string selectedEqp = cmbEqp.SelectedItem?.ToString();
-            if (!string.IsNullOrEmpty(selectedEqp) && selectedEqp != "全部設備")
+            if (!string.IsNullOrEmpty(selectedEqp) && selectedEqp != "All Equipment")
             {
-                // 過濾目標機台是該設備，或者尚未指派目標但其站點包含該設備
                 bindings = bindings.Where(b => 
                     b.TargetEqpId == selectedEqp || 
                     (string.IsNullOrEmpty(b.TargetEqpId) && _allMappings.Any(m => m.StepId == b.NextStepId && m.EqpId == selectedEqp))
@@ -138,14 +137,14 @@ namespace AdvancedPlanningSystem
 
         private string GetPriorityText(int p)
         {
-            if (p == 2) return "急件 (Urgent)";
-            if (p == 1) return "工程 (Eng)";
-            return "一般 (Normal)";
+            if (p == 2) return "Urgent";
+            if (p == 1) return "Engineering";
+            return "Normal";
         }
 
         private void DgvLeaderboard_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
-            // 批次線：前 4 名 (RowIndex 0~3) 背景顯示淺綠色
+            // Batch Highlight: Top 4 (RowIndex 0~3)
             if (e.RowIndex >= 0 && e.RowIndex <= 3)
             {
                 e.CellStyle.BackColor = Color.FromArgb(220, 255, 220);
@@ -154,12 +153,12 @@ namespace AdvancedPlanningSystem
             if (dgvLeaderboard.Columns[e.ColumnIndex].Name == "colPriority" && e.Value != null)
             {
                 string value = e.Value.ToString();
-                if (value.Contains("急件"))
+                if (value.Contains("Urgent"))
                 {
                     e.CellStyle.ForeColor = Color.Red;
                     e.CellStyle.Font = new Font(e.CellStyle.Font, FontStyle.Bold);
                 }
-                else if (value.Contains("工程"))
+                else if (value.Contains("Engineering"))
                 {
                     e.CellStyle.ForeColor = Color.Purple;
                     e.CellStyle.Font = new Font(e.CellStyle.Font, FontStyle.Bold);

@@ -30,6 +30,7 @@ namespace AdvancedPlanningSystem
         {
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.btnSystemTest = new System.Windows.Forms.Button();
+            this.btnManualSync = new System.Windows.Forms.Button();
             this.flpLegend = new System.Windows.Forms.FlowLayoutPanel();
             this.lblLegendError = new System.Windows.Forms.Label();
             this.pnlColorError = new System.Windows.Forms.Panel();
@@ -44,7 +45,6 @@ namespace AdvancedPlanningSystem
             this.btnGlobalMonitor = new System.Windows.Forms.Button();
             this.btnTransitMonitor = new System.Windows.Forms.Button();
             this.btnEqpMonitor = new System.Windows.Forms.Button();
-            this.btnManualSync = new System.Windows.Forms.Button();
             this.lblTitle = new System.Windows.Forms.Label();
             this.pnlSimStatus = new System.Windows.Forms.Panel();
             this.lblSimStatus = new System.Windows.Forms.Label();
@@ -78,12 +78,26 @@ namespace AdvancedPlanningSystem
             // 
             this.btnSystemTest.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSystemTest.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.btnSystemTest.Location = new System.Drawing.Point(629, 12);
+            this.btnSystemTest.Location = new System.Drawing.Point(675, 12);
             this.btnSystemTest.Name = "btnSystemTest";
-            this.btnSystemTest.Size = new System.Drawing.Size(160, 36);
+            this.btnSystemTest.Size = new System.Drawing.Size(113, 36);
             this.btnSystemTest.TabIndex = 8;
-            this.btnSystemTest.Text = "系統測試 >>";
+            this.btnSystemTest.Text = "System Test";
             this.btnSystemTest.UseVisualStyleBackColor = true;
+            // 
+            // btnManualSync
+            // 
+            this.btnManualSync.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnManualSync.BackColor = System.Drawing.Color.Orange;
+            this.btnManualSync.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
+            this.btnManualSync.Location = new System.Drawing.Point(796, 12);
+            this.btnManualSync.Name = "btnManualSync";
+            this.btnManualSync.Size = new System.Drawing.Size(160, 36);
+            this.btnManualSync.TabIndex = 9;
+            this.btnManualSync.Text = "Manual Decision";
+            this.btnManualSync.UseVisualStyleBackColor = false;
+            this.btnManualSync.Visible = false;
+            this.btnManualSync.Click += new System.EventHandler(this.btnManualSync_Click);
             // 
             // flpLegend
             // 
@@ -134,10 +148,10 @@ namespace AdvancedPlanningSystem
             this.lblLegendDispatching.AutoSize = true;
             this.lblLegendDispatching.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.lblLegendDispatching.ForeColor = System.Drawing.Color.White;
-            this.lblLegendDispatching.Location = new System.Drawing.Point(320, 5);
+            this.lblLegendDispatching.Location = new System.Drawing.Point(324, 5);
             this.lblLegendDispatching.Margin = new System.Windows.Forms.Padding(0, 5, 5, 0);
             this.lblLegendDispatching.Name = "lblLegendDispatching";
-            this.lblLegendDispatching.Size = new System.Drawing.Size(45, 15);
+            this.lblLegendDispatching.Size = new System.Drawing.Size(46, 15);
             this.lblLegendDispatching.TabIndex = 2;
             this.lblLegendDispatching.Text = "MOVE";
             // 
@@ -145,7 +159,7 @@ namespace AdvancedPlanningSystem
             // 
             this.pnlColorDispatching.BackColor = System.Drawing.Color.LimeGreen;
             this.pnlColorDispatching.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlColorDispatching.Location = new System.Drawing.Point(295, 6);
+            this.pnlColorDispatching.Location = new System.Drawing.Point(299, 6);
             this.pnlColorDispatching.Margin = new System.Windows.Forms.Padding(0, 6, 10, 0);
             this.pnlColorDispatching.Name = "pnlColorDispatching";
             this.pnlColorDispatching.Size = new System.Drawing.Size(15, 15);
@@ -156,10 +170,10 @@ namespace AdvancedPlanningSystem
             this.lblLegendOccupied.AutoSize = true;
             this.lblLegendOccupied.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.lblLegendOccupied.ForeColor = System.Drawing.Color.White;
-            this.lblLegendOccupied.Location = new System.Drawing.Point(245, 5);
+            this.lblLegendOccupied.Location = new System.Drawing.Point(255, 5);
             this.lblLegendOccupied.Margin = new System.Windows.Forms.Padding(0, 5, 5, 0);
             this.lblLegendOccupied.Name = "lblLegendOccupied";
-            this.lblLegendOccupied.Size = new System.Drawing.Size(40, 15);
+            this.lblLegendOccupied.Size = new System.Drawing.Size(39, 15);
             this.lblLegendOccupied.TabIndex = 4;
             this.lblLegendOccupied.Text = "WAIT";
             // 
@@ -167,7 +181,7 @@ namespace AdvancedPlanningSystem
             // 
             this.pnlColorOccupied.BackColor = System.Drawing.Color.SkyBlue;
             this.pnlColorOccupied.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlColorOccupied.Location = new System.Drawing.Point(220, 6);
+            this.pnlColorOccupied.Location = new System.Drawing.Point(230, 6);
             this.pnlColorOccupied.Margin = new System.Windows.Forms.Padding(0, 6, 10, 0);
             this.pnlColorOccupied.Name = "pnlColorOccupied";
             this.pnlColorOccupied.Size = new System.Drawing.Size(15, 15);
@@ -178,10 +192,10 @@ namespace AdvancedPlanningSystem
             this.lblLegendFinish.AutoSize = true;
             this.lblLegendFinish.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.lblLegendFinish.ForeColor = System.Drawing.Color.White;
-            this.lblLegendFinish.Location = new System.Drawing.Point(170, 5);
+            this.lblLegendFinish.Location = new System.Drawing.Point(179, 5);
             this.lblLegendFinish.Margin = new System.Windows.Forms.Padding(0, 5, 5, 0);
             this.lblLegendFinish.Name = "lblLegendFinish";
-            this.lblLegendFinish.Size = new System.Drawing.Size(45, 15);
+            this.lblLegendFinish.Size = new System.Drawing.Size(46, 15);
             this.lblLegendFinish.TabIndex = 8;
             this.lblLegendFinish.Text = "DONE";
             // 
@@ -189,7 +203,7 @@ namespace AdvancedPlanningSystem
             // 
             this.pnlColorFinish.BackColor = System.Drawing.Color.MediumPurple;
             this.pnlColorFinish.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlColorFinish.Location = new System.Drawing.Point(145, 6);
+            this.pnlColorFinish.Location = new System.Drawing.Point(154, 6);
             this.pnlColorFinish.Margin = new System.Windows.Forms.Padding(0, 6, 10, 0);
             this.pnlColorFinish.Name = "pnlColorFinish";
             this.pnlColorFinish.Size = new System.Drawing.Size(15, 15);
@@ -200,10 +214,10 @@ namespace AdvancedPlanningSystem
             this.lblLegendEmpty.AutoSize = true;
             this.lblLegendEmpty.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.lblLegendEmpty.ForeColor = System.Drawing.Color.White;
-            this.lblLegendEmpty.Location = new System.Drawing.Point(85, 5);
+            this.lblLegendEmpty.Location = new System.Drawing.Point(96, 5);
             this.lblLegendEmpty.Margin = new System.Windows.Forms.Padding(0, 5, 5, 0);
             this.lblLegendEmpty.Name = "lblLegendEmpty";
-            this.lblLegendEmpty.Size = new System.Drawing.Size(50, 15);
+            this.lblLegendEmpty.Size = new System.Drawing.Size(53, 15);
             this.lblLegendEmpty.TabIndex = 6;
             this.lblLegendEmpty.Text = "EMPTY";
             // 
@@ -211,7 +225,7 @@ namespace AdvancedPlanningSystem
             // 
             this.pnlColorEmpty.BackColor = System.Drawing.Color.LightGray;
             this.pnlColorEmpty.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlColorEmpty.Location = new System.Drawing.Point(60, 6);
+            this.pnlColorEmpty.Location = new System.Drawing.Point(71, 6);
             this.pnlColorEmpty.Margin = new System.Windows.Forms.Padding(0, 6, 10, 0);
             this.pnlColorEmpty.Name = "pnlColorEmpty";
             this.pnlColorEmpty.Size = new System.Drawing.Size(15, 15);
@@ -225,7 +239,7 @@ namespace AdvancedPlanningSystem
             this.btnGlobalMonitor.Name = "btnGlobalMonitor";
             this.btnGlobalMonitor.Size = new System.Drawing.Size(160, 36);
             this.btnGlobalMonitor.TabIndex = 1;
-            this.btnGlobalMonitor.Text = "全局排行 >>";
+            this.btnGlobalMonitor.Text = "Global Rank";
             this.btnGlobalMonitor.UseVisualStyleBackColor = true;
             // 
             // btnTransitMonitor
@@ -236,7 +250,7 @@ namespace AdvancedPlanningSystem
             this.btnTransitMonitor.Name = "btnTransitMonitor";
             this.btnTransitMonitor.Size = new System.Drawing.Size(160, 36);
             this.btnTransitMonitor.TabIndex = 3;
-            this.btnTransitMonitor.Text = "運送監控 >>";
+            this.btnTransitMonitor.Text = "Trans Monitor";
             this.btnTransitMonitor.UseVisualStyleBackColor = true;
             // 
             // btnEqpMonitor
@@ -247,22 +261,8 @@ namespace AdvancedPlanningSystem
             this.btnEqpMonitor.Name = "btnEqpMonitor";
             this.btnEqpMonitor.Size = new System.Drawing.Size(160, 36);
             this.btnEqpMonitor.TabIndex = 4;
-            this.btnEqpMonitor.Text = "機台看板 >>";
+            this.btnEqpMonitor.Text = "EQ Monitor ";
             this.btnEqpMonitor.UseVisualStyleBackColor = true;
-            // 
-            // btnManualSync
-            // 
-            this.btnManualSync.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnManualSync.BackColor = System.Drawing.Color.Orange;
-            this.btnManualSync.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.btnManualSync.Location = new System.Drawing.Point(800, 12);
-            this.btnManualSync.Name = "btnManualSync";
-            this.btnManualSync.Size = new System.Drawing.Size(160, 36);
-            this.btnManualSync.TabIndex = 9;
-            this.btnManualSync.Text = "手動決策執行";
-            this.btnManualSync.UseVisualStyleBackColor = false;
-            this.btnManualSync.Visible = false;
-            this.btnManualSync.Click += new System.EventHandler(this.btnManualSync_Click);
             // 
             // lblTitle
             // 
@@ -291,9 +291,9 @@ namespace AdvancedPlanningSystem
             this.lblSimStatus.ForeColor = System.Drawing.Color.White;
             this.lblSimStatus.Location = new System.Drawing.Point(540, 22);
             this.lblSimStatus.Name = "lblSimStatus";
-            this.lblSimStatus.Size = new System.Drawing.Size(83, 17);
+            this.lblSimStatus.Size = new System.Drawing.Size(129, 17);
             this.lblSimStatus.TabIndex = 6;
-            this.lblSimStatus.Text = "模擬器斷線";
+            this.lblSimStatus.Text = "Simulator Offline";
             // 
             // pnlGrid
             // 

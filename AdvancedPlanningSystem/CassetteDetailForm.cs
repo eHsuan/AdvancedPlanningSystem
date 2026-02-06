@@ -37,23 +37,23 @@ namespace AdvancedPlanningSystem
 
         private void LoadRealData()
         {
-            lblHeader.Text = $"卡匣: {_cassetteId} (位於 Port {_portId})";
+            lblHeader.Text = $"Carrier: {_cassetteId} (Port {_portId})";
 
             var binding = _repo.GetBinding(_cassetteId);
             if (binding == null)
             {
-                MessageBox.Show("查無此卡匣資料 (可能已出庫或未綁定)。", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                NotificationForm.ShowAsync("Error", "No data found for this carrier (may have been checked out or not bound).", NotificationLevel.Warning, 5);
                 this.Close();
                 return;
             }
 
-            // 1. 顯示評分資訊
+            // 1. Scoring Info
             DisplayScoringInfo(binding);
 
-            // 2. 顯示隊列資訊
+            // 2. Queue Info
             DisplayQueueInfo(binding);
 
-            // 3. 顯示決策結果
+            // 3. Decision Result
             DisplayDecision(binding);
         }
 
@@ -68,38 +68,38 @@ namespace AdvancedPlanningSystem
 
         private void DisplayScoringInfo(StateBinding binding)
         {
-            // QTime 使用真實剩餘時間 T_Real
+            // QTime using T_Real
             double tReal = binding.TReal;
             if (tReal < 99999)
             {
                 lblValQTime.Text = $"{binding.ScoreQTime:N0} (真實剩餘: {tReal:F0} min)";
-                // 若 T_Real 小於 15 分鐘變紅 (更緊急的警示)
+                // Warning if T_Real < 15 mins
                 lblValQTime.ForeColor = (tReal < 15) ? Color.Red : (tReal < 45 ? Color.Orange : Color.Black);
             }
             else
             {
-                lblValQTime.Text = "0 (無限制)";
+                lblValQTime.Text = "0 (No Limit)";
                 lblValQTime.ForeColor = Color.Gray;
             }
 
             // Priority
             if (binding.PriorityType == 1) 
             {
-                lblValUrgent.Text = "Engineering (工程)";
+                lblValUrgent.Text = "Engineering";
                 lblValUrgent.ForeColor = Color.Blue;
             }
             else if (binding.PriorityType == 2)
             {
-                lblValUrgent.Text = $"{binding.ScoreUrgent:N0} (急件)";
+                lblValUrgent.Text = $"{binding.ScoreUrgent:N0} (Urgent)";
                 lblValUrgent.ForeColor = Color.Red;
             }
             else
             {
-                lblValUrgent.Text = "0 (一般)";
+                lblValUrgent.Text = "0 (Normal)";
                 lblValUrgent.ForeColor = Color.Black;
             }
 
-            // 其他分數
+            // Other scores
             lblValEng.Text = binding.ScoreEng.ToString("N0");
             lblValDue.Text = binding.ScoreDue.ToString("N0");
             lblValLead.Text = binding.ScoreLead.ToString("N0");
@@ -112,9 +112,9 @@ namespace AdvancedPlanningSystem
             lstBatchQueue.Items.Clear();
             string nextStep = currentBinding.NextStepId;
 
-            // 找出候選機台資訊
+            // Find candidate eqp info
             var stepEqps = _repo.GetStepEqpMappings().Where(m => m.StepId == nextStep).ToList();
-            string eqpInfoStr = $"下一站: {nextStep}\r\n可用機台數: {stepEqps.Count}";
+            string eqpInfoStr = $"Next Step: {nextStep}\r\nAvailable Eqps: {stepEqps.Count}";
             
             if (stepEqps.Any())
             {
@@ -122,24 +122,23 @@ namespace AdvancedPlanningSystem
                 var eqpConfig = _repo.GetEqpConfig(firstEqpId);
                 if (eqpConfig != null)
                 {
-                    eqpInfoStr += $"\r\n標準批次量 (Batch): {eqpConfig.BatchSize}";
-                    // 注意：這裡無法直接取得即時 WIP (需 DataSyncService)，暫時顯示靜態 Config
+                    eqpInfoStr += $"\r\nStandard Batch Size: {eqpConfig.BatchSize}";
+                    // Note: Real-time WIP requires DataSyncService, using static Config for now
                     eqpInfoStr += $"\r\nMax WIP: {eqpConfig.MaxWipQty}";
                 }
             }
             lblEqpInfo.Text = eqpInfoStr;
 
-            // 建立隊列 (同站點的所有卡匣)
-            // 包含 Wait 和 Dispatching (如果是剛派出的)
+            // Build Queue
             var allBindings = _repo.GetAllBindings().Where(b => b.NextStepId == nextStep).ToList();
             
-            // 排序：Dispatching 在最前 (已經派了)，然後是 Wait 依分數高低
+            // Sort: Dispatching first, then Wait by score
             var sortedList = allBindings
-                .OrderByDescending(b => !string.IsNullOrEmpty(b.DispatchTime)) // 派貨中優先
+                .OrderByDescending(b => !string.IsNullOrEmpty(b.DispatchTime)) 
                 .ThenByDescending(b => b.DispatchScore)
                 .ToList();
 
-            int batchSize = 4; // 預設，若有 config 則覆蓋
+            int batchSize = 4; 
             if (stepEqps.Any())
             {
                 var cfg = _repo.GetEqpConfig(stepEqps.First().EqpId);
@@ -158,7 +157,7 @@ namespace AdvancedPlanningSystem
                 lstBatchQueue.Items.Add(new QueueItem(text, isMe));
                 
                 count++;
-                // 批次分隔線
+                // Batch Separator
                 if (count % batchSize == 0 && count < sortedList.Count)
                 {
                     lstBatchQueue.Items.Add(new QueueItem($"--- Batch Cut ({count}) ---", false, true));
@@ -170,28 +169,28 @@ namespace AdvancedPlanningSystem
         {
             if (!string.IsNullOrEmpty(binding.DispatchTime))
             {
-                lblDecision.Text = $"🚀 已派貨 (Target: {binding.TargetEqpId})";
+                lblDecision.Text = $"🚀 Dispatched (Target: {binding.TargetEqpId})";
                 lblDecision.BackColor = Color.ForestGreen;
             }
             else if (binding.NextStepId == "END")
             {
-                lblDecision.Text = "🏁 完工 (Finished)";
+                lblDecision.Text = "🏁 Finished";
                 lblDecision.BackColor = Color.MediumPurple;
             }
             else
             {
-                // 顯示等待原因
+                // Display Wait Reason
                 string reason = string.IsNullOrEmpty(binding.WaitReason) ? "Analyzing..." : binding.WaitReason;
-                lblDecision.Text = $"⏳ 等待中: {reason}";
+                lblDecision.Text = $"⏳ Waiting: {reason}";
                 
-                // 根據原因變色
+                // Color based on reason
                 if (reason.Contains("DOWN") || reason.Contains("FULL") || reason.Contains("No Route"))
                 {
-                    lblDecision.BackColor = Color.Crimson; // 異常阻塞
+                    lblDecision.BackColor = Color.Crimson; // Blocked
                 }
                 else
                 {
-                    lblDecision.BackColor = Color.Orange; // 正常排隊
+                    lblDecision.BackColor = Color.Orange; // Normal Queue
                 }
             }
         }

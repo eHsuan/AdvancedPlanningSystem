@@ -51,18 +51,18 @@ namespace AdvancedPlanningSystem.Services
 
         public void Start(int intervalMs = 60000)
         {
-            // 執行異常恢復邏輯
+            // Execute system recovery logic
             RestoreSystemState();
 
             if (AppConfig.ManualMode)
             {
-                LogAndUI("系統處於 [手動模式]，已停用自動定時器。");
+                LogAndUI("System in [Manual Mode], automatic timer disabled.");
                 LogHelper.Logger.Info("DataSyncService started in Manual Mode.");
             }
             else
             {
                 _timer = new Timer(async state => await SyncRoutine(), null, 0, intervalMs);
-                LogAndUI($"DataSyncService 已啟動 ({intervalMs / 1000}s interval)");
+                LogAndUI($"DataSyncService Started ({intervalMs / 1000}s interval)");
                 LogHelper.Logger.Info("DataSyncService Started (Auto).");
             }
         }
@@ -70,57 +70,58 @@ namespace AdvancedPlanningSystem.Services
         public async Task TriggerManualSyncAsync()
         {
             if (!AppConfig.ManualMode) return;
-            LogAndUI(">>> 手動觸發同步與決策...");
+            LogAndUI(">>> Manual sync and decision triggered...");
             await SyncRoutine();
         }
 
         public void Stop()
         {
             _timer?.Change(Timeout.Infinite, 0);
-            LogAndUI("DataSyncService 已停止");
+            LogAndUI("DataSyncService Stopped");
             LogHelper.Logger.Info("DataSyncService Stopped.");
         }
 
         /// <summary>
-        /// 提供給 DispatchService 獲取快取的 WIP 資料
+        /// Provides cached WIP data to DispatchService
         /// </summary>
         public Dictionary<string, WipInfoResponse> GetCachedWip()
         {
             lock (_cacheLock)
             {
-                CheckDataFreshness();
                 return new Dictionary<string, WipInfoResponse>(_cachedWip);
             }
         }
 
         /// <summary>
-        /// 提供給 DispatchService 獲取快取的機台狀態
+        /// Provides cached Equipment status to DispatchService
         /// </summary>
         public Dictionary<string, EqStatusResponse> GetCachedEqStatus()
         {
             lock (_cacheLock)
             {
-                CheckDataFreshness();
                 return new Dictionary<string, EqStatusResponse>(_cachedEqpStatus);
             }
         }
 
-        private void CheckDataFreshness()
+        private bool IsDataFresh()
         {
-            if ((DateTime.Now - _lastMesSyncTime).TotalMinutes > DATA_STALE_LIMIT_MIN)
+            if (_lastMesSyncTime == DateTime.MinValue) return false;
+            double elapsedMin = (DateTime.Now - _lastMesSyncTime).TotalMinutes;
+            
+            if (elapsedMin > 15.0)
             {
-                string msg = $"MES Data Stale! Last Update: {_lastMesSyncTime}";
-                LogHelper.Logger.Error(msg);
-                throw new Exception(msg);
+                LogHelper.Logger.Error($"MES Data Stale! Last Update: {_lastMesSyncTime} ({elapsedMin:F1} min ago)");
+                return false;
             }
+            return true;
         }
 
         /// <summary>
-        /// 異常恢復邏輯 (Recovery Plan v2)
+        /// Recovery Logic (Recovery Plan v2)
         /// </summary>
         private void RestoreSystemState()
         {
-            LogAndUI("執行系統狀態檢查與恢復...");
+            LogAndUI("Performing system state check and recovery...");
             try
             {
                 var allBindings = _repo.GetAllBindings();
@@ -133,7 +134,7 @@ namespace AdvancedPlanningSystem.Services
                         bool isOccupied = portStatusDict.ContainsKey(b.PortId);
                         if (!isOccupied)
                         {
-                            LogAndUI($"[Recovery] {b.CarrierId} 已取走，移至 Transit。");
+                            LogAndUI($"[Recovery] {b.CarrierId} picked up, moving to Transit.");
                             var transit = new StateTransit
                             {
                                 CarrierId = b.CarrierId, LotId = b.LotId,
@@ -147,13 +148,13 @@ namespace AdvancedPlanningSystem.Services
                         }
                         else
                         {
-                            LogAndUI($"[Recovery] {b.CarrierId} 仍在架上，重置為 WAIT。");
+                            LogAndUI($"[Recovery] {b.CarrierId} still on shelf, resetting to WAIT.");
                             b.DispatchTime = null; 
                             _repo.InsertBinding(b);
                         }
                     }
                 }
-                LogAndUI("系統狀態恢復完成。");
+                LogAndUI("System state recovery completed.");
             }
             catch (Exception ex)
             {
@@ -165,7 +166,7 @@ namespace AdvancedPlanningSystem.Services
         public void ReloadConfig() { }
 
         /// <summary>
-        /// 核心同步迴圈
+        /// Core Sync Routine
         /// </summary>
         private async Task SyncRoutine()
         {
@@ -174,7 +175,17 @@ namespace AdvancedPlanningSystem.Services
 
             try
             {
+                // Attempt to update cache
                 await UpdateMesCacheAsync();
+
+                // Check data freshness (15-minute limit)
+                if (!IsDataFresh())
+                {
+                    LogAndUI("[CRITICAL] Data Stale (>15m). Dispatching Suspended.");
+                    string msg = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] MES data has not been updated for over 15 minutes. Dispatching is suspended for safety.";
+                    NotificationForm.ShowAsync("Critical: Data Stale", msg, NotificationLevel.Critical, 0);
+                    return; 
+                }
                 
                 try 
                 {
@@ -233,8 +244,8 @@ namespace AdvancedPlanningSystem.Services
 
                     if (orderInfo.step_id == transit.NextStepId)
                     {
-                        LogAndUI($"[Transit] {transit.CarrierId} 已到站 ({orderInfo.step_id})。");
-                        _cloudRepo.InsertGenericLog(transit.CarrierId, transit.LotId, $"到站完成: {orderInfo.step_id}");
+                        LogAndUI($"[Transit] {transit.CarrierId} arrived at {orderInfo.step_id}.");
+                        _cloudRepo.InsertGenericLog(transit.CarrierId, transit.LotId, $"Arrival Completed: {orderInfo.step_id}");
                         _repo.RemoveTransit(transit.CarrierId);
                         continue;
                     }
@@ -244,17 +255,17 @@ namespace AdvancedPlanningSystem.Services
                     {
                         if (DateTime.Now > expTime.Value)
                         {
-                            LogAndUI($"[Transit] {transit.CarrierId} 超時未達! 記錄至 CloudDB。");
-                            _cloudRepo.InsertGenericLog(transit.CarrierId, transit.LotId, $"搬運超時: Exp={transit.ExpectedArrivalTime}");
+                            LogAndUI($"[Transit] {transit.CarrierId} overdue! Logging to CloudDB.");
+                            _cloudRepo.InsertGenericLog(transit.CarrierId, transit.LotId, $"Transport Overdue: Exp={transit.ExpectedArrivalTime}");
                             _repo.RemoveTransit(transit.CarrierId);
                             continue;
                         }
                     }
                 }
 
-                LogAndUI(">>> 派貨決策檢查開始...");
+                LogAndUI(">>> Dispatching Decision Loop Started...");
                 await _dispatchService.ExecuteDispatchAsync();
-                LogAndUI("<<< 派貨決策檢查結束。");
+                LogAndUI("<<< Dispatching Decision Loop Finished.");
             }
             catch (Exception ex)
             {
@@ -265,6 +276,12 @@ namespace AdvancedPlanningSystem.Services
             {
                 _isSyncing = false;
             }
+        }
+
+        public async Task ForceUpdateCacheAsync()
+        {
+            LogHelper.Logger.Info("Forced MES cache update requested.");
+            await UpdateMesCacheAsync();
         }
 
         private async Task UpdateMesCacheAsync()
@@ -297,11 +314,8 @@ namespace AdvancedPlanningSystem.Services
             catch (Exception ex)
             {
                 LogHelper.Logger.Error("Failed to update MES Cache", ex);
-                System.Windows.Forms.MessageBox.Show(
-                    $"無法連線至 MES Server!\n請檢查模擬器是否已啟動。\n錯誤訊息: {ex.Message}", 
-                    "通訊異常", 
-                    System.Windows.Forms.MessageBoxButtons.OK, 
-                    System.Windows.Forms.MessageBoxIcon.Warning);
+                string msg = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Failed to connect to MES Server. Using cached data if available.\nError: " + ex.Message;
+                NotificationForm.ShowAsync("MES Sync Warning", msg, NotificationLevel.Warning, 0);
             }
         }
 

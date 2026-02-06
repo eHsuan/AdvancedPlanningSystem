@@ -188,7 +188,7 @@ namespace AdvancedPlanningSystem.Services
                         cassette.TargetEqpId = "STOCK"; 
                         _repo.InsertBinding(cassette);
 
-                        _cloudRepo.InsertGenericLog(cassette.CarrierId, cassette.LotId, "完工出庫 -> STOCK");
+                        _cloudRepo.InsertGenericLog(cassette.CarrierId, cassette.LotId, "Finish Check-out -> STOCK");
                         LogHelper.Dispatch.Info($"[Dispatch Finish] {cassette.CarrierId} -> STOCK");
                     }
                 }
@@ -292,7 +292,7 @@ namespace AdvancedPlanningSystem.Services
                                 cassette.DispatchTime = DateTime.Now.ToString("yyyyMMddHHmmss");
                                 cassette.TargetEqpId = eqpId;
                                 _repo.InsertBinding(cassette); 
-                                _cloudRepo.InsertGenericLog(cassette.CarrierId, cassette.LotId, $"派貨執行: {triggerReason} -> {eqpId}");
+                                _cloudRepo.InsertGenericLog(cassette.CarrierId, cassette.LotId, $"Dispatch Executed: {triggerReason} -> {eqpId}");
                                 LogHelper.Dispatch.Info($"        - [EXEC] {cassette.CarrierId} -> {eqpId}");
                             }
                         }

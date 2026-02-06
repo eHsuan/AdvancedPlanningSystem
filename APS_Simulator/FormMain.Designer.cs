@@ -256,7 +256,7 @@ namespace APSSimulator
             this.btnEnterEq.Name = "btnEnterEq";
             this.btnEnterEq.Size = new System.Drawing.Size(120, 40);
             this.btnEnterEq.TabIndex = 10;
-            this.btnEnterEq.Text = "進入機台 (ENTER EQ)";
+            this.btnEnterEq.Text = "批量進入機台";
             this.btnEnterEq.UseVisualStyleBackColor = false;
             // 
             // btnBatchPick

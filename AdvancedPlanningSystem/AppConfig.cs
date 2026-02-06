@@ -27,6 +27,12 @@ namespace AdvancedPlanningSystem
         public static int MesMockPort = 9000; // 模擬 MES Port
         public static string RealMesUrl = "http://192.168.1.100:80/api"; // 真實 MES URL (備用)
 
+        public static bool ManualMode = true; // 是否啟用手動決策模式
+
+        public static double DueBaseHours = 240.0; // 交期評分基準 (小時)
+
+        public static double TransportBufferMin = 30.0; // QTIME計算人員搬運緩衝時間 (分鐘)
+
         // 其他未來可能的設定
         // public static string ConnectionString = "...";
     }

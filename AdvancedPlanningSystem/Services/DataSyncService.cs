@@ -31,6 +31,8 @@ namespace AdvancedPlanningSystem.Services
         private Dictionary<string, EqStatusResponse> _cachedEqpStatus = new Dictionary<string, EqStatusResponse>();
         // [New] QTime Cache from MES API
         private List<QTimeLimitResponse> _qTimeCache = new List<QTimeLimitResponse>();
+        // [New] StepTime Cache from MES API
+        private List<StepTimeResponse> _stepTimeCache = new List<StepTimeResponse>();
         
         private DateTime _lastMesSyncTime = DateTime.MinValue;
         private readonly object _cacheLock = new object();
@@ -52,9 +54,24 @@ namespace AdvancedPlanningSystem.Services
             // 執行異常恢復邏輯
             RestoreSystemState();
 
-            _timer = new Timer(async state => await SyncRoutine(), null, 0, intervalMs);
-            LogAndUI($"DataSyncService 已啟動 ({intervalMs/1000}s interval)");
-            LogHelper.Logger.Info("DataSyncService Started.");
+            if (AppConfig.ManualMode)
+            {
+                LogAndUI("系統處於 [手動模式]，已停用自動定時器。");
+                LogHelper.Logger.Info("DataSyncService started in Manual Mode.");
+            }
+            else
+            {
+                _timer = new Timer(async state => await SyncRoutine(), null, 0, intervalMs);
+                LogAndUI($"DataSyncService 已啟動 ({intervalMs / 1000}s interval)");
+                LogHelper.Logger.Info("DataSyncService Started (Auto).");
+            }
+        }
+
+        public async Task TriggerManualSyncAsync()
+        {
+            if (!AppConfig.ManualMode) return;
+            LogAndUI(">>> 手動觸發同步與決策...");
+            await SyncRoutine();
         }
 
         public void Stop()
@@ -94,34 +111,26 @@ namespace AdvancedPlanningSystem.Services
             {
                 string msg = $"MES Data Stale! Last Update: {_lastMesSyncTime}";
                 LogHelper.Logger.Error(msg);
-                // 這裡可以選擇是否拋出例外阻斷派貨，或者只是 Log 警告
-                // 安全起見，若資料過期太久應視為不可靠
                 throw new Exception(msg);
             }
         }
 
         /// <summary>
         /// 異常恢復邏輯 (Recovery Plan v2)
-        /// 目的：解決系統崩潰重啟後，卡匣狀態卡在 DISPATCHING 的問題。
         /// </summary>
         private void RestoreSystemState()
         {
             LogAndUI("執行系統狀態檢查與恢復...");
             try
             {
-                // 取得所有 Binding 資料與目前 Port 的硬體狀態
                 var allBindings = _repo.GetAllBindings();
                 var portStatusDict = _repo.GetActivePorts().ToDictionary(p => p.PortId, p => p.Status);
 
                 foreach (var b in allBindings)
                 {
-                    // 只處理狀態為「派送中」的項目
                     if (!string.IsNullOrEmpty(b.DispatchTime))
                     {
                         bool isOccupied = portStatusDict.ContainsKey(b.PortId);
-                        
-                        // 情況 A: 貨已取走 (Port 表中查無此 Port 為 OCCUPIED)
-                        // 判定：實際上已經 Pickup，只是系統沒收到 PICK 訊號或沒來得及處理
                         if (!isOccupied)
                         {
                             LogAndUI($"[Recovery] {b.CarrierId} 已取走，移至 Transit。");
@@ -130,18 +139,16 @@ namespace AdvancedPlanningSystem.Services
                                 CarrierId = b.CarrierId, LotId = b.LotId,
                                 TargetEqpId = b.TargetEqpId, NextStepId = b.NextStepId,
                                 DispatchTime = b.DispatchTime,
-                                PickupTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                                ExpectedArrivalTime = DateTime.Now.AddMinutes(10).ToString("yyyy-MM-dd HH:mm:ss"), // 預設 10 分鐘
+                                PickupTime = DateTime.Now.ToString("yyyyMMddHHmmss"),
+                                ExpectedArrivalTime = DateTime.Now.AddMinutes(10).ToString("yyyyMMddHHmmss"), 
                                 IsOverdue = 0
                             };
                             _repo.MoveToTransit(transit);
                         }
-                        // 情況 B: 貨仍在架上 (Sensor ON)
-                        // 判定：之前的派貨指令無效或失敗，重置狀態讓系統重新評分
                         else
                         {
                             LogAndUI($"[Recovery] {b.CarrierId} 仍在架上，重置為 WAIT。");
-                            b.DispatchTime = null; // 清空時間，視為 WAIT
+                            b.DispatchTime = null; 
                             _repo.InsertBinding(b);
                         }
                     }
@@ -155,10 +162,7 @@ namespace AdvancedPlanningSystem.Services
             }
         }
         
-        // ReloadConfig 已不再需要，因為 QTime 改為動態 API 獲取
         public void ReloadConfig() { }
-
-        // ... (Stop, GetCachedWip, GetCachedEqStatus, CheckDataFreshness, RestoreSystemState remain the same) ...
 
         /// <summary>
         /// 核心同步迴圈
@@ -170,11 +174,8 @@ namespace AdvancedPlanningSystem.Services
 
             try
             {
-                // --- Phase 2: MES Data Caching Logic ---
                 await UpdateMesCacheAsync();
                 
-                // [New] 同步 QTime 設定 (API c.)
-                // 直接呼叫 API 並更新記憶體快取
                 try 
                 {
                     var qTimes = await _mesService.GetAllQTimeLimitsAsync();
@@ -185,12 +186,24 @@ namespace AdvancedPlanningSystem.Services
                 }
                 catch (Exception ex)
                 {
-                    LogHelper.Logger.Error("[QTime Sync] Failed to fetch limits: " + ex.Message);
+                    LogHelper.Score.Error("[QTime Sync] Failed to fetch limits: " + ex.Message);
                 }
 
-                // 1. 準備批次查詢名單 (Port + Transit 都要查)
-                var activePorts = _repo.GetActivePorts(); // 取得架上卡匣
-                var transits = _repo.GetAllTransits();    // 取得運送中卡匣
+                try
+                {
+                    var stepTimes = await _mesService.GetAllStepTimesAsync();
+                    if (stepTimes != null)
+                    {
+                        lock (_cacheLock) { _stepTimeCache = stepTimes; }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogHelper.Score.Error("[StepTime Sync] Failed to fetch times: " + ex.Message);
+                }
+
+                var activePorts = _repo.GetActivePorts(); 
+                var transits = _repo.GetAllTransits();    
                 
                 var portWorkNos = activePorts.Where(p => !string.IsNullOrEmpty(p.LotId)).Select(p => p.LotId).ToList();
                 var transitWorkNos = transits.Where(t => !string.IsNullOrEmpty(t.LotId)).Select(t => t.LotId).ToList();
@@ -199,44 +212,37 @@ namespace AdvancedPlanningSystem.Services
 
                 if (allWorkNos.Count == 0) 
                 {
-                    // 即使沒有工單要查，仍需觸發 Dispatcher 檢查機台是否 IDLE (防空轉)
-                    // 注意：Dispatcher 內部現在應使用 GetCachedWip/GetCachedEqStatus
                     await _dispatchService.ExecuteDispatchAsync();
                     return;
                 }
 
-                // 2. 批次呼叫 MES API 取得最新工單資訊
                 var orderInfos = await _mesService.GetOrderInfoBatchAsync(allWorkNos);
                 var orderDict = orderInfos.ToDictionary(o => o.WorkNo, o => o);
 
-                // 3. 處理架上卡匣 (Sync & Score)
                 foreach (var port in activePorts)
                 {
                     if (string.IsNullOrEmpty(port.LotId) || !orderDict.ContainsKey(port.LotId)) continue;
                     var orderInfo = orderDict[port.LotId];
-                    // 執行單一卡匣的同步與評分
                     ProcessBindingSyncAndScore(port, orderInfo);
                 }
 
-                // 4. 處理運送中卡匣 (Transit Check)
                 foreach (var transit in transits)
                 {
                     if (!orderDict.ContainsKey(transit.LotId)) continue;
                     var orderInfo = orderDict[transit.LotId];
 
-                    // A. 到站檢查：若 MES 回傳的 StepId 已經等於我們記錄的 NextStepId，代表已過帳
                     if (orderInfo.step_id == transit.NextStepId)
                     {
-                        LogAndUI($"[Transit] {transit.CarrierId} 已到站 ({orderInfo.step_id})。記錄至 CloudDB。");
+                        LogAndUI($"[Transit] {transit.CarrierId} 已到站 ({orderInfo.step_id})。");
                         _cloudRepo.InsertGenericLog(transit.CarrierId, transit.LotId, $"到站完成: {orderInfo.step_id}");
                         _repo.RemoveTransit(transit.CarrierId);
                         continue;
                     }
 
-                    // B. 超時檢查：若當前時間 > 預計到達時間
-                    if (DateTime.TryParse(transit.ExpectedArrivalTime, out DateTime expTime))
+                    var expTime = ParseDbTime(transit.ExpectedArrivalTime);
+                    if (expTime.HasValue)
                     {
-                        if (DateTime.Now > expTime)
+                        if (DateTime.Now > expTime.Value)
                         {
                             LogAndUI($"[Transit] {transit.CarrierId} 超時未達! 記錄至 CloudDB。");
                             _cloudRepo.InsertGenericLog(transit.CarrierId, transit.LotId, $"搬運超時: Exp={transit.ExpectedArrivalTime}");
@@ -246,8 +252,6 @@ namespace AdvancedPlanningSystem.Services
                     }
                 }
 
-                // 5. 觸發派貨決策服務 (Step 4 & 5)
-                // DispatchService 將會呼叫 GetCachedWip() 存取剛更新的資料
                 LogAndUI(">>> 派貨決策檢查開始...");
                 await _dispatchService.ExecuteDispatchAsync();
                 LogAndUI("<<< 派貨決策檢查結束。");
@@ -267,8 +271,6 @@ namespace AdvancedPlanningSystem.Services
         {
             try
             {
-                // 取得所有相關機台 ID (從 StepEqpMapping 取得，這裡假設可從 Repo 獲取或 DispatchService 知道)
-                // 為了簡化，我們先讀取 StepEqpMapping。實務上可快取此清單。
                 var mapping = _repo.GetStepEqpMappings();
                 var eqpIds = mapping.Select(m => m.EqpId).Distinct().ToList();
 
@@ -284,7 +286,6 @@ namespace AdvancedPlanningSystem.Services
                         _lastMesSyncTime = DateTime.Now;
                     }
                     
-                    // 同步 MES 的 MaxWip 到本地資料庫
                     foreach (var wip in wips)
                     {
                         _repo.UpdateEqpMaxWip(wip.eq_id, wip.max_wip_qty);
@@ -296,51 +297,72 @@ namespace AdvancedPlanningSystem.Services
             catch (Exception ex)
             {
                 LogHelper.Logger.Error("Failed to update MES Cache", ex);
-                // 不拋出例外，以免中斷主要的 SyncRoutine，但若連續失敗會觸發 Stale Check
+                System.Windows.Forms.MessageBox.Show(
+                    $"無法連線至 MES Server!\n請檢查模擬器是否已啟動。\n錯誤訊息: {ex.Message}", 
+                    "通訊異常", 
+                    System.Windows.Forms.MessageBoxButtons.OK, 
+                    System.Windows.Forms.MessageBoxIcon.Warning);
             }
+        }
+
+        private DateTime? ParseDbTime(string timeStr)
+        {
+            if (string.IsNullOrEmpty(timeStr)) return null;
+            DateTime dt;
+            if (DateTime.TryParseExact(timeStr, "yyyyMMddHHmmss", null, System.Globalization.DateTimeStyles.None, out dt)) return dt;
+            if (DateTime.TryParse(timeStr, out dt)) return dt;
+            return null;
         }
 
         /// <summary>
         /// 單一卡匣的資料同步與評分邏輯 (Step 1~3)
+        /// 三段式 QTime 判定實作 (Green/Red/Dead Zone)
         /// </summary>
         private void ProcessBindingSyncAndScore(StatePort port, OrderInfoResponse orderInfo)
         {
-            // 1. QTime 計算
-            DateTime? prevOut = null;
-            DateTime? dueDate = null;
+            LogHelper.Score.Debug($"[Scoring Start] Carrier: {port.CarrierId}, Lot: {port.LotId}, Step: {orderInfo.step_id} -> {orderInfo.next_step_id}");
+
+            // 1. 取得時間基礎資料
+            DateTime? prevOut = ParseDbTime(orderInfo.prev_out_time);
+            DateTime? dueDate = ParseDbTime(orderInfo.due_date);
             string qTimeDeadline = ""; 
-            double tSafe = 999999; 
+            
+            double tReal = 999999; 
+            double tSafe = 999999;
 
-            if (!string.IsNullOrEmpty(orderInfo.prev_out_time) && DateTime.TryParse(orderInfo.prev_out_time, out DateTime dtPrev))
+            if (prevOut.HasValue)
             {
-                prevOut = dtPrev;
-                
-                // [修正] 從 MES API 快取中取得 QTime Limit
-                int limit = 120; // Default fallback
-                
+                // A. 取得 QTime Limit (T_Limit)
+                int limit = 120; 
                 QTimeLimitResponse matchedQTime = null;
-                lock (_cacheLock)
-                {
-                    matchedQTime = _qTimeCache.FirstOrDefault(q => q.step_id == orderInfo.step_id && q.next_step_id == orderInfo.next_step_id);
-                }
+                lock (_cacheLock) { matchedQTime = _qTimeCache.FirstOrDefault(q => q.step_id == orderInfo.step_id && q.next_step_id == orderInfo.next_step_id); }
+                if (matchedQTime != null) limit = matchedQTime.qtime_limit_min;
 
-                if (matchedQTime != null)
-                {
-                    limit = matchedQTime.qtime_limit_min;
-                }
+                // B. 取得下一站標準工時 (T_Std_Process)
+                double stdProcessMin = 5.0; 
+                StepTimeResponse matchedStepTime = null;
+                lock (_cacheLock) { matchedStepTime = _stepTimeCache.FirstOrDefault(s => s.step_id == orderInfo.next_step_id); }
+                if (matchedStepTime != null) stdProcessMin = matchedStepTime.std_time_sec / 60.0;
 
-                double elapsedMin = (DateTime.Now - dtPrev).TotalMinutes;
-                tSafe = limit - elapsedMin;
-                qTimeDeadline = dtPrev.AddMinutes(limit).ToString("yyyy-MM-dd HH:mm:ss");
-            }
+                // C. 取得搬運緩衝 (T_Buffer)
+                double bufferMin = AppConfig.TransportBufferMin;
 
-            if (!string.IsNullOrEmpty(orderInfo.due_date) && DateTime.TryParse(orderInfo.due_date, out DateTime dtDue))
-            {
-                dueDate = dtDue;
+                // D. 計算已流逝時間
+                double elapsedMin = (DateTime.Now - prevOut.Value).TotalMinutes;
+
+                // E. 計算 T_Real 與 T_Safe
+                tReal = limit - elapsedMin - stdProcessMin;
+                tSafe = tReal - bufferMin;
+                
+                qTimeDeadline = prevOut.Value.AddMinutes(limit).ToString("yyyyMMddHHmmss");
+                
+                LogHelper.Score.Debug($"  - QTime Formula: Limit:{limit} - Elapsed:{elapsedMin:F1} - Std:{stdProcessMin:F1} = T_Real:{tReal:F1}m (T_Safe:{tSafe:F1}m)");
             }
 
             // 2. 例外攔截 (Step 2)
-            int isHold = (tSafe < 0) ? 1 : 0;
+            // 只有真實剩餘時間 T_Real <= 0 才是真正死亡
+            int isHold = (tReal <= 0) ? 1 : 0;
+            if (isHold == 1) LogHelper.Score.Warn($"  - DEAD ZONE: T_Real ({tReal:F1}) <= 0, Item is HOLD.");
 
             // 3. 加權評分 (Step 3: Scoring)
             double score = 0;
@@ -348,11 +370,20 @@ namespace AdvancedPlanningSystem.Services
 
             if (isHold == 0) 
             {
-                if (tSafe < 99999) 
+                if (tSafe > 0 && tSafe < 99999) 
                 {
+                    // 階段 A: 安全期 (Green Zone)
                     s_qtime = 1000000.0 / Math.Max(0.1, tSafe);
-                    score += s_qtime;
+                    LogHelper.Score.Debug($"  - QTime Stage A (Green): {s_qtime:F2}");
                 }
+                else if (tSafe <= 0 && tReal > 0)
+                {
+                    // 階段 B: 緩衝期/緊急期 (Red Zone)
+                    // 給予 900 萬起跳的無限大分數
+                    s_qtime = 9000000.0 + (1000000.0 / Math.Max(0.1, tReal));
+                    LogHelper.Score.Debug($"  - QTime Stage B (Red): {s_qtime:F2} (T_Real: {tReal:F1})");
+                }
+                score += s_qtime;
                 
                 if (orderInfo.priority_type == 2) 
                 {
@@ -360,7 +391,7 @@ namespace AdvancedPlanningSystem.Services
                     score += s_urgent;
                 }
                 
-                if (orderInfo.priority_type == 1) // Phase 2: Engineering is Type 1
+                if (orderInfo.priority_type == 1) 
                 {
                     s_eng = 50000.0;
                     score += s_eng;
@@ -368,13 +399,15 @@ namespace AdvancedPlanningSystem.Services
                 
                 if (dueDate.HasValue) 
                 {
-                    s_due = (240.0 - (dueDate.Value - DateTime.Now).TotalHours) * 100.0 + 10000.0;
+                    double hoursLeft = (dueDate.Value - DateTime.Now).TotalHours;
+                    s_due = Math.Max(0, (AppConfig.DueBaseHours - hoursLeft) * 100.0 + 10000.0);
                     score += s_due;
                 }
                 
                 if (prevOut.HasValue) 
                 {
-                    s_lead = (DateTime.Now - prevOut.Value).TotalMinutes * 10.0;
+                    double leadMin = (DateTime.Now - prevOut.Value).TotalMinutes;
+                    s_lead = leadMin * 10.0;
                     score += s_lead;
                 }
             }
@@ -392,20 +425,23 @@ namespace AdvancedPlanningSystem.Services
                 QTimeDeadline = qTimeDeadline,
                 DispatchScore = Math.Round(score, 2),
                 
-                // 儲存細項
                 ScoreQTime = Math.Round(s_qtime, 2),
                 ScoreUrgent = Math.Round(s_urgent, 2),
                 ScoreEng = Math.Round(s_eng, 2),
                 ScoreDue = Math.Round(s_due, 2),
                 ScoreLead = Math.Round(s_lead, 2),
 
+                TReal = tReal, // 儲存真實剩餘時間供 UI 顯示
+
                 PriorityType = orderInfo.priority_type,
                 IsHold = isHold,
-                BindTime = existing?.BindTime ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                WaitReason = existing?.WaitReason ?? "",
+                BindTime = existing?.BindTime ?? DateTime.Now.ToString("yyyyMMddHHmmss"),
                 DispatchTime = existing?.DispatchTime 
             };
 
             _repo.InsertBinding(binding);
+            LogHelper.Score.Info($"[Scoring End] Carrier: {port.CarrierId}, Score: {binding.DispatchScore}");
         }
 
         private void LogAndUI(string msg)
@@ -415,8 +451,9 @@ namespace AdvancedPlanningSystem.Services
             {
                 _uiContext.Post(_ => {
                     string log = $"[{DateTime.Now:HH:mm:ss}] {msg}";
-                    _logBox.Items.Insert(0, log);
-                    if (_logBox.Items.Count > 100) _logBox.Items.RemoveAt(100);
+                    _logBox.Items.Add(log);
+                    if (_logBox.Items.Count > 100) _logBox.Items.RemoveAt(0);
+                    _logBox.SelectedIndex = _logBox.Items.Count - 1;
                 }, null);
             }
         }

@@ -28,9 +28,12 @@ namespace AdvancedPlanningSystem
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.pnlTop = new System.Windows.Forms.Panel();
-            this.rbEqp2 = new System.Windows.Forms.RadioButton();
-            this.rbEqp1 = new System.Windows.Forms.RadioButton();
+            this.rbEng = new System.Windows.Forms.RadioButton();
+            this.cmbEqp = new System.Windows.Forms.ComboBox();
+            this.cmbStep = new System.Windows.Forms.ComboBox();
+            this.btnRefresh = new System.Windows.Forms.Button();
             this.rbUrgent = new System.Windows.Forms.RadioButton();
             this.rbAll = new System.Windows.Forms.RadioButton();
             this.splitContainer = new System.Windows.Forms.SplitContainer();
@@ -38,6 +41,7 @@ namespace AdvancedPlanningSystem
             this.colRank = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colPort = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colCassetteID = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colWorkNo = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colTargetEQP = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colPriority = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colTotalScore = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -53,8 +57,10 @@ namespace AdvancedPlanningSystem
             // 
             // pnlTop
             // 
-            this.pnlTop.Controls.Add(this.rbEqp2);
-            this.pnlTop.Controls.Add(this.rbEqp1);
+            this.pnlTop.Controls.Add(this.rbEng);
+            this.pnlTop.Controls.Add(this.cmbEqp);
+            this.pnlTop.Controls.Add(this.cmbStep);
+            this.pnlTop.Controls.Add(this.btnRefresh);
             this.pnlTop.Controls.Add(this.rbUrgent);
             this.pnlTop.Controls.Add(this.rbAll);
             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
@@ -64,25 +70,47 @@ namespace AdvancedPlanningSystem
             this.pnlTop.Size = new System.Drawing.Size(1200, 50);
             this.pnlTop.TabIndex = 0;
             // 
-            // rbEqp2
+            // rbEng
             // 
-            this.rbEqp2.AutoSize = true;
-            this.rbEqp2.Location = new System.Drawing.Point(300, 15);
-            this.rbEqp2.Name = "rbEqp2";
-            this.rbEqp2.Size = new System.Drawing.Size(61, 16);
-            this.rbEqp2.TabIndex = 3;
-            this.rbEqp2.Text = "EQP-02";
-            this.rbEqp2.UseVisualStyleBackColor = true;
+            this.rbEng.AutoSize = true;
+            this.rbEng.Location = new System.Drawing.Point(180, 15);
+            this.rbEng.Name = "rbEng";
+            this.rbEng.Size = new System.Drawing.Size(71, 16);
+            this.rbEng.TabIndex = 7;
+            this.rbEng.Text = "只看工程";
+            this.rbEng.UseVisualStyleBackColor = true;
             // 
-            // rbEqp1
+            // cmbEqp
             // 
-            this.rbEqp1.AutoSize = true;
-            this.rbEqp1.Location = new System.Drawing.Point(200, 15);
-            this.rbEqp1.Name = "rbEqp1";
-            this.rbEqp1.Size = new System.Drawing.Size(61, 16);
-            this.rbEqp1.TabIndex = 2;
-            this.rbEqp1.Text = "EQP-01";
-            this.rbEqp1.UseVisualStyleBackColor = true;
+            this.cmbEqp.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbEqp.FormattingEnabled = true;
+            this.cmbEqp.Location = new System.Drawing.Point(480, 14);
+            this.cmbEqp.Name = "cmbEqp";
+            this.cmbEqp.Size = new System.Drawing.Size(150, 20);
+            this.cmbEqp.TabIndex = 6;
+            // 
+            // cmbStep
+            // 
+            this.cmbStep.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbStep.FormattingEnabled = true;
+            this.cmbStep.Location = new System.Drawing.Point(320, 14);
+            this.cmbStep.Name = "cmbStep";
+            this.cmbStep.Size = new System.Drawing.Size(150, 20);
+            this.cmbStep.TabIndex = 5;
+            this.cmbStep.SelectedIndexChanged += new System.EventHandler(this.cmbStep_SelectedIndexChanged);
+            // 
+            // btnRefresh
+            // 
+            this.btnRefresh.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnRefresh.BackColor = System.Drawing.Color.LightBlue;
+            this.btnRefresh.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
+            this.btnRefresh.Location = new System.Drawing.Point(1080, 10);
+            this.btnRefresh.Name = "btnRefresh";
+            this.btnRefresh.Size = new System.Drawing.Size(100, 30);
+            this.btnRefresh.TabIndex = 4;
+            this.btnRefresh.Text = "手動刷新";
+            this.btnRefresh.UseVisualStyleBackColor = false;
+            this.btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
             // 
             // rbUrgent
             // 
@@ -134,6 +162,7 @@ namespace AdvancedPlanningSystem
             this.colRank,
             this.colPort,
             this.colCassetteID,
+            this.colWorkNo,
             this.colTargetEQP,
             this.colPriority,
             this.colTotalScore,
@@ -168,6 +197,13 @@ namespace AdvancedPlanningSystem
             this.colCassetteID.HeaderText = "卡匣ID";
             this.colCassetteID.Name = "colCassetteID";
             this.colCassetteID.ReadOnly = true;
+            // 
+            // colWorkNo
+            // 
+            this.colWorkNo.DataPropertyName = "WorkNo";
+            this.colWorkNo.HeaderText = "工單號";
+            this.colWorkNo.Name = "colWorkNo";
+            this.colWorkNo.ReadOnly = true;
             // 
             // colTargetEQP
             // 
@@ -232,8 +268,6 @@ namespace AdvancedPlanningSystem
         #endregion
 
         private System.Windows.Forms.Panel pnlTop;
-        private System.Windows.Forms.RadioButton rbEqp2;
-        private System.Windows.Forms.RadioButton rbEqp1;
         private System.Windows.Forms.RadioButton rbUrgent;
         private System.Windows.Forms.RadioButton rbAll;
         private System.Windows.Forms.SplitContainer splitContainer;
@@ -242,9 +276,14 @@ namespace AdvancedPlanningSystem
         private System.Windows.Forms.DataGridViewTextBoxColumn colRank;
         private System.Windows.Forms.DataGridViewTextBoxColumn colPort;
         private System.Windows.Forms.DataGridViewTextBoxColumn colCassetteID;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colWorkNo;
         private System.Windows.Forms.DataGridViewTextBoxColumn colTargetEQP;
         private System.Windows.Forms.DataGridViewTextBoxColumn colPriority;
         private System.Windows.Forms.DataGridViewTextBoxColumn colTotalScore;
         private System.Windows.Forms.DataGridViewTextBoxColumn colStatus;
+        private System.Windows.Forms.Button btnRefresh;
+        private System.Windows.Forms.RadioButton rbEng;
+        private System.Windows.Forms.ComboBox cmbEqp;
+        private System.Windows.Forms.ComboBox cmbStep;
     }
 }

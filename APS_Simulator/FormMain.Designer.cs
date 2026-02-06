@@ -39,10 +39,13 @@ namespace APSSimulator
             this.colWorkNo = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colCurrentStep = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colNextStep = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colTargetEqp = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colStatus = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colAction = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.txtClientLog = new System.Windows.Forms.TextBox();
             this.grpPersonOp = new System.Windows.Forms.GroupBox();
+            this.btnSelectAll = new System.Windows.Forms.Button();
+            this.btnDeselectAll = new System.Windows.Forms.Button();
             this.btnEnterEq = new System.Windows.Forms.Button();
             this.btnBatchPick = new System.Windows.Forms.Button();
             this.btnBatchScan = new System.Windows.Forms.Button();
@@ -69,6 +72,10 @@ namespace APSSimulator
             this.btnStopMes = new System.Windows.Forms.Button();
             this.btnStartMes = new System.Windows.Forms.Button();
             this.lblMesStatus = new System.Windows.Forms.Label();
+            this.ctxMenuRow = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.menuScan = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuPick = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuEnterEq = new System.Windows.Forms.ToolStripMenuItem();
             this.tabControlMain.SuspendLayout();
             this.tabPagePerson.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvTestList)).BeginInit();
@@ -80,6 +87,7 @@ namespace APSSimulator
             this.tabPageMES.SuspendLayout();
             this.panelMesControl.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numMesPort)).BeginInit();
+            this.ctxMenuRow.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControlMain
@@ -129,14 +137,17 @@ namespace APSSimulator
             this.colWorkNo,
             this.colCurrentStep,
             this.colNextStep,
+            this.colTargetEqp,
             this.colStatus,
             this.colAction});
+            this.dgvTestList.ContextMenuStrip = this.ctxMenuRow;
             this.dgvTestList.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvTestList.Location = new System.Drawing.Point(3, 103);
             this.dgvTestList.Name = "dgvTestList";
             this.dgvTestList.RowTemplate.Height = 24;
             this.dgvTestList.Size = new System.Drawing.Size(994, 497);
             this.dgvTestList.TabIndex = 1;
+            this.dgvTestList.CellMouseDown += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dgvTestList_CellMouseDown);
             // 
             // colSelect
             // 
@@ -174,6 +185,13 @@ namespace APSSimulator
             this.colNextStep.Name = "colNextStep";
             this.colNextStep.Width = 100;
             // 
+            // colTargetEqp
+            // 
+            this.colTargetEqp.HeaderText = "目標機台";
+            this.colTargetEqp.Name = "colTargetEqp";
+            this.colTargetEqp.ReadOnly = true;
+            this.colTargetEqp.Width = 100;
+            // 
             // colStatus
             // 
             this.colStatus.HeaderText = "目前狀態";
@@ -198,6 +216,8 @@ namespace APSSimulator
             // 
             // grpPersonOp
             // 
+            this.grpPersonOp.Controls.Add(this.btnSelectAll);
+            this.grpPersonOp.Controls.Add(this.btnDeselectAll);
             this.grpPersonOp.Controls.Add(this.btnEnterEq);
             this.grpPersonOp.Controls.Add(this.btnBatchPick);
             this.grpPersonOp.Controls.Add(this.btnBatchScan);
@@ -209,12 +229,30 @@ namespace APSSimulator
             this.grpPersonOp.Size = new System.Drawing.Size(994, 100);
             this.grpPersonOp.TabIndex = 0;
             this.grpPersonOp.TabStop = false;
-            this.grpPersonOp.Text = "批量測試控制";
+            this.grpPersonOp.Text = "人員操作模擬 (Person Simulation)";
+            // 
+            // btnSelectAll
+            // 
+            this.btnSelectAll.Location = new System.Drawing.Point(20, 70);
+            this.btnSelectAll.Name = "btnSelectAll";
+            this.btnSelectAll.Size = new System.Drawing.Size(60, 25);
+            this.btnSelectAll.TabIndex = 11;
+            this.btnSelectAll.Text = "全選";
+            this.btnSelectAll.UseVisualStyleBackColor = true;
+            // 
+            // btnDeselectAll
+            // 
+            this.btnDeselectAll.Location = new System.Drawing.Point(85, 70);
+            this.btnDeselectAll.Name = "btnDeselectAll";
+            this.btnDeselectAll.Size = new System.Drawing.Size(60, 25);
+            this.btnDeselectAll.TabIndex = 12;
+            this.btnDeselectAll.Text = "全取消";
+            this.btnDeselectAll.UseVisualStyleBackColor = true;
             // 
             // btnEnterEq
             // 
             this.btnEnterEq.BackColor = System.Drawing.Color.Orange;
-            this.btnEnterEq.Location = new System.Drawing.Point(410, 30);
+            this.btnEnterEq.Location = new System.Drawing.Point(410, 25);
             this.btnEnterEq.Name = "btnEnterEq";
             this.btnEnterEq.Size = new System.Drawing.Size(120, 40);
             this.btnEnterEq.TabIndex = 10;
@@ -224,7 +262,7 @@ namespace APSSimulator
             // btnBatchPick
             // 
             this.btnBatchPick.BackColor = System.Drawing.Color.LightGreen;
-            this.btnBatchPick.Location = new System.Drawing.Point(280, 30);
+            this.btnBatchPick.Location = new System.Drawing.Point(280, 25);
             this.btnBatchPick.Name = "btnBatchPick";
             this.btnBatchPick.Size = new System.Drawing.Size(120, 40);
             this.btnBatchPick.TabIndex = 9;
@@ -234,7 +272,7 @@ namespace APSSimulator
             // btnBatchScan
             // 
             this.btnBatchScan.BackColor = System.Drawing.Color.LightBlue;
-            this.btnBatchScan.Location = new System.Drawing.Point(150, 30);
+            this.btnBatchScan.Location = new System.Drawing.Point(150, 25);
             this.btnBatchScan.Name = "btnBatchScan";
             this.btnBatchScan.Size = new System.Drawing.Size(120, 40);
             this.btnBatchScan.TabIndex = 8;
@@ -243,11 +281,11 @@ namespace APSSimulator
             // 
             // btnLoadDefault
             // 
-            this.btnLoadDefault.Location = new System.Drawing.Point(20, 30);
+            this.btnLoadDefault.Location = new System.Drawing.Point(20, 25);
             this.btnLoadDefault.Name = "btnLoadDefault";
             this.btnLoadDefault.Size = new System.Drawing.Size(120, 40);
             this.btnLoadDefault.TabIndex = 7;
-            this.btnLoadDefault.Text = "載入預設測試清單";
+            this.btnLoadDefault.Text = "載入預設列表";
             this.btnLoadDefault.UseVisualStyleBackColor = true;
             // 
             // grpClientConfig
@@ -463,6 +501,36 @@ namespace APSSimulator
             this.lblMesStatus.TabIndex = 2;
             this.lblMesStatus.Text = "Status: Stopped";
             // 
+            // ctxMenuRow
+            // 
+            this.ctxMenuRow.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.menuScan,
+            this.menuPick,
+            this.menuEnterEq});
+            this.ctxMenuRow.Name = "ctxMenuRow";
+            this.ctxMenuRow.Size = new System.Drawing.Size(181, 70);
+            // 
+            // menuScan
+            // 
+            this.menuScan.Name = "menuScan";
+            this.menuScan.Size = new System.Drawing.Size(180, 22);
+            this.menuScan.Text = "單獨入庫 (Scan)";
+            this.menuScan.Click += new System.EventHandler(this.menuScan_Click);
+            // 
+            // menuPick
+            // 
+            this.menuPick.Name = "menuPick";
+            this.menuPick.Size = new System.Drawing.Size(180, 22);
+            this.menuPick.Text = "單獨取走 (Pick)";
+            this.menuPick.Click += new System.EventHandler(this.menuPick_Click);
+            // 
+            // menuEnterEq
+            // 
+            this.menuEnterEq.Name = "menuEnterEq";
+            this.menuEnterEq.Size = new System.Drawing.Size(180, 22);
+            this.menuEnterEq.Text = "進入機台 (Track-In)";
+            this.menuEnterEq.Click += new System.EventHandler(this.menuEnterEq_Click);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -487,6 +555,7 @@ namespace APSSimulator
             this.panelMesControl.ResumeLayout(false);
             this.panelMesControl.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numMesPort)).EndInit();
+            this.ctxMenuRow.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -507,6 +576,7 @@ namespace APSSimulator
         private System.Windows.Forms.DataGridViewTextBoxColumn colWorkNo;
         private System.Windows.Forms.DataGridViewTextBoxColumn colCurrentStep;
         private System.Windows.Forms.DataGridViewTextBoxColumn colNextStep;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colTargetEqp;
         private System.Windows.Forms.DataGridViewTextBoxColumn colStatus;
         private System.Windows.Forms.DataGridViewTextBoxColumn colAction;
         private System.Windows.Forms.TextBox txtClientLog;
@@ -542,5 +612,11 @@ namespace APSSimulator
         private System.Windows.Forms.Label lblMesStatus;
         private System.Windows.Forms.Label lblMesPort;
         private System.Windows.Forms.NumericUpDown numMesPort;
+        private System.Windows.Forms.Button btnSelectAll;
+        private System.Windows.Forms.Button btnDeselectAll;
+        private System.Windows.Forms.ContextMenuStrip ctxMenuRow;
+        private System.Windows.Forms.ToolStripMenuItem menuScan;
+        private System.Windows.Forms.ToolStripMenuItem menuPick;
+        private System.Windows.Forms.ToolStripMenuItem menuEnterEq;
     }
 }

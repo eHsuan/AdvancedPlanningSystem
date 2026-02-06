@@ -36,7 +36,7 @@ namespace AdvancedPlanningSystem.Repositories
                                         step_id TEXT, next_step_id TEXT, target_eqp_id TEXT,
                                         final_score REAL, priority_type INTEGER,
                                         bind_time TEXT, dispatch_time TEXT, pickup_time TEXT,
-                                        archived_at TEXT DEFAULT CURRENT_TIMESTAMP, note TEXT
+                                        archived_at TEXT, note TEXT
                                     );";
                                 using (var cmd = new SQLiteCommand(sql, conn)) { cmd.ExecuteNonQuery(); }
                             }
@@ -56,8 +56,8 @@ namespace AdvancedPlanningSystem.Repositories
                     conn.Open();
                     string sql = @"
                         INSERT INTO cloud_history_log_cache 
-                        (carrier_id, lot_id, port_id, step_id, next_step_id, target_eqp_id, final_score, priority_type, bind_time, dispatch_time, pickup_time, note)
-                        VALUES (@cid, @lid, @pid, @sid, @nid, @teqp, @score, @pri, @btime, @dtime, @ptime, @note)
+                        (carrier_id, lot_id, port_id, step_id, next_step_id, target_eqp_id, final_score, priority_type, bind_time, dispatch_time, pickup_time, archived_at, note)
+                        VALUES (@cid, @lid, @pid, @sid, @nid, @teqp, @score, @pri, @btime, @dtime, @ptime, @now, @note)
                     ";
                     using (var cmd = new SQLiteCommand(sql, conn))
                     {
@@ -72,6 +72,7 @@ namespace AdvancedPlanningSystem.Repositories
                         cmd.Parameters.AddWithValue("@btime", binding.BindTime);
                         cmd.Parameters.AddWithValue("@dtime", binding.DispatchTime);
                         cmd.Parameters.AddWithValue("@ptime", pickupTime);
+                        cmd.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyyMMddHHmmss"));
                         cmd.Parameters.AddWithValue("@note", note);
                         cmd.ExecuteNonQuery();
                     }
@@ -86,12 +87,13 @@ namespace AdvancedPlanningSystem.Repositories
                 using (var conn = new SQLiteConnection(_connectionString))
                 {
                     conn.Open();
-                    string sql = "INSERT INTO cloud_history_log_cache (carrier_id, lot_id, note) VALUES (@cid, @lid, @note)";
+                    string sql = "INSERT INTO cloud_history_log_cache (carrier_id, lot_id, note, archived_at) VALUES (@cid, @lid, @note, @now)";
                     using (var cmd = new SQLiteCommand(sql, conn))
                     {
                         cmd.Parameters.AddWithValue("@cid", carrierId);
                         cmd.Parameters.AddWithValue("@lid", lotId);
                         cmd.Parameters.AddWithValue("@note", note);
+                        cmd.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyyMMddHHmmss"));
                         cmd.ExecuteNonQuery();
                     }
                 }

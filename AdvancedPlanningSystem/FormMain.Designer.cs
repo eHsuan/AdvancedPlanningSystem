@@ -37,11 +37,14 @@ namespace AdvancedPlanningSystem
             this.pnlColorDispatching = new System.Windows.Forms.Panel();
             this.lblLegendOccupied = new System.Windows.Forms.Label();
             this.pnlColorOccupied = new System.Windows.Forms.Panel();
+            this.lblLegendFinish = new System.Windows.Forms.Label();
+            this.pnlColorFinish = new System.Windows.Forms.Panel();
             this.lblLegendEmpty = new System.Windows.Forms.Label();
             this.pnlColorEmpty = new System.Windows.Forms.Panel();
             this.btnGlobalMonitor = new System.Windows.Forms.Button();
             this.btnTransitMonitor = new System.Windows.Forms.Button();
             this.btnEqpMonitor = new System.Windows.Forms.Button();
+            this.btnManualSync = new System.Windows.Forms.Button();
             this.lblTitle = new System.Windows.Forms.Label();
             this.pnlSimStatus = new System.Windows.Forms.Panel();
             this.lblSimStatus = new System.Windows.Forms.Label();
@@ -57,6 +60,7 @@ namespace AdvancedPlanningSystem
             // 
             this.pnlHeader.BackColor = System.Drawing.Color.DarkGray;
             this.pnlHeader.Controls.Add(this.btnSystemTest);
+            this.pnlHeader.Controls.Add(this.btnManualSync);
             this.pnlHeader.Controls.Add(this.flpLegend);
             this.pnlHeader.Controls.Add(this.btnGlobalMonitor);
             this.pnlHeader.Controls.Add(this.btnTransitMonitor);
@@ -92,101 +96,125 @@ namespace AdvancedPlanningSystem
             this.flpLegend.Controls.Add(this.pnlColorDispatching);
             this.flpLegend.Controls.Add(this.lblLegendOccupied);
             this.flpLegend.Controls.Add(this.pnlColorOccupied);
+            this.flpLegend.Controls.Add(this.lblLegendFinish);
+            this.flpLegend.Controls.Add(this.pnlColorFinish);
             this.flpLegend.Controls.Add(this.lblLegendEmpty);
             this.flpLegend.Controls.Add(this.pnlColorEmpty);
             this.flpLegend.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.flpLegend.Location = new System.Drawing.Point(1022, 15);
+            this.flpLegend.Location = new System.Drawing.Point(900, 15);
             this.flpLegend.Name = "flpLegend";
-            this.flpLegend.Size = new System.Drawing.Size(328, 33);
+            this.flpLegend.Size = new System.Drawing.Size(450, 33);
             this.flpLegend.TabIndex = 2;
             this.flpLegend.WrapContents = false;
             // 
             // lblLegendError
             // 
             this.lblLegendError.AutoSize = true;
-            this.lblLegendError.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
+            this.lblLegendError.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.lblLegendError.ForeColor = System.Drawing.Color.White;
-            this.lblLegendError.Location = new System.Drawing.Point(285, 5);
+            this.lblLegendError.Location = new System.Drawing.Point(400, 5);
             this.lblLegendError.Margin = new System.Windows.Forms.Padding(0, 5, 5, 0);
             this.lblLegendError.Name = "lblLegendError";
-            this.lblLegendError.Size = new System.Drawing.Size(38, 17);
+            this.lblLegendError.Size = new System.Drawing.Size(45, 15);
             this.lblLegendError.TabIndex = 0;
-            this.lblLegendError.Text = "異常";
+            this.lblLegendError.Text = "HOLD";
             // 
             // pnlColorError
             // 
             this.pnlColorError.BackColor = System.Drawing.Color.Red;
             this.pnlColorError.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlColorError.Location = new System.Drawing.Point(255, 6);
+            this.pnlColorError.Location = new System.Drawing.Point(375, 6);
             this.pnlColorError.Margin = new System.Windows.Forms.Padding(0, 6, 10, 0);
             this.pnlColorError.Name = "pnlColorError";
-            this.pnlColorError.Size = new System.Drawing.Size(20, 20);
+            this.pnlColorError.Size = new System.Drawing.Size(15, 15);
             this.pnlColorError.TabIndex = 1;
             // 
             // lblLegendDispatching
             // 
             this.lblLegendDispatching.AutoSize = true;
-            this.lblLegendDispatching.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
+            this.lblLegendDispatching.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.lblLegendDispatching.ForeColor = System.Drawing.Color.White;
-            this.lblLegendDispatching.Location = new System.Drawing.Point(197, 5);
+            this.lblLegendDispatching.Location = new System.Drawing.Point(320, 5);
             this.lblLegendDispatching.Margin = new System.Windows.Forms.Padding(0, 5, 5, 0);
             this.lblLegendDispatching.Name = "lblLegendDispatching";
-            this.lblLegendDispatching.Size = new System.Drawing.Size(53, 17);
+            this.lblLegendDispatching.Size = new System.Drawing.Size(45, 15);
             this.lblLegendDispatching.TabIndex = 2;
-            this.lblLegendDispatching.Text = "派貨中";
+            this.lblLegendDispatching.Text = "MOVE";
             // 
             // pnlColorDispatching
             // 
             this.pnlColorDispatching.BackColor = System.Drawing.Color.LimeGreen;
             this.pnlColorDispatching.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlColorDispatching.Location = new System.Drawing.Point(167, 6);
+            this.pnlColorDispatching.Location = new System.Drawing.Point(295, 6);
             this.pnlColorDispatching.Margin = new System.Windows.Forms.Padding(0, 6, 10, 0);
             this.pnlColorDispatching.Name = "pnlColorDispatching";
-            this.pnlColorDispatching.Size = new System.Drawing.Size(20, 20);
+            this.pnlColorDispatching.Size = new System.Drawing.Size(15, 15);
             this.pnlColorDispatching.TabIndex = 3;
             // 
             // lblLegendOccupied
             // 
             this.lblLegendOccupied.AutoSize = true;
-            this.lblLegendOccupied.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
+            this.lblLegendOccupied.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.lblLegendOccupied.ForeColor = System.Drawing.Color.White;
-            this.lblLegendOccupied.Location = new System.Drawing.Point(124, 5);
+            this.lblLegendOccupied.Location = new System.Drawing.Point(245, 5);
             this.lblLegendOccupied.Margin = new System.Windows.Forms.Padding(0, 5, 5, 0);
             this.lblLegendOccupied.Name = "lblLegendOccupied";
-            this.lblLegendOccupied.Size = new System.Drawing.Size(38, 17);
+            this.lblLegendOccupied.Size = new System.Drawing.Size(40, 15);
             this.lblLegendOccupied.TabIndex = 4;
-            this.lblLegendOccupied.Text = "有貨";
+            this.lblLegendOccupied.Text = "WAIT";
             // 
             // pnlColorOccupied
             // 
             this.pnlColorOccupied.BackColor = System.Drawing.Color.SkyBlue;
             this.pnlColorOccupied.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlColorOccupied.Location = new System.Drawing.Point(94, 6);
+            this.pnlColorOccupied.Location = new System.Drawing.Point(220, 6);
             this.pnlColorOccupied.Margin = new System.Windows.Forms.Padding(0, 6, 10, 0);
             this.pnlColorOccupied.Name = "pnlColorOccupied";
-            this.pnlColorOccupied.Size = new System.Drawing.Size(20, 20);
+            this.pnlColorOccupied.Size = new System.Drawing.Size(15, 15);
             this.pnlColorOccupied.TabIndex = 5;
+            // 
+            // lblLegendFinish
+            // 
+            this.lblLegendFinish.AutoSize = true;
+            this.lblLegendFinish.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
+            this.lblLegendFinish.ForeColor = System.Drawing.Color.White;
+            this.lblLegendFinish.Location = new System.Drawing.Point(170, 5);
+            this.lblLegendFinish.Margin = new System.Windows.Forms.Padding(0, 5, 5, 0);
+            this.lblLegendFinish.Name = "lblLegendFinish";
+            this.lblLegendFinish.Size = new System.Drawing.Size(45, 15);
+            this.lblLegendFinish.TabIndex = 8;
+            this.lblLegendFinish.Text = "DONE";
+            // 
+            // pnlColorFinish
+            // 
+            this.pnlColorFinish.BackColor = System.Drawing.Color.MediumPurple;
+            this.pnlColorFinish.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlColorFinish.Location = new System.Drawing.Point(145, 6);
+            this.pnlColorFinish.Margin = new System.Windows.Forms.Padding(0, 6, 10, 0);
+            this.pnlColorFinish.Name = "pnlColorFinish";
+            this.pnlColorFinish.Size = new System.Drawing.Size(15, 15);
+            this.pnlColorFinish.TabIndex = 9;
             // 
             // lblLegendEmpty
             // 
             this.lblLegendEmpty.AutoSize = true;
-            this.lblLegendEmpty.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
+            this.lblLegendEmpty.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.lblLegendEmpty.ForeColor = System.Drawing.Color.White;
-            this.lblLegendEmpty.Location = new System.Drawing.Point(66, 5);
+            this.lblLegendEmpty.Location = new System.Drawing.Point(85, 5);
             this.lblLegendEmpty.Margin = new System.Windows.Forms.Padding(0, 5, 5, 0);
             this.lblLegendEmpty.Name = "lblLegendEmpty";
-            this.lblLegendEmpty.Size = new System.Drawing.Size(23, 17);
+            this.lblLegendEmpty.Size = new System.Drawing.Size(50, 15);
             this.lblLegendEmpty.TabIndex = 6;
-            this.lblLegendEmpty.Text = "空";
+            this.lblLegendEmpty.Text = "EMPTY";
             // 
             // pnlColorEmpty
             // 
             this.pnlColorEmpty.BackColor = System.Drawing.Color.LightGray;
             this.pnlColorEmpty.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlColorEmpty.Location = new System.Drawing.Point(36, 6);
+            this.pnlColorEmpty.Location = new System.Drawing.Point(60, 6);
             this.pnlColorEmpty.Margin = new System.Windows.Forms.Padding(0, 6, 10, 0);
             this.pnlColorEmpty.Name = "pnlColorEmpty";
-            this.pnlColorEmpty.Size = new System.Drawing.Size(20, 20);
+            this.pnlColorEmpty.Size = new System.Drawing.Size(15, 15);
             this.pnlColorEmpty.TabIndex = 7;
             // 
             // btnGlobalMonitor
@@ -221,6 +249,20 @@ namespace AdvancedPlanningSystem
             this.btnEqpMonitor.TabIndex = 4;
             this.btnEqpMonitor.Text = "機台看板 >>";
             this.btnEqpMonitor.UseVisualStyleBackColor = true;
+            // 
+            // btnManualSync
+            // 
+            this.btnManualSync.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnManualSync.BackColor = System.Drawing.Color.Orange;
+            this.btnManualSync.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
+            this.btnManualSync.Location = new System.Drawing.Point(800, 12);
+            this.btnManualSync.Name = "btnManualSync";
+            this.btnManualSync.Size = new System.Drawing.Size(160, 36);
+            this.btnManualSync.TabIndex = 9;
+            this.btnManualSync.Text = "手動決策執行";
+            this.btnManualSync.UseVisualStyleBackColor = false;
+            this.btnManualSync.Visible = false;
+            this.btnManualSync.Click += new System.EventHandler(this.btnManualSync_Click);
             // 
             // lblTitle
             // 
@@ -332,13 +374,11 @@ namespace AdvancedPlanningSystem
         private System.Windows.Forms.Button btnTransitMonitor;
         private System.Windows.Forms.Button btnEqpMonitor;
         private System.Windows.Forms.Label lblTitle;
-        private System.Windows.Forms.Panel pnlSimStatus; // New
-        private System.Windows.Forms.Label lblSimStatus; // New
+        private System.Windows.Forms.Panel pnlSimStatus;
+        private System.Windows.Forms.Label lblSimStatus;
         private System.Windows.Forms.Panel pnlGrid;
         private System.Windows.Forms.TableLayoutPanel tlpShelf;
         private System.Windows.Forms.ListBox lstLog;
-        
-        // Legend Controls
         private System.Windows.Forms.FlowLayoutPanel flpLegend;
         private System.Windows.Forms.Label lblLegendEmpty;
         private System.Windows.Forms.Panel pnlColorEmpty;
@@ -349,5 +389,8 @@ namespace AdvancedPlanningSystem
         private System.Windows.Forms.Label lblLegendError;
         private System.Windows.Forms.Panel pnlColorError;
         private System.Windows.Forms.Button btnSystemTest;
+        private System.Windows.Forms.Button btnManualSync;
+        private System.Windows.Forms.Label lblLegendFinish;
+        private System.Windows.Forms.Panel pnlColorFinish;
     }
 }

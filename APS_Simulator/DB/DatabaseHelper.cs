@@ -224,7 +224,7 @@ namespace APSSimulator.DB
             sb.Append("('ST0012', 'RUN', '600', '2P2552H0I2J4', 5, 40),");
 
             // 13. Cu蝕刻 (Etch)
-            sb.Append("('ET0023', 'RUN', '300', '2P2552Q1R2S3', 10, 40),");
+            sb.Append("('ET0023', 'RUN', '300', '2P2552Q1R2S3', 38, 40),");
 
             // 14. NiCr蝕刻
             sb.Append("('ET0026', 'RUN', '350', '2P2552K6L8M0', 8, 40),");
@@ -469,36 +469,39 @@ namespace APSSimulator.DB
 
         private static string GetOrderSeedSql()
         {
-            return @"
-                INSERT INTO mock_mes_orders 
-                (work_no, carrier_id, step_id, next_step_id, prev_out_time, priority_type, due_date, route_id, current_seq_no) VALUES
-                ('2P25521UP124', 'P63X31', 'UPET002', 'UPET003', '202602031201', 2, '202602230501', '03SEC', 5400),
-                ('2P23527UP111', 'A3TE69', 'UPOV026', 'UPPR002', '202602010401', 0, '202602230501', '03SEC', 11000),
-                ('2P25127UP131', 'A9W6WE', 'UPMS030', 'UPCL028', '202602010401', 0, '202602230501', '03SEC', 13700),
-                ('2P25407UP412', 'GW9531', 'UPO2001', 'UPET016', '202602010401', 0, '202602230501', '03SEC', 3750),
-                ('2P25423UP864', 'L9W661', 'UPMS017', 'UPSC001', '202602010401', 0, '202602230501', '03SEC', 3901),
-                ('2P23498UP223', 'O932Q1', 'UPMS036', 'UPSC040', '202602010401', 0, '202602230501', '03SEC', 14800),
-                ('2P22245UP113', 'Y46193', 'UPQC008', 'END', '202602010401', 0, '202602230501', '03SEC', 17400),
-                ('2P29148UP877', 'TXC6CC', 'UPPR003', 'UPOV030', '202602010401', 0, '202602230501', '03SEC', 12300),
-                ('2P26469UP349', 'K691H1', 'UPPA008', 'UPDB002', '202602010401', 0, '202602230501', '03SEC', 2),
-                ('2P29741UP121', 'H89U87', 'UPDR003', 'UPCL001', '202602010401', 0, '202602230501', '03SEC', 1301),
-                ('2P25331UP666', 'X9D655', 'UPOV025', 'UPPL010', '202602020801', 1, '202602230501', '03SEC', 10000);
-            ";
-            //return @"
-            //    INSERT INTO mock_mes_orders 
-            //    (work_no, carrier_id, step_id, next_step_id, prev_out_time, priority_type, due_date, route_id, current_seq_no) VALUES
-            //    ('2P25521UP124', 'P63X31', 'UPET002', 'UPET003', '202602031201', 2, '202602230501', '03SEC', 5400),
-            //    ('2P23527UP111', 'A3TE69', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
-            //    ('2P25127UP131', 'A9W6WE', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
-            //    ('2P25407UP412', 'GW9531', 'UPET002', 'UPET003', '202602031201', 2, '202602230501', '03SEC', 5400),
-            //    ('2P25423UP864', 'L9W661', 'UPET002', 'UPET003', '202602031201', 1, '202602230501', '03SEC', 5400),
-            //    ('2P23498UP223', 'O932Q1', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
-            //    ('2P22245UP113', 'Y46193', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
-            //    ('2P29148UP877', 'TXC6CC', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
-            //    ('2P26469UP349', 'K691H1', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
-            //    ('2P29741UP121', 'H89U87', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
-            //    ('2P25331UP666', 'X9D655', 'UPET002', 'UPET003', '202602031201', 0, '202602230501', '03SEC', 5400),
-            //";
+            var random = new Random();
+            var sb = new StringBuilder();
+            sb.Append("INSERT INTO mock_mes_orders (work_no, carrier_id, step_id, next_step_id, prev_out_time, priority_type, due_date, route_id, current_seq_no) VALUES ");
+
+            var orders = new[]
+            {
+                new { wn="2P25521UP124", cid="P63X31", pri=2 },
+                new { wn="2P23527UP111", cid="A3TE69", pri=0 },
+                new { wn="2P25127UP131", cid="A9W6WE", pri=0 },
+                new { wn="2P25407UP412", cid="GW9531", pri=2 },
+                new { wn="2P25423UP864", cid="L9W661", pri=1 },
+                new { wn="2P23498UP223", cid="O932Q1", pri=0 },
+                new { wn="2P22245UP113", cid="Y46193", pri=0 },
+                new { wn="2P29148UP877", cid="TXC6CC", pri=0 },
+                new { wn="2P26469UP349", cid="K691H1", pri=0 },
+                new { wn="2P29741UP121", cid="H89U87", pri=0 },
+                new { wn="2P25331UP666", cid="X9D655", pri=0 }
+            };
+
+            foreach (var o in orders)
+            {
+                string prevOut = DateTime.Now.AddMinutes(-random.Next(1, 101)).ToString("yyyyMMddHHmmss");
+                string dueDate = DateTime.Now.AddDays(random.Next(1, 10)).ToString("yyyyMMddHHmmss");
+                sb.Append($"('{o.wn}', '{o.cid}', 'UPET002', 'UPET003', '{prevOut}', {o.pri}, '{dueDate}', '03SEC', 5400),");
+            }
+
+            if (sb.Length > 0 && sb[sb.Length - 1] == ',')
+            {
+                sb.Remove(sb.Length - 1, 1);
+                sb.Append(";");
+            }
+
+            return sb.ToString();
         }
 
         private static string GetExtraConfigSeedSql()

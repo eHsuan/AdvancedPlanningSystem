@@ -48,6 +48,9 @@ namespace AdvancedPlanningSystem.Models
         public string DispatchTime { get; set; }   // 派送時間 (用於 UI 顯示綠色狀態)
         public string NextStepId { get; set; }     // 下一站 (用於判斷是否完工)
         public string TargetEqpId { get; set; }    // 目標機台
+        public int IsHold { get; set; }            // 是否異常攔截
+        public double DispatchScore { get; set; }  // 派貨分數
+        public double TReal { get; set; }          // 真實剩餘時間
     }
 
     // local_state_binding
@@ -70,6 +73,8 @@ namespace AdvancedPlanningSystem.Models
         public double ScoreEng { get; set; }
         public double ScoreDue { get; set; }
         public double ScoreLead { get; set; }
+
+        public double TReal { get; set; }          // 真實剩餘時間 (T_Real)
 
         public int PriorityType { get; set; }      // priority_type
         public int IsHold { get; set; }            // is_hold

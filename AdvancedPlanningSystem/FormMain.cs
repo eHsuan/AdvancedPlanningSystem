@@ -69,25 +69,26 @@ namespace AdvancedPlanningSystem
                         portCtrl.TargetEqpId = data.TargetEqpId ?? ""; // 傳入目標機台
                         
                         // 狀態判斷優先權:
-                        // 1. 已派貨 (Dispatching) -> MOVE
-                        // 2. 完工 (NextStep == END) -> FINISH -> DONE
-                        // 3. 一般有貨 -> OCCUPIED -> WAIT
+                        // 1. 已派貨 (Dispatching) -> MOVE (優先顯示綠色，即使已逾期)
+                        // 2. 異常攔截 (IsHold) -> ERROR (紅色)
+                        // 3. 完工 (NextStep == END) -> FINISH -> DONE
+                        // 4. 一般有貨 -> OCCUPIED -> WAIT
                         
                         if (!string.IsNullOrEmpty(data.DispatchTime))
                         {
                             portCtrl.Status = PortStatus.Dispatching;
+                            // [New] 若進入 Red Zone (分數 900萬級)，啟動閃爍
+                            portCtrl.IsFlashing = (data.DispatchScore >= 9000000);
                         }
-                        else if (data.NextStepId == "END")
+                        else if (data.IsHold == 1)
                         {
-                            portCtrl.Status = PortStatus.Finish;
-                        }
-                        else if (Enum.TryParse(data.Status, true, out PortStatus statusEnum))
-                        {
-                            portCtrl.Status = statusEnum;
+                            portCtrl.Status = PortStatus.Error;
+                            portCtrl.IsFlashing = false;
                         }
                         else
                         {
-                            portCtrl.Status = PortStatus.Occupied;
+                            portCtrl.Status = (data.NextStepId == "END") ? PortStatus.Finish : PortStatus.Occupied;
+                            portCtrl.IsFlashing = (data.DispatchScore >= 9000000);
                         }
                     }
                     else
@@ -125,6 +126,13 @@ namespace AdvancedPlanningSystem
             int rows = (int)Math.Ceiling((double)totalPorts / cols);
 
             GenerateShelfGrid(rows, cols, totalPorts);
+
+            // [New] 手動模式按鈕控制
+            if (AppConfig.ManualMode)
+            {
+                btnManualSync.Visible = true;
+                AddLog(">>> [模式] 目前為手動決策模式，請點擊按鈕執行每一輪。");
+            }
 
             // 初始化通訊
             InitializeCommunications();
@@ -202,6 +210,24 @@ namespace AdvancedPlanningSystem
             }
         }
 
+        private async void btnManualSync_Click(object sender, EventArgs e)
+        {
+            if (_syncService == null) return;
+            
+            btnManualSync.Enabled = false;
+            btnManualSync.Text = "執行中...";
+            
+            try
+            {
+                await _syncService.TriggerManualSyncAsync();
+            }
+            finally
+            {
+                btnManualSync.Enabled = true;
+                btnManualSync.Text = "手動決策執行";
+            }
+        }
+
         private async void InitializeCommunications()
         {
             AddLog("系統啟動中...");
@@ -272,9 +298,10 @@ namespace AdvancedPlanningSystem
                 AddLog($"[SCAN] RawPort: {rawPortId} -> Port: {portId}, Barcode: {e.Barcode}");
                 string workNo = await _externalDb.GetWorkNoByBarcodeAsync(e.Barcode);
                 AddLog($"[DB] 查詢工單: {e.Barcode} -> {workNo}");
+                
+                // 使用合併原子操作處理入庫
                 UpdatePortStatus(portId, e.Barcode, workNo, PortStatus.Occupied);
-                _repo.UpdatePortStateOnly(portId, "OCCUPIED");
-                _repo.InsertBinding(new AdvancedPlanningSystem.Models.StateBinding { CarrierId = e.Barcode, PortId = portId, LotId = workNo, BindTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
+                _repo.HandleScanArrival(portId, e.Barcode, workNo);
             };
 
             // --- Pick 事件 (出庫) ---
@@ -303,9 +330,9 @@ namespace AdvancedPlanningSystem
                             LotId = binding.LotId,
                             TargetEqpId = binding.TargetEqpId,
                             NextStepId = binding.NextStepId,
-                            DispatchTime = binding.DispatchTime ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                            PickupTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                            ExpectedArrivalTime = DateTime.Now.AddMinutes(bufferMin).ToString("yyyy-MM-dd HH:mm:ss"),
+                            DispatchTime = binding.DispatchTime ?? DateTime.Now.ToString("yyyyMMddHHmmss"),
+                            PickupTime = DateTime.Now.ToString("yyyyMMddHHmmss"),
+                            ExpectedArrivalTime = DateTime.Now.AddMinutes(bufferMin).ToString("yyyyMMddHHmmss"),
                             IsOverdue = 0
                         };
 

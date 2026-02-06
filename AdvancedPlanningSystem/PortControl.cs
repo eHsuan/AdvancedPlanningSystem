@@ -9,22 +9,31 @@ namespace AdvancedPlanningSystem
     {
         private PortStatus _status;
         private string _targetEqpId;
+        private bool _isFlashing;
+        private Timer _flashTimer;
+        private bool _flashToggle;
 
         public PortControl()
         {
             InitializeComponent();
             
-            // 啟用雙緩衝以減少閃爍
+            // 啟用雙緩衝
             this.DoubleBuffered = true;
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer | 
                           ControlStyles.UserPaint | 
                           ControlStyles.AllPaintingInWmPaint, true);
             this.UpdateStyles();
 
-            // 設定預設狀態
+            // 閃爍 Timer 初始化
+            _flashTimer = new Timer();
+            _flashTimer.Interval = 500;
+            _flashTimer.Tick += (s, e) => {
+                _flashToggle = !_flashToggle;
+                UpdateBackColor();
+            };
+
             Status = PortStatus.Empty;
 
-            // 將內部控制項的 Click 事件轉發給 UserControl 本身
             this.lblPortID.Click += (s, e) => this.InvokeOnClick(this, EventArgs.Empty);
             this.lblCstInfo.Click += (s, e) => this.InvokeOnClick(this, EventArgs.Empty);
             this.lblWorkInfo.Click += (s, e) => this.InvokeOnClick(this, EventArgs.Empty);
@@ -40,35 +49,20 @@ namespace AdvancedPlanningSystem
         private void AdjustLayout()
         {
             int h = this.Height;
-            // 高度判斷：完整顯示需約 80px
-            // 順序：WorkNo 先隱藏 -> Target 隱藏 (或 Cst 隱藏，視需求)
-            
             bool showWork = (h >= 75);
-            // 若高度非常小，Target 是否優先於 Cst? 通常 Dispatching 時 Target 比較重要
-            // 這裡暫時策略：只要非 Empty，Cst 永遠顯示 (佔位 22)，Target 在最下方
-            // 如果高度 < 60，Target 可能會被切，考慮隱藏 WorkNo 騰出空間給 Target
-
             lblWorkInfo.Visible = showWork && (_status != PortStatus.Empty);
             
-            // 如果 WorkInfo 隱藏，TargetInfo 往上移? 
-            // 為了簡化，直接設定 Visible，不改變 Top 座標 (假設 Layout 夠用)
-            // 若要更精緻，可動態調整 Top
             if (!showWork && (_status != PortStatus.Empty))
             {
-                // Work 隱藏，Target 上移填補空缺
                 lblTargetInfo.Top = lblWorkInfo.Top;
             }
             else
             {
-                // 還原
-                lblTargetInfo.Top = lblWorkInfo.Bottom + 2; // 假設間距
-                // 從 Designer 看是 Work=38, Target=55 -> 差17
                 lblTargetInfo.Top = 55;
             }
         }
 
         [Category("Custom Properties")]
-        [Description("Port ID to display in top-left corner.")]
         public string PortID
         {
             get { return lblPortID.Text; }
@@ -76,61 +70,43 @@ namespace AdvancedPlanningSystem
         }
 
         [Category("Custom Properties")]
-        [Description("Cassette ID to display.")]
         public string CassetteID
         {
             get { return lblCstInfo.Text.Replace("CstID : ", ""); }
-            set 
-            { 
-                lblCstInfo.Text = "CstID : " + value; 
-                UpdateToolTip();
-            }
+            set { lblCstInfo.Text = "CstID : " + value; UpdateToolTip(); }
         }
 
         [Category("Custom Properties")]
-        [Description("Work Order Number (WorkNo) to display.")]
         public string WorkNo
         {
             get { return lblWorkInfo.Text.Replace("WorkNo : ", ""); }
-            set 
-            { 
-                lblWorkInfo.Text = "WorkNo : " + value; 
-                UpdateToolTip();
-            }
+            set { lblWorkInfo.Text = "WorkNo : " + value; UpdateToolTip(); }
         }
 
         [Category("Custom Properties")]
-        [Description("Target Equipment ID to display.")]
         public string TargetEqpId
         {
             get { return _targetEqpId; }
-            set 
-            { 
-                _targetEqpId = value;
-                lblTargetInfo.Text = "Target : " + value;
-                UpdateToolTip();
-                UpdateBackColor(); // Re-evaluate visibility
-            }
+            set { _targetEqpId = value; lblTargetInfo.Text = "Target : " + value; UpdateToolTip(); UpdateBackColor(); }
         }
 
         [Category("Custom Properties")]
-        [Description("Status text for the CST (e.g. WAIT, MOVE).")]
-        public string CstStatusText
-        {
-            get { return lblCstStatus.Text; }
-            set { lblCstStatus.Text = value; }
-        }
-
-        [Category("Custom Properties")]
-        [Description("Current status of the port, which affects the background color.")]
         public PortStatus Status
         {
             get { return _status; }
-            set
-            {
-                _status = value;
-                UpdateBackColor();
-                AdjustLayout(); // Re-evaluate layout
+            set { _status = value; UpdateBackColor(); AdjustLayout(); }
+        }
+
+        [Category("Custom Properties")]
+        [Description("是否啟用閃爍效果 (用於緊急貨件)")]
+        public bool IsFlashing
+        {
+            get { return _isFlashing; }
+            set 
+            { 
+                _isFlashing = value;
+                if (_isFlashing) _flashTimer.Start();
+                else { _flashTimer.Stop(); _flashToggle = false; UpdateBackColor(); }
             }
         }
 
@@ -141,14 +117,7 @@ namespace AdvancedPlanningSystem
                 toolTipInfo.SetToolTip(this, $"Port: {PortID}");
                 return;
             }
-            
-            string tip = $"Port: {PortID}\nCstID: {CassetteID}\nWorkNo: {WorkNo}";
-            if (!string.IsNullOrEmpty(_targetEqpId))
-            {
-                tip += $"\nTarget: {_targetEqpId}";
-            }
-            tip += $"\nStatus: {lblCstStatus.Text}";
-
+            string tip = $"Port: {PortID}\nCstID: {CassetteID}\nWorkNo: {WorkNo}\nTarget: {_targetEqpId}\nStatus: {lblCstStatus.Text}";
             toolTipInfo.SetToolTip(this, tip);
             toolTipInfo.SetToolTip(lblCstInfo, tip);
             toolTipInfo.SetToolTip(lblWorkInfo, tip);
@@ -160,12 +129,7 @@ namespace AdvancedPlanningSystem
             bool hasContent = (_status != PortStatus.Empty);
             lblCstStatus.Visible = hasContent;
             lblCstInfo.Visible = hasContent;
-            
-            bool hasTarget = hasContent && !string.IsNullOrEmpty(_targetEqpId);
-            lblTargetInfo.Visible = hasTarget;
-            
-            // WorkInfo visibility is controlled by AdjustLayout based on height, 
-            // but fundamentally it must have content
+            lblTargetInfo.Visible = hasContent && !string.IsNullOrEmpty(_targetEqpId);
             if (!hasContent) lblWorkInfo.Visible = false;
 
             switch (_status)
@@ -176,23 +140,21 @@ namespace AdvancedPlanningSystem
                     break;
                 case PortStatus.Occupied:
                     this.BackColor = Color.SkyBlue;
-                    lblCstStatus.ForeColor = Color.DarkBlue;
                     lblCstStatus.Text = "WAIT";
                     break;
                 case PortStatus.Dispatching:
-                    this.BackColor = Color.LimeGreen;
-                    lblCstStatus.ForeColor = Color.White;
-                    lblCstStatus.Text = "Dispatching";
+                    // 閃爍邏輯：若為緊急件則在深綠與亮綠間切換
+                    if (_isFlashing && _flashToggle) this.BackColor = Color.YellowGreen;
+                    else this.BackColor = Color.LimeGreen;
+                    lblCstStatus.Text = "MOVE";
                     break;
                 case PortStatus.Finish:
                     this.BackColor = Color.MediumPurple;
-                    lblCstStatus.ForeColor = Color.White;
                     lblCstStatus.Text = "DONE";
                     break;
                 case PortStatus.Error:
                     this.BackColor = Color.Red;
-                    lblCstStatus.ForeColor = Color.Yellow;
-                    lblCstStatus.Text = "ERROR";
+                    lblCstStatus.Text = "HOLD";
                     break;
                 default:
                     this.BackColor = SystemColors.Control;

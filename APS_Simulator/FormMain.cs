@@ -81,12 +81,13 @@ namespace APSSimulator
                 this.Invoke(new Action(() => {
                     if (msg.StartsWith("OPEN,"))
                     {
-                        // Msg: OPEN,P01
+                        // Msg: OPEN,P01,LF0003
                         string[] parts = msg.Split(',');
                         if (parts.Length >= 2)
                         {
                             string portId = parts[1].Trim();
-                            UpdateGridStatus(portId, "Ready to Pick (Open)", Color.LightGreen);
+                            string targetEqp = parts.Length >= 3 ? parts[2].Trim() : "";
+                            UpdateGridStatusWithTarget(portId, targetEqp, "Ready to Pick (Open)", Color.LightGreen);
                         }
                     }
                 }));
@@ -126,78 +127,31 @@ namespace APSSimulator
 
             // [New] Batch Operations
             btnLoadDefault.Click += (s, e) => LoadTestList();
+
+            btnSelectAll.Click += (s, e) => SetAllSelection(true);
+            btnDeselectAll.Click += (s, e) => SetAllSelection(false);
             
             btnBatchScan.Click += async (s, e) => {
                 foreach (DataGridViewRow row in dgvTestList.Rows)
                 {
-                    if (row.IsNewRow) continue;
-                    bool selected = Convert.ToBoolean(row.Cells["colSelect"].Value);
-                    if (selected)
-                    {
-                        string port = row.Cells["colPortId"].Value?.ToString();
-                        string cass = row.Cells["colCassetteId"].Value?.ToString();
-                        if (!string.IsNullOrEmpty(port) && !string.IsNullOrEmpty(cass))
-                        {
-                            await _apsClient.ScanAsync(port, cass);
-                            row.Cells["colStatus"].Value = "Scanned (On Shelf)";
-                            row.DefaultCellStyle.BackColor = Color.LightYellow;
-                            await System.Threading.Tasks.Task.Delay(100); // Small delay to avoid flooding
-                        }
-                    }
+                    if (row.IsNewRow || !Convert.ToBoolean(row.Cells["colSelect"].Value)) continue;
+                    await ProcessScanForRow(row);
                 }
             };
 
             btnBatchPick.Click += async (s, e) => {
                 foreach (DataGridViewRow row in dgvTestList.Rows)
                 {
-                    if (row.IsNewRow) continue;
-                    bool selected = Convert.ToBoolean(row.Cells["colSelect"].Value);
-                    if (selected)
-                    {
-                        string port = row.Cells["colPortId"].Value?.ToString();
-                        if (!string.IsNullOrEmpty(port))
-                        {
-                            await _apsClient.PickAsync(port);
-                            row.Cells["colStatus"].Value = "Picked (In Transit)";
-                            row.DefaultCellStyle.BackColor = Color.White;
-                            await System.Threading.Tasks.Task.Delay(100);
-                        }
-                    }
+                    if (row.IsNewRow || !Convert.ToBoolean(row.Cells["colSelect"].Value)) continue;
+                    await ProcessPickForRow(row);
                 }
             };
 
             btnEnterEq.Click += async (s, e) => {
                 foreach (DataGridViewRow row in dgvTestList.Rows)
                 {
-                    if (row.IsNewRow) continue;
-                    bool selected = Convert.ToBoolean(row.Cells["colSelect"].Value);
-                    if (!selected) continue;
-
-                    string workNo = row.Cells["colWorkNo"].Value?.ToString();
-                    string stepId = row.Cells["colCurrentStep"].Value?.ToString();
-                    if (string.IsNullOrEmpty(workNo)) continue;
-
-                    // 1. 查詢加工時間
-                    int processSec = GetProcessTime(stepId);
-                    row.Cells["colStatus"].Value = $"Processing ({processSec}s)...";
-                    row.DefaultCellStyle.BackColor = Color.SandyBrown;
-
-                    // 2. 異步等待
-                    var task = Task.Run(async () => {
-                        await Task.Delay(processSec * 1000);
-                        
-                        // 3. 加工完成，更新資料庫 (過帳到下一站)
-                        CompleteProcessingInDb(workNo);
-
-                        // 4. 通知 UI 更新
-                        this.Invoke(new Action(() => {
-                            row.Cells["colStatus"].Value = "Finished (Ready to Scan)";
-                            row.DefaultCellStyle.BackColor = Color.LightGray;
-                            AppendClientLog($"[Sim] {workNo} processed in EQ ({processSec}s).");
-                            // 重新讀取該行資料以更新 Current/Next Step 顯示
-                            RefreshRowData(row, workNo);
-                        }));
-                    });
+                    if (row.IsNewRow || !Convert.ToBoolean(row.Cells["colSelect"].Value)) continue;
+                    await ProcessEnterEqForRow(row);
                 }
             };
 
@@ -213,6 +167,107 @@ namespace APSSimulator
             };
             LoadMachines(); // First load
             LoadTestList(); // Load default test list
+        }
+
+        private void SetAllSelection(bool selected)
+        {
+            foreach (DataGridViewRow row in dgvTestList.Rows)
+            {
+                if (row.IsNewRow) continue;
+                row.Cells["colSelect"].Value = selected;
+            }
+        }
+
+        private async Task ProcessScanForRow(DataGridViewRow row)
+        {
+            string port = row.Cells["colPortId"].Value?.ToString();
+            string cass = row.Cells["colCassetteId"].Value?.ToString();
+            if (!string.IsNullOrEmpty(port) && !string.IsNullOrEmpty(cass))
+            {
+                await _apsClient.ScanAsync(port, cass);
+                row.Cells["colStatus"].Value = "Scanned (On Shelf)";
+                row.DefaultCellStyle.BackColor = Color.LightYellow;
+                await System.Threading.Tasks.Task.Delay(100); 
+            }
+        }
+
+        private async Task ProcessPickForRow(DataGridViewRow row)
+        {
+            string port = row.Cells["colPortId"].Value?.ToString();
+            if (!string.IsNullOrEmpty(port))
+            {
+                await _apsClient.PickAsync(port);
+                row.Cells["colStatus"].Value = "Picked (In Transit)";
+                row.DefaultCellStyle.BackColor = Color.White;
+                await System.Threading.Tasks.Task.Delay(100);
+            }
+        }
+
+        private async Task ProcessEnterEqForRow(DataGridViewRow row)
+        {
+            string workNo = row.Cells["colWorkNo"].Value?.ToString();
+            string stepId = row.Cells["colCurrentStep"].Value?.ToString();
+            string targetEqp = row.Cells["colTargetEqp"].Value?.ToString();
+            if (string.IsNullOrEmpty(workNo)) return;
+
+            TrackInStepInDb(workNo);
+            
+            // 自動增加機台 WIP
+            if (!string.IsNullOrEmpty(targetEqp) && targetEqp != "STOCK")
+            {
+                ChangeMachineWipInDb(targetEqp, 1);
+                LoadMachines(); 
+            }
+
+            row.Cells["colStatus"].Value = "Track-In (Processing)...";
+            row.DefaultCellStyle.BackColor = Color.SandyBrown;
+            RefreshRowData(row, workNo);
+
+            int processSec = GetProcessTime(stepId);
+            await Task.Run(async () => {
+                await Task.Delay(processSec * 1000);
+                CompleteProcessingInDb(workNo);
+                
+                // 自動減少機台 WIP
+                if (!string.IsNullOrEmpty(targetEqp) && targetEqp != "STOCK")
+                {
+                    ChangeMachineWipInDb(targetEqp, -1);
+                }
+
+                this.Invoke(new Action(() => {
+                    row.Cells["colStatus"].Value = "Finished (Ready to Scan)";
+                    row.DefaultCellStyle.BackColor = Color.LightGray;
+                    row.Cells["colTargetEqp"].Value = ""; 
+                    AppendClientLog($"[Sim] {workNo} processed and WIP updated.");
+                    RefreshRowData(row, workNo);
+                    LoadMachines();
+                }));
+            });
+        }
+
+        private void dgvTestList_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
+            {
+                dgvTestList.ClearSelection();
+                dgvTestList.Rows[e.RowIndex].Selected = true;
+                dgvTestList.CurrentCell = dgvTestList.Rows[e.RowIndex].Cells[e.ColumnIndex >= 0 ? e.ColumnIndex : 0];
+            }
+        }
+
+        private async void menuScan_Click(object sender, EventArgs e)
+        {
+            if (dgvTestList.SelectedRows.Count > 0) await ProcessScanForRow(dgvTestList.SelectedRows[0]);
+        }
+
+        private async void menuPick_Click(object sender, EventArgs e)
+        {
+            if (dgvTestList.SelectedRows.Count > 0) await ProcessPickForRow(dgvTestList.SelectedRows[0]);
+        }
+
+        private async void menuEnterEq_Click(object sender, EventArgs e)
+        {
+            if (dgvTestList.SelectedRows.Count > 0) await ProcessEnterEqForRow(dgvTestList.SelectedRows[0]);
         }
 
         private void FilterMachines(string keyword)
@@ -250,23 +305,23 @@ namespace APSSimulator
             catch { return 30; }
         }
 
-        private void CompleteProcessingInDb(string workNo)
+        /// <summary>
+        /// 模擬進站過帳 (Track-In)：立即將 StepId 更新為目標站點
+        /// </summary>
+        private void TrackInStepInDb(string workNo)
         {
             try
             {
                 using (var conn = new SQLiteConnection(DatabaseHelper.ConnectionString))
                 {
                     conn.Open();
-                    // 1. 取得當前 NextStepId 所在的 seq_no
+                    // 取得目前該工單對應的 NextStepId 資訊
                     string sqlGetNext = @"
                         SELECT r.seq_no, r.step_id 
                         FROM mock_mes_route_def r 
                         JOIN mock_mes_orders o ON r.route_id = o.route_id 
                         WHERE o.work_no = @wn AND r.seq_no > o.current_seq_no 
                         ORDER BY r.seq_no ASC LIMIT 1";
-                    
-                    int nextSeq = -1;
-                    string nextStepId = "";
 
                     using (var cmd = new SQLiteCommand(sqlGetNext, conn))
                     {
@@ -275,33 +330,47 @@ namespace APSSimulator
                         {
                             if (reader.Read())
                             {
-                                nextSeq = Convert.ToInt32(reader["seq_no"]);
-                                nextStepId = reader["step_id"].ToString();
+                                int nextSeq = Convert.ToInt32(reader["seq_no"]);
+                                string nextStepId = reader["step_id"].ToString();
+
+                                // 立即更新為該站點，這會讓 APS 監控偵測到「已到站」
+                                string sqlUpdate = "UPDATE mock_mes_orders SET step_id = @sid, current_seq_no = @seq WHERE work_no = @wn";
+                                using (var updCmd = new SQLiteCommand(sqlUpdate, conn))
+                                {
+                                    updCmd.Parameters.AddWithValue("@sid", nextStepId);
+                                    updCmd.Parameters.AddWithValue("@seq", nextSeq);
+                                    updCmd.Parameters.AddWithValue("@wn", workNo);
+                                    updCmd.ExecuteNonQuery();
+                                }
                             }
                         }
                     }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendClientLog("TrackInStepInDb Error: " + ex.Message);
+            }
+        }
 
-                    // 2. 更新工單狀態：
-                    // - current_seq_no 設為剛完成站點的 seq (或下一個，視 MES 邏輯，這裡我們設為剛找到的 nextSeq 表示已到該站)
-                    // - step_id 設為 nextStepId
-                    // - prev_out_time 設為現在 (觸發下一站的 QTime 計算)
-                    if (nextSeq != -1)
+        /// <summary>
+        /// 模擬加工完成出站 (Track-Out)：更新 prev_out_time 並跳轉到下一站的計算點
+        /// </summary>
+        private void CompleteProcessingInDb(string workNo)
+        {
+            try
+            {
+                using (var conn = new SQLiteConnection(DatabaseHelper.ConnectionString))
+                {
+                    conn.Open();
+                    // 更新 prev_out_time 為現在時間，這代表「這一站加工結束時間」
+                    // 這會影響 APS 下一輪評分中的 QTime 計算
+                    string sqlUpdate = "UPDATE mock_mes_orders SET prev_out_time = @now WHERE work_no = @wn";
+                    using (var cmd = new SQLiteCommand(sqlUpdate, conn))
                     {
-                        string sqlUpdate = @"
-                            UPDATE mock_mes_orders 
-                            SET current_seq_no = @seq, 
-                                step_id = @sid, 
-                                prev_out_time = @now 
-                            WHERE work_no = @wn";
-                        
-                        using (var cmd = new SQLiteCommand(sqlUpdate, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@seq", nextSeq);
-                            cmd.Parameters.AddWithValue("@sid", nextStepId);
-                            cmd.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"));
-                            cmd.Parameters.AddWithValue("@wn", workNo);
-                            cmd.ExecuteNonQuery();
-                        }
+                        cmd.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyyMMddHHmmss"));
+                        cmd.Parameters.AddWithValue("@wn", workNo);
+                        cmd.ExecuteNonQuery();
                     }
                 }
             }
@@ -364,16 +433,39 @@ namespace APSSimulator
             }
         }
 
-        private void UpdateGridStatus(string portId, string status, Color color)
+        private void ChangeMachineWipInDb(string eqpId, int delta)
+        {
+            try
+            {
+                using (var conn = new SQLiteConnection(DatabaseHelper.ConnectionString))
+                {
+                    conn.Open();
+                    string sql = "UPDATE mock_mes_equipments SET current_wip_qty = current_wip_qty + @d WHERE eqp_id = @id";
+                    using (var cmd = new SQLiteCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@d", delta);
+                        cmd.Parameters.AddWithValue("@id", eqpId);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendClientLog($"ChangeMachineWipInDb Error ({eqpId}): {ex.Message}");
+            }
+        }
+
+        private void UpdateGridStatusWithTarget(string portId, string targetEqp, string status, Color color)
         {
             foreach (DataGridViewRow row in dgvTestList.Rows)
             {
                 if (row.Cells["colPortId"].Value?.ToString() == portId)
                 {
                     row.Cells["colStatus"].Value = status;
+                    row.Cells["colTargetEqp"].Value = targetEqp;
                     row.DefaultCellStyle.BackColor = color;
-                    row.Cells["colAction"].Value = $"Received OPEN at {DateTime.Now:HH:mm:ss}";
-                    break; // Found
+                    row.Cells["colAction"].Value = $"Received OPEN: {targetEqp} at {DateTime.Now:HH:mm:ss}";
+                    break; 
                 }
             }
         }

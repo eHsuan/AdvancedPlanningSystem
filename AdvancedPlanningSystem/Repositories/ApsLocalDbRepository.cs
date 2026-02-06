@@ -16,9 +16,45 @@ namespace AdvancedPlanningSystem.Repositories
         public ApsLocalDbRepository(string dbName = "APSLocalDB.db")
         {
             _dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, dbName);
-            // 加入 Busy Timeout 與 WAL 模式設定
-            _connectionString = $"Data Source={_dbPath};Version=3;Busy Timeout=5000;";
+            // Busy Timeout 增加到 10 秒
+            _connectionString = $"Data Source={_dbPath};Version=3;Busy Timeout=10000;";
             EnsureDatabaseExists();
+        }
+
+        /// <summary>
+        /// 強化版的連線開啟方法，包含 Open 與 PRAGMA 的重試機制
+        /// </summary>
+        private SQLiteConnection GetOpenConnection()
+        {
+            int retryCount = 5;
+            int delayMs = 200;
+
+            for (int i = 0; i < retryCount; i++)
+            {
+                var conn = new SQLiteConnection(_connectionString);
+                try
+                {
+                    conn.Open();
+                    // 每次開啟連線都確保效能優化設定
+                    using (var cmd = new SQLiteCommand("PRAGMA synchronous=NORMAL; PRAGMA journal_mode=WAL;", conn))
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                    return conn;
+                }
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (conn != null) { conn.Dispose(); }
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(delayMs);
+                }
+                catch (Exception)
+                {
+                    if (conn != null) { conn.Dispose(); }
+                    throw;
+                }
+            }
+            return null;
         }
 
         private void EnsureDatabaseExists()
@@ -30,17 +66,18 @@ namespace AdvancedPlanningSystem.Repositories
                     SQLiteConnection.CreateFile(_dbPath);
                 }
 
-                using (var conn = new SQLiteConnection(_connectionString))
+                using (var conn = GetOpenConnection())
                 {
-                    conn.Open();
-                    // 開啟 WAL 模式以支援讀寫併發
-                    using (var cmd = new SQLiteCommand("PRAGMA journal_mode=WAL;", conn))
-                    {
-                        cmd.ExecuteNonQuery();
-                    }
-
                     // 檢查是否需要建立表
                     CreateTables(conn);
+                    
+                    // 自動升級：若舊資料庫沒有 treal 欄位，補上它
+                    try {
+                        using (var cmd = new SQLiteCommand("ALTER TABLE local_state_binding ADD COLUMN treal REAL DEFAULT 0", conn)) {
+                            cmd.ExecuteNonQuery();
+                        }
+                    } catch { /* 欄位已存在會噴錯，忽略即可 */ }
+
                     SeedTestData(conn);
                 }
             }
@@ -172,6 +209,7 @@ namespace AdvancedPlanningSystem.Repositories
                     qtime_deadline TEXT, dispatch_score REAL DEFAULT 0, 
                     score_qtime REAL DEFAULT 0, score_urgent REAL DEFAULT 0, 
                     score_eng REAL DEFAULT 0, score_due REAL DEFAULT 0, score_lead REAL DEFAULT 0,
+                    treal REAL DEFAULT 0,
                     priority_type INTEGER DEFAULT 0, is_hold INTEGER DEFAULT 0,
                     wait_reason TEXT, 
                     bind_time TEXT, dispatch_time TEXT,
@@ -186,14 +224,65 @@ namespace AdvancedPlanningSystem.Repositories
             using (var cmd = new SQLiteCommand(sql, conn)) { cmd.ExecuteNonQuery(); }
         }
 
+        /// <summary>
+        /// 合併 Scan 產生的 Port 更新與 Binding 插入，減少資料庫鎖定機率。
+        /// </summary>
+        public void HandleScanArrival(string portId, string carrierId, string lotId)
+        {
+            int retryCount = 3;
+            int delayMs = 200;
+
+            for (int i = 0; i < retryCount; i++)
+            {
+                try
+                {
+                    lock (_dbLock)
+                    {
+                        using (var conn = GetOpenConnection())
+                        using (var trans = conn.BeginTransaction())
+                        {
+                            try
+                            {
+                                string sqlPort = "INSERT OR REPLACE INTO local_state_port (port_id, status, last_update) VALUES (@p, 'OCCUPIED', @t)";
+                                using (var cmd = new SQLiteCommand(sqlPort, conn))
+                                {
+                                    cmd.Parameters.AddWithValue("@p", portId);
+                                    cmd.Parameters.AddWithValue("@t", DateTime.Now.ToString("yyyyMMddHHmmss"));
+                                    cmd.ExecuteNonQuery();
+                                }
+
+                                string sqlBind = "INSERT OR REPLACE INTO local_state_binding (carrier_id, port_id, lot_id, bind_time) VALUES (@cid, @pid, @lid, @btime)";
+                                using (var cmd = new SQLiteCommand(sqlBind, conn))
+                                {
+                                    cmd.Parameters.AddWithValue("@cid", carrierId);
+                                    cmd.Parameters.AddWithValue("@pid", portId);
+                                    cmd.Parameters.AddWithValue("@lid", lotId);
+                                    cmd.Parameters.AddWithValue("@btime", DateTime.Now.ToString("yyyyMMddHHmmss"));
+                                    cmd.ExecuteNonQuery();
+                                }
+
+                                trans.Commit();
+                                return;
+                            }
+                            catch { trans.Rollback(); throw; }
+                        }
+                    }
+                }
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(delayMs);
+                }
+            }
+        }
+
         public List<ConfigStepEqp> GetStepEqpMappings()
         {
             lock (_dbLock)
             {
                 var list = new List<ConfigStepEqp>();
-                using (var conn = new SQLiteConnection(_connectionString))
+                using (var conn = GetOpenConnection())
                 {
-                    conn.Open();
                     using (var cmd = new SQLiteCommand("SELECT * FROM local_config_step_eqp", conn))
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -212,9 +301,8 @@ namespace AdvancedPlanningSystem.Repositories
             lock (_dbLock)
             {
                 var list = new List<ConfigQTime>();
-                using (var conn = new SQLiteConnection(_connectionString))
+                using (var conn = GetOpenConnection())
                 {
-                    conn.Open();
                     using (var cmd = new SQLiteCommand("SELECT * FROM local_config_qtime", conn))
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -232,9 +320,8 @@ namespace AdvancedPlanningSystem.Repositories
         {
             lock (_dbLock)
             {
-                using (var conn = new SQLiteConnection(_connectionString))
+                using (var conn = GetOpenConnection())
                 {
-                    conn.Open();
                     using (var cmd = new SQLiteCommand("SELECT * FROM local_config_eqp WHERE eqp_id = @id", conn))
                     {
                         cmd.Parameters.AddWithValue("@id", eqpId);
@@ -256,9 +343,8 @@ namespace AdvancedPlanningSystem.Repositories
             lock (_dbLock)
             {
                 var list = new List<ConfigEqp>();
-                using (var conn = new SQLiteConnection(_connectionString))
+                using (var conn = GetOpenConnection())
                 {
-                    conn.Open();
                     using (var cmd = new SQLiteCommand("SELECT * FROM local_config_eqp", conn))
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -274,221 +360,373 @@ namespace AdvancedPlanningSystem.Repositories
 
         public void UpdateEqpMaxWip(string eqpId, int maxWip)
         {
-            lock (_dbLock)
+            int retryCount = 3;
+            for (int i = 0; i < retryCount; i++)
             {
-                using (var conn = new SQLiteConnection(_connectionString))
+                try
                 {
-                    conn.Open();
-                    string sql = "UPDATE local_config_eqp SET max_wip_qty = @m WHERE eqp_id = @id";
-                    using (var cmd = new SQLiteCommand(sql, conn))
+                    lock (_dbLock)
                     {
-                        cmd.Parameters.AddWithValue("@m", maxWip);
-                        cmd.Parameters.AddWithValue("@id", eqpId);
-                        cmd.ExecuteNonQuery();
+                        using (var conn = GetOpenConnection())
+                        {
+                            string sql = "UPDATE local_config_eqp SET max_wip_qty = @m WHERE eqp_id = @id";
+                            using (var cmd = new SQLiteCommand(sql, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@m", maxWip);
+                                cmd.Parameters.AddWithValue("@id", eqpId);
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                        return;
                     }
+                }
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(200);
                 }
             }
         }
 
         public void UpdatePortStateOnly(string portId, string status)
         {
-            lock (_dbLock)
+            int retryCount = 3;
+            for (int i = 0; i < retryCount; i++)
             {
-                using (var conn = new SQLiteConnection(_connectionString))
+                try
                 {
-                    conn.Open();
-                    string sql = "INSERT OR REPLACE INTO local_state_port (port_id, status, last_update) VALUES (@p, @s, @t)";
-                    using (var cmd = new SQLiteCommand(sql, conn))
+                    lock (_dbLock)
                     {
-                        cmd.Parameters.AddWithValue("@p", portId);
-                        cmd.Parameters.AddWithValue("@s", status);
-                        cmd.Parameters.AddWithValue("@t", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                        cmd.ExecuteNonQuery();
+                        using (var conn = GetOpenConnection())
+                        {
+                            string sql = "INSERT OR REPLACE INTO local_state_port (port_id, status, last_update) VALUES (@p, @s, @t)";
+                            using (var cmd = new SQLiteCommand(sql, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@p", portId);
+                                cmd.Parameters.AddWithValue("@s", status);
+                                cmd.Parameters.AddWithValue("@t", DateTime.Now.ToString("yyyyMMddHHmmss"));
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                        return;
                     }
+                }
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(200);
                 }
             }
         }
 
         public List<StatePort> GetActivePorts()
         {
-            lock (_dbLock)
+            int retryCount = 3;
+            int delayMs = 200;
+
+            for (int i = 0; i < retryCount; i++)
             {
-                var list = new List<StatePort>();
-                using (var conn = new SQLiteConnection(_connectionString))
+                try
                 {
-                    conn.Open();
-                    string sql = @"
-                        SELECT p.*, b.carrier_id, b.lot_id, b.dispatch_time, b.next_step_id, b.target_eqp_id 
-                        FROM local_state_port p 
-                        LEFT JOIN local_state_binding b ON p.port_id = b.port_id 
-                        WHERE p.status = 'OCCUPIED'";
-                    using (var cmd = new SQLiteCommand(sql, conn))
-                    using (var reader = cmd.ExecuteReader())
+                    lock (_dbLock)
                     {
-                        while (reader.Read())
+                        var list = new List<StatePort>();
+                        using (var conn = GetOpenConnection())
                         {
-                            list.Add(new StatePort { PortId = reader["port_id"].ToString(), Status = reader["status"].ToString(), DoorState = reader["door_state"].ToString(), LastUpdate = reader["last_update"].ToString(), CarrierId = reader["carrier_id"] == DBNull.Value ? null : reader["carrier_id"].ToString(), LotId = reader["lot_id"] == DBNull.Value ? null : reader["lot_id"].ToString(), DispatchTime = reader["dispatch_time"] == DBNull.Value ? null : reader["dispatch_time"].ToString(), NextStepId = reader["next_step_id"] == DBNull.Value ? null : reader["next_step_id"].ToString(), TargetEqpId = reader["target_eqp_id"] == DBNull.Value ? null : reader["target_eqp_id"].ToString() });
+                            string sql = @"
+                                SELECT p.*, b.carrier_id, b.lot_id, b.dispatch_time, b.next_step_id, b.target_eqp_id, b.is_hold, b.dispatch_score, b.treal 
+                                FROM local_state_port p 
+                                LEFT JOIN local_state_binding b ON p.port_id = b.port_id 
+                                WHERE p.status = 'OCCUPIED'";
+                            using (var cmd = new SQLiteCommand(sql, conn))
+                            using (var reader = cmd.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    list.Add(new StatePort { 
+                                        PortId = reader["port_id"].ToString(), 
+                                        Status = reader["status"].ToString(), 
+                                        DoorState = reader["door_state"].ToString(), 
+                                        LastUpdate = reader["last_update"].ToString(), 
+                                        CarrierId = reader["carrier_id"] == DBNull.Value ? null : reader["carrier_id"].ToString(), 
+                                        LotId = reader["lot_id"] == DBNull.Value ? null : reader["lot_id"].ToString(), 
+                                        DispatchTime = reader["dispatch_time"] == DBNull.Value ? null : reader["dispatch_time"].ToString(), 
+                                        NextStepId = reader["next_step_id"] == DBNull.Value ? null : reader["next_step_id"].ToString(), 
+                                        TargetEqpId = reader["target_eqp_id"] == DBNull.Value ? null : reader["target_eqp_id"].ToString(),
+                                        IsHold = reader["is_hold"] == DBNull.Value ? 0 : Convert.ToInt32(reader["is_hold"]),
+                                        DispatchScore = reader["dispatch_score"] == DBNull.Value ? 0 : Convert.ToDouble(reader["dispatch_score"]),
+                                        TReal = reader["treal"] == DBNull.Value ? 0 : Convert.ToDouble(reader["treal"])
+                                    });
+                                }
+                            }
                         }
+                        return list;
                     }
                 }
-                return list;
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(delayMs);
+                }
             }
+            return new List<StatePort>();
         }
 
         public void InsertBinding(StateBinding binding)
         {
-            lock (_dbLock)
+            int retryCount = 3;
+            for (int i = 0; i < retryCount; i++)
             {
-                using (var conn = new SQLiteConnection(_connectionString))
+                try
                 {
-                    conn.Open();
-                    string sql = @"
-                        INSERT OR REPLACE INTO local_state_binding 
-                        (carrier_id, port_id, lot_id, current_step_id, next_step_id, target_eqp_id, 
-                         qtime_deadline, dispatch_score, 
-                         score_qtime, score_urgent, score_eng, score_due, score_lead,
-                         priority_type, is_hold, wait_reason, bind_time, dispatch_time)
-                        VALUES (@cid, @pid, @lid, @sid, @nid, @teqp, @dead, @score, 
-                                @sq, @su, @se, @sd, @sl,
-                                @pri, @hold, @wreason, @btime, @dtime)
-                    ";
-                    using (var cmd = new SQLiteCommand(sql, conn))
+                    lock (_dbLock)
                     {
-                        cmd.Parameters.AddWithValue("@cid", binding.CarrierId);
-                        cmd.Parameters.AddWithValue("@pid", binding.PortId);
-                        cmd.Parameters.AddWithValue("@lid", binding.LotId);
-                        cmd.Parameters.AddWithValue("@sid", binding.CurrentStepId ?? "");
-                        cmd.Parameters.AddWithValue("@nid", binding.NextStepId ?? "");
-                        cmd.Parameters.AddWithValue("@teqp", binding.TargetEqpId ?? "");
-                        cmd.Parameters.AddWithValue("@dead", binding.QTimeDeadline ?? "");
-                        cmd.Parameters.AddWithValue("@score", binding.DispatchScore);
-                        cmd.Parameters.AddWithValue("@sq", binding.ScoreQTime);
-                        cmd.Parameters.AddWithValue("@su", binding.ScoreUrgent);
-                        cmd.Parameters.AddWithValue("@se", binding.ScoreEng);
-                        cmd.Parameters.AddWithValue("@sd", binding.ScoreDue);
-                        cmd.Parameters.AddWithValue("@sl", binding.ScoreLead);
-                        cmd.Parameters.AddWithValue("@pri", binding.PriorityType);
-                        cmd.Parameters.AddWithValue("@hold", binding.IsHold);
-                        cmd.Parameters.AddWithValue("@wreason", binding.WaitReason ?? "");
-                        cmd.Parameters.AddWithValue("@btime", binding.BindTime ?? "");
-                        cmd.Parameters.AddWithValue("@dtime", (object)binding.DispatchTime ?? DBNull.Value);
-                        cmd.ExecuteNonQuery();
+                        using (var conn = GetOpenConnection())
+                        {
+                            string sql = @"
+                            INSERT OR REPLACE INTO local_state_binding 
+                            (carrier_id, port_id, lot_id, current_step_id, next_step_id, target_eqp_id, 
+                             qtime_deadline, dispatch_score, 
+                             score_qtime, score_urgent, score_eng, score_due, score_lead, treal,
+                             priority_type, is_hold, wait_reason, bind_time, dispatch_time)
+                            VALUES (@cid, @pid, @lid, @sid, @nid, @teqp, @dead, @score, 
+                                    @sq, @su, @se, @sd, @sl, @treal,
+                                    @pri, @hold, @wreason, @btime, @dtime)
+                        ";
+                        using (var cmd = new SQLiteCommand(sql, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@cid", binding.CarrierId);
+                            cmd.Parameters.AddWithValue("@pid", binding.PortId);
+                            cmd.Parameters.AddWithValue("@lid", binding.LotId);
+                            cmd.Parameters.AddWithValue("@sid", binding.CurrentStepId ?? "");
+                            cmd.Parameters.AddWithValue("@nid", binding.NextStepId ?? "");
+                            cmd.Parameters.AddWithValue("@teqp", binding.TargetEqpId ?? "");
+                            cmd.Parameters.AddWithValue("@dead", binding.QTimeDeadline ?? "");
+                            cmd.Parameters.AddWithValue("@score", binding.DispatchScore);
+                            cmd.Parameters.AddWithValue("@sq", binding.ScoreQTime);
+                            cmd.Parameters.AddWithValue("@su", binding.ScoreUrgent);
+                            cmd.Parameters.AddWithValue("@se", binding.ScoreEng);
+                            cmd.Parameters.AddWithValue("@sd", binding.ScoreDue);
+                            cmd.Parameters.AddWithValue("@sl", binding.ScoreLead);
+                            cmd.Parameters.AddWithValue("@treal", binding.TReal);
+                            cmd.Parameters.AddWithValue("@pri", binding.PriorityType);
+                            cmd.Parameters.AddWithValue("@hold", binding.IsHold);
+                            cmd.Parameters.AddWithValue("@wreason", binding.WaitReason ?? "");
+                            cmd.Parameters.AddWithValue("@btime", binding.BindTime ?? "");
+                            cmd.Parameters.AddWithValue("@dtime", (object)binding.DispatchTime ?? DBNull.Value);
+                            cmd.ExecuteNonQuery();
+                        }
+                        }
+                        return;
                     }
+                }
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(200);
                 }
             }
         }
 
         public List<StateBinding> GetWaitBindings()
         {
-            lock (_dbLock)
+            int retryCount = 3;
+            int delayMs = 200;
+            for (int i = 0; i < retryCount; i++)
             {
-                var list = new List<StateBinding>();
-                using (var conn = new SQLiteConnection(_connectionString))
+                try
                 {
-                    conn.Open();
-                    string sql = "SELECT * FROM local_state_binding WHERE dispatch_time IS NULL OR dispatch_time = ''";
-                    using (var cmd = new SQLiteCommand(sql, conn))
-                    using (var reader = cmd.ExecuteReader()) { while (reader.Read()) list.Add(MapBinding(reader)); }
+                    lock (_dbLock)
+                    {
+                        var list = new List<StateBinding>();
+                        using (var conn = GetOpenConnection())
+                        {
+                            string sql = "SELECT * FROM local_state_binding WHERE dispatch_time IS NULL OR dispatch_time = ''";
+                            using (var cmd = new SQLiteCommand(sql, conn))
+                            using (var reader = cmd.ExecuteReader()) { while (reader.Read()) list.Add(MapBinding(reader)); }
+                        }
+                        return list;
+                    }
                 }
-                return list;
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(delayMs);
+                }
             }
+            return new List<StateBinding>();
         }
 
         public List<StateBinding> GetSortedWaitBindings()
         {
-            lock (_dbLock)
+            int retryCount = 3;
+            int delayMs = 200;
+            for (int i = 0; i < retryCount; i++)
             {
-                var list = new List<StateBinding>();
-                using (var conn = new SQLiteConnection(_connectionString))
+                try
                 {
-                    conn.Open();
-                    string sql = "SELECT * FROM local_state_binding WHERE (dispatch_time IS NULL OR dispatch_time = '') ORDER BY dispatch_score DESC";
-                    using (var cmd = new SQLiteCommand(sql, conn))
-                    using (var reader = cmd.ExecuteReader()) { while (reader.Read()) list.Add(MapBinding(reader)); }
+                    lock (_dbLock)
+                    {
+                        var list = new List<StateBinding>();
+                        using (var conn = GetOpenConnection())
+                        {
+                            // 修正：不應過濾 dispatch_time，讓全局監控能看到「已派送但未取」的卡匣
+                            string sql = "SELECT * FROM local_state_binding ORDER BY dispatch_score DESC";
+                            using (var cmd = new SQLiteCommand(sql, conn))
+                            using (var reader = cmd.ExecuteReader()) { while (reader.Read()) list.Add(MapBinding(reader)); }
+                        }
+                        return list;
+                    }
                 }
-                return list;
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(delayMs);
+                }
             }
+            return new List<StateBinding>();
         }
 
         public StateBinding GetBinding(string carrierId)
         {
-            lock (_dbLock)
+            int retryCount = 3;
+            int delayMs = 200;
+            for (int i = 0; i < retryCount; i++)
             {
-                using (var conn = new SQLiteConnection(_connectionString))
+                try
                 {
-                    conn.Open();
-                    string sql = "SELECT * FROM local_state_binding WHERE carrier_id = @cid";
-                    using (var cmd = new SQLiteCommand(sql, conn))
+                    lock (_dbLock)
                     {
-                        cmd.Parameters.AddWithValue("@cid", carrierId);
-                        using (var reader = cmd.ExecuteReader()) { if (reader.Read()) return MapBinding(reader); }
+                        using (var conn = GetOpenConnection())
+                        {
+                            string sql = "SELECT * FROM local_state_binding WHERE carrier_id = @cid";
+                            using (var cmd = new SQLiteCommand(sql, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@cid", carrierId);
+                                using (var reader = cmd.ExecuteReader()) { if (reader.Read()) return MapBinding(reader); }
+                            }
+                        }
+                        return null;
                     }
                 }
-                return null;
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(delayMs);
+                }
             }
+            return null;
         }
 
         public List<StateBinding> GetAllBindings()
         {
-            lock (_dbLock)
+            int retryCount = 3;
+            int delayMs = 200;
+            for (int i = 0; i < retryCount; i++)
             {
-                var list = new List<StateBinding>();
-                using (var conn = new SQLiteConnection(_connectionString))
+                try
                 {
-                    conn.Open();
-                    string sql = "SELECT * FROM local_state_binding";
-                    using (var cmd = new SQLiteCommand(sql, conn))
-                    using (var reader = cmd.ExecuteReader()) { while (reader.Read()) list.Add(MapBinding(reader)); }
+                    lock (_dbLock)
+                    {
+                        var list = new List<StateBinding>();
+                        using (var conn = GetOpenConnection())
+                        {
+                            string sql = "SELECT * FROM local_state_binding";
+                            using (var cmd = new SQLiteCommand(sql, conn))
+                            using (var reader = cmd.ExecuteReader()) { while (reader.Read()) list.Add(MapBinding(reader)); }
+                        }
+                        return list;
+                    }
                 }
-                return list;
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(delayMs);
+                }
             }
+            return new List<StateBinding>();
         }
 
         public void MoveToTransit(StateTransit transit)
         {
-            lock (_dbLock)
+            int retryCount = 3;
+            for (int i = 0; i < retryCount; i++)
             {
-                using (var conn = new SQLiteConnection(_connectionString))
+                try
                 {
-                    conn.Open();
-                    using (var transaction = conn.BeginTransaction())
+                    lock (_dbLock)
                     {
-                        try
+                        using (var conn = GetOpenConnection())
+                        using (var transaction = conn.BeginTransaction())
                         {
-                            using (var cmd = new SQLiteCommand("DELETE FROM local_state_binding WHERE carrier_id = @cid", conn)) { cmd.Parameters.AddWithValue("@cid", transit.CarrierId); cmd.ExecuteNonQuery(); }
-                            string insSql = "INSERT OR REPLACE INTO local_state_transit (carrier_id, lot_id, target_eqp_id, next_step_id, dispatch_time, pickup_time, expected_arrival_time, is_overdue) VALUES (@cid, @lot, @teqp, @nstep, @dtime, @ptime, @exp, @ovd)";
-                            using (var cmd = new SQLiteCommand(insSql, conn)) { cmd.Parameters.AddWithValue("@cid", transit.CarrierId); cmd.Parameters.AddWithValue("@lot", transit.LotId); cmd.Parameters.AddWithValue("@teqp", transit.TargetEqpId); cmd.Parameters.AddWithValue("@nstep", transit.NextStepId); cmd.Parameters.AddWithValue("@dtime", transit.DispatchTime); cmd.Parameters.AddWithValue("@ptime", transit.PickupTime); cmd.Parameters.AddWithValue("@exp", transit.ExpectedArrivalTime); cmd.Parameters.AddWithValue("@ovd", transit.IsOverdue); cmd.ExecuteNonQuery(); }
-                            transaction.Commit();
+                            try
+                            {
+                                using (var cmd = new SQLiteCommand("DELETE FROM local_state_binding WHERE carrier_id = @cid", conn)) { cmd.Parameters.AddWithValue("@cid", transit.CarrierId); cmd.ExecuteNonQuery(); }
+                                string insSql = "INSERT OR REPLACE INTO local_state_transit (carrier_id, lot_id, target_eqp_id, next_step_id, dispatch_time, pickup_time, expected_arrival_time, is_overdue) VALUES (@cid, @lot, @teqp, @nstep, @dtime, @ptime, @exp, @ovd)";
+                                using (var cmd = new SQLiteCommand(insSql, conn)) { cmd.Parameters.AddWithValue("@cid", transit.CarrierId); cmd.Parameters.AddWithValue("@lot", transit.LotId); cmd.Parameters.AddWithValue("@teqp", transit.TargetEqpId); cmd.Parameters.AddWithValue("@nstep", transit.NextStepId); cmd.Parameters.AddWithValue("@dtime", transit.DispatchTime); cmd.Parameters.AddWithValue("@ptime", transit.PickupTime); cmd.Parameters.AddWithValue("@exp", transit.ExpectedArrivalTime); cmd.Parameters.AddWithValue("@ovd", transit.IsOverdue); cmd.ExecuteNonQuery(); }
+                                transaction.Commit();
+                                return;
+                            }
+                            catch { transaction.Rollback(); throw; }
                         }
-                        catch { transaction.Rollback(); throw; }
                     }
+                }
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(200);
                 }
             }
         }
 
         public List<StateTransit> GetAllTransits()
         {
-            lock (_dbLock)
+            int retryCount = 3;
+            int delayMs = 200;
+            for (int i = 0; i < retryCount; i++)
             {
-                var list = new List<StateTransit>();
-                using (var conn = new SQLiteConnection(_connectionString))
+                try
                 {
-                    conn.Open();
-                    using (var cmd = new SQLiteCommand("SELECT * FROM local_state_transit", conn))
-                    using (var reader = cmd.ExecuteReader()) { while (reader.Read()) list.Add(MapTransit(reader)); }
+                    lock (_dbLock)
+                    {
+                        var list = new List<StateTransit>();
+                        using (var conn = GetOpenConnection())
+                        {
+                            using (var cmd = new SQLiteCommand("SELECT * FROM local_state_transit", conn))
+                            using (var reader = cmd.ExecuteReader()) { while (reader.Read()) list.Add(MapTransit(reader)); }
+                        }
+                        return list;
+                    }
                 }
-                return list;
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(delayMs);
+                }
             }
+            return new List<StateTransit>();
         }
 
         public void RemoveTransit(string carrierId)
         {
-            lock (_dbLock)
+            int retryCount = 3;
+            for (int i = 0; i < retryCount; i++)
             {
-                using (var conn = new SQLiteConnection(_connectionString))
+                try
                 {
-                    conn.Open();
-                    using (var cmd = new SQLiteCommand("DELETE FROM local_state_transit WHERE carrier_id = @cid", conn)) { cmd.Parameters.AddWithValue("@cid", carrierId); cmd.ExecuteNonQuery(); }
+                    lock (_dbLock)
+                    {
+                        using (var conn = GetOpenConnection())
+                        {
+                            using (var cmd = new SQLiteCommand("DELETE FROM local_state_transit WHERE carrier_id = @cid", conn)) { cmd.Parameters.AddWithValue("@cid", carrierId); cmd.ExecuteNonQuery(); }
+                        }
+                        return;
+                    }
+                }
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(200);
                 }
             }
         }
@@ -497,33 +735,61 @@ namespace AdvancedPlanningSystem.Repositories
         {
             lock (_dbLock)
             {
-                using (var conn = new SQLiteConnection(_connectionString))
+                using (var conn = GetOpenConnection())
+                using (var trans = conn.BeginTransaction())
                 {
-                    conn.Open();
-                    using (var trans = conn.BeginTransaction())
+                    try
                     {
-                        try
-                        {
-                            new SQLiteCommand("DELETE FROM local_state_binding", conn).ExecuteNonQuery();
-                            new SQLiteCommand("DELETE FROM local_state_transit", conn).ExecuteNonQuery();
-                            new SQLiteCommand("DELETE FROM local_state_port", conn).ExecuteNonQuery();
-                            trans.Commit();
-                        }
-                        catch
-                        {
-                            trans.Rollback();
-                            throw;
-                        }
+                        new SQLiteCommand("DELETE FROM local_state_binding", conn).ExecuteNonQuery();
+                        new SQLiteCommand("DELETE FROM local_state_transit", conn).ExecuteNonQuery();
+                        new SQLiteCommand("DELETE FROM local_state_port", conn).ExecuteNonQuery();
+                        trans.Commit();
                     }
+                    catch { trans.Rollback(); throw; }
                 }
             }
         }
 
         private StateBinding MapBinding(SQLiteDataReader reader)
         {
-            Func<string, double> safeReadDouble = (col) => { try { return reader[col] == DBNull.Value ? 0 : Convert.ToDouble(reader[col]); } catch { return 0; } };
-            string safeReadString(string col) { try { return reader[col] == DBNull.Value ? "" : reader[col].ToString(); } catch { return ""; } }
-            return new StateBinding { CarrierId = reader["carrier_id"].ToString(), PortId = reader["port_id"].ToString(), LotId = reader["lot_id"].ToString(), CurrentStepId = reader["current_step_id"].ToString(), NextStepId = reader["next_step_id"].ToString(), TargetEqpId = reader["target_eqp_id"].ToString(), QTimeDeadline = reader["qtime_deadline"].ToString(), DispatchScore = Convert.ToDouble(reader["dispatch_score"]), ScoreQTime = safeReadDouble("score_qtime"), ScoreUrgent = safeReadDouble("score_urgent"), ScoreEng = safeReadDouble("score_eng"), ScoreDue = safeReadDouble("score_due"), ScoreLead = safeReadDouble("score_lead"), PriorityType = Convert.ToInt32(reader["priority_type"]), IsHold = Convert.ToInt32(reader["is_hold"]), WaitReason = safeReadString("wait_reason"), BindTime = reader["bind_time"].ToString(), DispatchTime = reader["dispatch_time"] == DBNull.Value ? null : reader["dispatch_time"].ToString() };
+            Func<string, double> safeReadDouble = (col) => { 
+                try { 
+                    int idx = reader.GetOrdinal(col);
+                    return reader.IsDBNull(idx) ? 0 : Convert.ToDouble(reader.GetValue(idx)); 
+                } 
+                catch { return 0; } 
+            };
+            
+            string safeReadString(string col) { 
+                try { 
+                    int idx = reader.GetOrdinal(col);
+                    return reader.IsDBNull(idx) ? "" : reader.GetValue(idx).ToString(); 
+                } 
+                catch { return ""; } 
+            }
+
+            return new StateBinding 
+            { 
+                CarrierId = reader["carrier_id"].ToString(), 
+                PortId = reader["port_id"].ToString(), 
+                LotId = reader["lot_id"].ToString(), 
+                CurrentStepId = reader["current_step_id"].ToString(), 
+                NextStepId = reader["next_step_id"].ToString(), 
+                TargetEqpId = reader["target_eqp_id"].ToString(), 
+                QTimeDeadline = reader["qtime_deadline"].ToString(), 
+                DispatchScore = Convert.ToDouble(reader["dispatch_score"]), 
+                ScoreQTime = safeReadDouble("score_qtime"), 
+                ScoreUrgent = safeReadDouble("score_urgent"), 
+                ScoreEng = safeReadDouble("score_eng"), 
+                ScoreDue = safeReadDouble("score_due"), 
+                ScoreLead = safeReadDouble("score_lead"), 
+                TReal = safeReadDouble("treal"),
+                PriorityType = Convert.ToInt32(reader["priority_type"]), 
+                IsHold = Convert.ToInt32(reader["is_hold"]), 
+                WaitReason = safeReadString("wait_reason"), 
+                BindTime = reader["bind_time"].ToString(), 
+                DispatchTime = reader["dispatch_time"] == DBNull.Value ? null : reader["dispatch_time"].ToString() 
+            };
         }
 
         private StateTransit MapTransit(SQLiteDataReader reader)

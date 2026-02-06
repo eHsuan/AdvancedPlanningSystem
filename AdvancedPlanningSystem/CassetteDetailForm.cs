@@ -57,14 +57,24 @@ namespace AdvancedPlanningSystem
             DisplayDecision(binding);
         }
 
+        private DateTime? ParseDbTime(string timeStr)
+        {
+            if (string.IsNullOrEmpty(timeStr)) return null;
+            DateTime dt;
+            if (DateTime.TryParseExact(timeStr, "yyyyMMddHHmmss", null, System.Globalization.DateTimeStyles.None, out dt)) return dt;
+            if (DateTime.TryParse(timeStr, out dt)) return dt;
+            return null;
+        }
+
         private void DisplayScoringInfo(StateBinding binding)
         {
-            // QTime
-            if (!string.IsNullOrEmpty(binding.QTimeDeadline) && DateTime.TryParse(binding.QTimeDeadline, out DateTime dtDead))
+            // QTime 使用真實剩餘時間 T_Real
+            double tReal = binding.TReal;
+            if (tReal < 99999)
             {
-                double remainMin = (dtDead - DateTime.Now).TotalMinutes;
-                lblValQTime.Text = $"{binding.ScoreQTime:N0} (剩餘: {remainMin:F0} min)";
-                lblValQTime.ForeColor = (remainMin < 60) ? Color.Red : Color.Black;
+                lblValQTime.Text = $"{binding.ScoreQTime:N0} (真實剩餘: {tReal:F0} min)";
+                // 若 T_Real 小於 15 分鐘變紅 (更緊急的警示)
+                lblValQTime.ForeColor = (tReal < 15) ? Color.Red : (tReal < 45 ? Color.Orange : Color.Black);
             }
             else
             {

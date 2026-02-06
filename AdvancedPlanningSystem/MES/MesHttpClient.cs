@@ -27,12 +27,12 @@ namespace AdvancedPlanningSystem.MES
             string url = $"{_baseUrl}{endpoint}";
             try
             {
-                LogHelper.Logger.Info($"[MES GET] {url}");
+                LogHelper.MES.Info($"[MES GET] {url}");
                 
                 HttpResponseMessage response = await _httpClient.GetAsync(url);
                 string responseJson = await response.Content.ReadAsStringAsync();
                 
-                LogHelper.Logger.Info($"[MES Response] {response.StatusCode}: {responseJson}");
+                LogHelper.MES.Info($"[MES Response] {response.StatusCode}: {responseJson}");
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -57,7 +57,7 @@ namespace AdvancedPlanningSystem.MES
             }
             catch (Exception ex) 
             {
-                LogHelper.Logger.Error($"[MES Error] GET {url}: {ex.Message}", ex);
+                LogHelper.MES.Error($"[MES Error] GET {url}: {ex.Message}", ex);
                 return default(T); 
             }
         }
@@ -68,13 +68,13 @@ namespace AdvancedPlanningSystem.MES
             try
             {
                 string json = _serializer.Serialize(data);
-                LogHelper.Logger.Info($"[MES POST] {url} Body: {json}");
+                LogHelper.MES.Info($"[MES POST] {url} Body: {json}");
 
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 HttpResponseMessage response = await _httpClient.PostAsync(url, content);
                 
                 string responseJson = await response.Content.ReadAsStringAsync();
-                LogHelper.Logger.Info($"[MES Response] {response.StatusCode}: {responseJson}");
+                LogHelper.MES.Info($"[MES Response] {response.StatusCode}: {responseJson}");
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -95,7 +95,7 @@ namespace AdvancedPlanningSystem.MES
             }
             catch (Exception ex)
             {
-                LogHelper.Logger.Error($"[MES Error] POST {url}: {ex.Message}", ex);
+                LogHelper.MES.Error($"[MES Error] POST {url}: {ex.Message}", ex);
                 return default(T);
             }
         }

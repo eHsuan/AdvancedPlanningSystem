@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Collections.Concurrent;
 using AdvancedPlanningSystem.MES;
 
 namespace AdvancedPlanningSystem
@@ -28,9 +29,17 @@ namespace AdvancedPlanningSystem
         private int _currentRows = 0;
         private int _currentCols = 0;
 
+        // --- 入庫處理佇列 ---
+        private ConcurrentQueue<ScanEventArgs> _stockInQueue = new ConcurrentQueue<ScanEventArgs>();
+        private bool _isProcessingQueue = false;
+
         public FormMain()
         {
             InitializeComponent();
+
+            // ... 初始化後啟動佇列處理器 ...
+            _isProcessingQueue = true;
+            Task.Run(() => ProcessStockInQueueAsync());
 
             // Initialize Repositories
             _repo = new AdvancedPlanningSystem.Repositories.ApsLocalDbRepository();
@@ -254,18 +263,9 @@ namespace AdvancedPlanningSystem
                 }));
             };
             
-            _tcpServer.OnScan += async (s, e) => {
-                string rawPortId = e.PortID;
-                string portId = rawPortId;
-                int pNum;
-                if (int.TryParse(rawPortId, out pNum)) portId = "P" + pNum.ToString("D2");
-                
-                AddLog($"[SCAN] Port: {portId}, Barcode: {e.Barcode}");
-                string workNo = await _externalDb.GetWorkNoByBarcodeAsync(e.Barcode);
-                AddLog($"[DB] Query WorkNo: {e.Barcode} -> {workNo}");
-                
-                UpdatePortStatus(portId, e.Barcode, workNo, PortStatus.Occupied);
-                _repo.HandleScanArrival(portId, e.Barcode, workNo);
+            _tcpServer.OnScan += (s, e) => {
+                // [佇列化] 收到訊號後僅放入佇列，不直接處理，確保序列化分配儲位
+                _stockInQueue.Enqueue(e);
             };
 
             _tcpServer.OnPick += async (s, e) => {
@@ -303,6 +303,12 @@ namespace AdvancedPlanningSystem
                 _repo.UpdatePortStateOnly(portId, "EMPTY");
             };
 
+            _tcpServer.OnEnterEqp += async (s, e) => {
+                AddLog($"[ENTER] Eqp: {e.EqpID}. Checking for transit completion...");
+                // 收到進入機台訊號，立即觸發 Transit 移除檢查 (根據 MES 最新狀態)
+                await _syncService.CheckAndRemoveArrivedTransitsAsync();
+            };
+
             if (AppConfig.SimulatorEnabled)
             {
                 _tcpServer.Start(AppConfig.SimulatorPort);
@@ -319,7 +325,79 @@ namespace AdvancedPlanningSystem
             _syncService = new AdvancedPlanningSystem.Services.DataSyncService(_mesService, _repo, _cloudRepo, _dispatchService, lstLog);
             _dispatchService.SetDataSyncService(_syncService);
 
-            _syncService.Start(60000); 
+            _syncService.Start(); 
+        }
+
+        private async Task ProcessStockInQueueAsync()
+        {
+            while (_isProcessingQueue)
+            {
+                if (_stockInQueue.TryDequeue(out var e))
+                {
+                    try
+                    {
+                        string portId = e.PortID;
+                        string cstId = e.Barcode;
+
+                        // --- [序列化分配邏輯] ---
+                        // 在此迴圈中處理，保證一次只有一筆請求在查詢與佔用空位
+                        if (string.IsNullOrEmpty(portId))
+                        {
+                            var activePorts = _repo.GetActivePorts().Select(p => p.PortId).ToList();
+                            for (int i = 1; i <= AppConfig.TotalPortCount; i++)
+                            {
+                                string candidate = "P" + i.ToString("D2");
+                                if (!activePorts.Contains(candidate))
+                                {
+                                    portId = candidate;
+                                    break;
+                                }
+                            }
+
+                            if (string.IsNullOrEmpty(portId))
+                            {
+                                AddLog($"[ALARM] 貨架已滿，無法為 {cstId} 分配儲位");
+                                NotificationForm.ShowAsync("貨架滿載", $"貨架已滿，無法入庫 {cstId}", NotificationLevel.Warning, 5);
+                                continue;
+                            }
+
+                            await _tcpServer.SendCommand($"ASSIGNED_PORT,{portId},{cstId}");
+                            AddLog($"[Auto Assign] 卡匣 {cstId} 分配至 {portId}");
+                        }
+                        else
+                        {
+                            // 手動指定檢查
+                            int pNum;
+                            if (int.TryParse(portId, out pNum)) portId = "P" + pNum.ToString("D2");
+
+                            var existing = _repo.GetActivePorts().FirstOrDefault(p => p.PortId == portId);
+                            if (existing != null)
+                            {
+                                string msg = $"Port {portId} 已有卡匣 {existing.CarrierId}，拒絕入庫 {cstId}";
+                                AddLog($"[ALARM] {msg}");
+                                NotificationForm.ShowAsync("碰撞警報", msg, NotificationLevel.Critical, 5);
+                                continue;
+                            }
+                        }
+
+                        // 執行入庫
+                        string workNo = await _externalDb.GetWorkNoByBarcodeAsync(cstId);
+                        UpdatePortStatus(portId, cstId, workNo, PortStatus.Occupied);
+                        _repo.HandleScanArrival(portId, cstId, workNo);
+                        
+                        AddLog($"[IN] Port: {portId}, Barcode: {cstId} 處理完成");
+                    }
+                    catch (Exception ex)
+                    {
+                        AddLog($"[Queue Error] 處理入庫要求時發生錯誤: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    // 佇列為空時稍作休息，避免佔用 CPU
+                    await Task.Delay(100);
+                }
+            }
         }
 
         private void AddLog(string msg)
@@ -337,6 +415,12 @@ namespace AdvancedPlanningSystem
 
         private void UpdatePortStatus(string portId, string cassetteId, string workNo, PortStatus status)
         {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => UpdatePortStatus(portId, cassetteId, workNo, status)));
+                return;
+            }
+
             foreach (Control c in tlpShelf.Controls)
             {
                 if (c is PortControl port && port.PortID == portId)

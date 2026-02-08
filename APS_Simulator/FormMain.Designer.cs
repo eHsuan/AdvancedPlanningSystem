@@ -31,6 +31,18 @@ namespace APSSimulator
             this.components = new System.ComponentModel.Container();
             this.tabControlMain = new System.Windows.Forms.TabControl();
             this.tabPageDispatch = new System.Windows.Forms.TabPage();
+            this.txtAutoSimLog = new System.Windows.Forms.TextBox();
+            this.dgvAutoSimOrders = new System.Windows.Forms.DataGridView();
+            this.pnlAutoSimTool = new System.Windows.Forms.Panel();
+            this.btnAutoSimExportLog = new System.Windows.Forms.Button();
+            this.btnAutoSimResults = new System.Windows.Forms.Button();
+            this.lblAutoSimStatus = new System.Windows.Forms.Label();
+            this.btnAutoSimExportData = new System.Windows.Forms.Button();
+            this.btnAutoSimStop = new System.Windows.Forms.Button();
+            this.btnAutoSimPause = new System.Windows.Forms.Button();
+            this.btnAutoSimStart = new System.Windows.Forms.Button();
+            this.btnAutoSimImport = new System.Windows.Forms.Button();
+            this.btnAutoSimExport = new System.Windows.Forms.Button();
             this.tabPagePerson = new System.Windows.Forms.TabPage();
             this.dgvTestList = new System.Windows.Forms.DataGridView();
             this.colSelect = new System.Windows.Forms.DataGridViewCheckBoxColumn();
@@ -42,6 +54,10 @@ namespace APSSimulator
             this.colTargetEqp = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colStatus = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colAction = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.ctxMenuRow = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.menuScan = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuPick = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuEnterEq = new System.Windows.Forms.ToolStripMenuItem();
             this.txtClientLog = new System.Windows.Forms.TextBox();
             this.grpPersonOp = new System.Windows.Forms.GroupBox();
             this.btnSelectAll = new System.Windows.Forms.Button();
@@ -69,16 +85,17 @@ namespace APSSimulator
             this.panelMesControl = new System.Windows.Forms.Panel();
             this.numMesPort = new System.Windows.Forms.NumericUpDown();
             this.lblMesPort = new System.Windows.Forms.Label();
+            this.lblMesStatus = new System.Windows.Forms.Label();
             this.btnStopMes = new System.Windows.Forms.Button();
             this.btnStartMes = new System.Windows.Forms.Button();
-            this.lblMesStatus = new System.Windows.Forms.Label();
-            this.ctxMenuRow = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.menuScan = new System.Windows.Forms.ToolStripMenuItem();
-            this.menuPick = new System.Windows.Forms.ToolStripMenuItem();
-            this.menuEnterEq = new System.Windows.Forms.ToolStripMenuItem();
+            this.tmrAutoSimulation = new System.Windows.Forms.Timer(this.components);
             this.tabControlMain.SuspendLayout();
+            this.tabPageDispatch.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvAutoSimOrders)).BeginInit();
+            this.pnlAutoSimTool.SuspendLayout();
             this.tabPagePerson.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvTestList)).BeginInit();
+            this.ctxMenuRow.SuspendLayout();
             this.grpPersonOp.SuspendLayout();
             this.grpClientConfig.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numClientPort)).BeginInit();
@@ -87,7 +104,6 @@ namespace APSSimulator
             this.tabPageMES.SuspendLayout();
             this.panelMesControl.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numMesPort)).BeginInit();
-            this.ctxMenuRow.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControlMain
@@ -105,13 +121,145 @@ namespace APSSimulator
             // 
             // tabPageDispatch
             // 
+            this.tabPageDispatch.Controls.Add(this.txtAutoSimLog);
+            this.tabPageDispatch.Controls.Add(this.dgvAutoSimOrders);
+            this.tabPageDispatch.Controls.Add(this.pnlAutoSimTool);
             this.tabPageDispatch.Location = new System.Drawing.Point(4, 22);
             this.tabPageDispatch.Name = "tabPageDispatch";
             this.tabPageDispatch.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageDispatch.Size = new System.Drawing.Size(1000, 703);
             this.tabPageDispatch.TabIndex = 0;
-            this.tabPageDispatch.Text = "派送流程監控";
+            this.tabPageDispatch.Text = "自動模擬 (Auto Sim)";
             this.tabPageDispatch.UseVisualStyleBackColor = true;
+            // 
+            // txtAutoSimLog
+            // 
+            this.txtAutoSimLog.BackColor = System.Drawing.Color.Black;
+            this.txtAutoSimLog.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtAutoSimLog.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtAutoSimLog.ForeColor = System.Drawing.Color.Lime;
+            this.txtAutoSimLog.Location = new System.Drawing.Point(3, 353);
+            this.txtAutoSimLog.Multiline = true;
+            this.txtAutoSimLog.Name = "txtAutoSimLog";
+            this.txtAutoSimLog.ReadOnly = true;
+            this.txtAutoSimLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtAutoSimLog.Size = new System.Drawing.Size(994, 347);
+            this.txtAutoSimLog.TabIndex = 2;
+            // 
+            // dgvAutoSimOrders
+            // 
+            this.dgvAutoSimOrders.AllowUserToAddRows = false;
+            this.dgvAutoSimOrders.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvAutoSimOrders.Dock = System.Windows.Forms.DockStyle.Top;
+            this.dgvAutoSimOrders.Location = new System.Drawing.Point(3, 53);
+            this.dgvAutoSimOrders.Name = "dgvAutoSimOrders";
+            this.dgvAutoSimOrders.RowTemplate.Height = 24;
+            this.dgvAutoSimOrders.Size = new System.Drawing.Size(994, 300);
+            this.dgvAutoSimOrders.TabIndex = 0;
+            // 
+            // pnlAutoSimTool
+            // 
+            this.pnlAutoSimTool.Controls.Add(this.btnAutoSimExportLog);
+            this.pnlAutoSimTool.Controls.Add(this.btnAutoSimResults);
+            this.pnlAutoSimTool.Controls.Add(this.lblAutoSimStatus);
+            this.pnlAutoSimTool.Controls.Add(this.btnAutoSimExportData);
+            this.pnlAutoSimTool.Controls.Add(this.btnAutoSimStop);
+            this.pnlAutoSimTool.Controls.Add(this.btnAutoSimPause);
+            this.pnlAutoSimTool.Controls.Add(this.btnAutoSimStart);
+            this.pnlAutoSimTool.Controls.Add(this.btnAutoSimImport);
+            this.pnlAutoSimTool.Controls.Add(this.btnAutoSimExport);
+            this.pnlAutoSimTool.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlAutoSimTool.Location = new System.Drawing.Point(3, 3);
+            this.pnlAutoSimTool.Name = "pnlAutoSimTool";
+            this.pnlAutoSimTool.Size = new System.Drawing.Size(994, 50);
+            this.pnlAutoSimTool.TabIndex = 1;
+            // 
+            // btnAutoSimExportLog
+            // 
+            this.btnAutoSimExportLog.Location = new System.Drawing.Point(812, 10);
+            this.btnAutoSimExportLog.Name = "btnAutoSimExportLog";
+            this.btnAutoSimExportLog.Size = new System.Drawing.Size(100, 30);
+            this.btnAutoSimExportLog.TabIndex = 8;
+            this.btnAutoSimExportLog.Text = "匯出日誌";
+            this.btnAutoSimExportLog.UseVisualStyleBackColor = true;
+            this.btnAutoSimExportLog.Click += new System.EventHandler(this.btnAutoSimExportLog_Click);
+            // 
+            // btnAutoSimResults
+            // 
+            this.btnAutoSimResults.Location = new System.Drawing.Point(707, 10);
+            this.btnAutoSimResults.Name = "btnAutoSimResults";
+            this.btnAutoSimResults.Size = new System.Drawing.Size(100, 30);
+            this.btnAutoSimResults.TabIndex = 7;
+            this.btnAutoSimResults.Text = "模擬結果";
+            this.btnAutoSimResults.UseVisualStyleBackColor = true;
+            this.btnAutoSimResults.Click += new System.EventHandler(this.btnAutoSimResults_Click);
+            // 
+            // lblAutoSimStatus
+            // 
+            this.lblAutoSimStatus.AutoSize = true;
+            this.lblAutoSimStatus.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
+            this.lblAutoSimStatus.Location = new System.Drawing.Point(920, 16);
+            this.lblAutoSimStatus.Name = "lblAutoSimStatus";
+            this.lblAutoSimStatus.Size = new System.Drawing.Size(67, 15);
+            this.lblAutoSimStatus.TabIndex = 0;
+            this.lblAutoSimStatus.Text = "狀態: 閒置";
+            // 
+            // btnAutoSimExportData
+            // 
+            this.btnAutoSimExportData.Location = new System.Drawing.Point(241, 10);
+            this.btnAutoSimExportData.Name = "btnAutoSimExportData";
+            this.btnAutoSimExportData.Size = new System.Drawing.Size(110, 30);
+            this.btnAutoSimExportData.TabIndex = 6;
+            this.btnAutoSimExportData.Text = "匯出資料";
+            this.btnAutoSimExportData.UseVisualStyleBackColor = true;
+            this.btnAutoSimExportData.Click += new System.EventHandler(this.btnAutoSimExportData_Click);
+            // 
+            // btnAutoSimStop
+            // 
+            this.btnAutoSimStop.Enabled = false;
+            this.btnAutoSimStop.Location = new System.Drawing.Point(592, 10);
+            this.btnAutoSimStop.Name = "btnAutoSimStop";
+            this.btnAutoSimStop.Size = new System.Drawing.Size(110, 30);
+            this.btnAutoSimStop.TabIndex = 4;
+            this.btnAutoSimStop.Text = "停止模擬";
+            this.btnAutoSimStop.Click += new System.EventHandler(this.btnAutoSimStop_Click);
+            // 
+            // btnAutoSimPause
+            // 
+            this.btnAutoSimPause.Enabled = false;
+            this.btnAutoSimPause.Location = new System.Drawing.Point(477, 10);
+            this.btnAutoSimPause.Name = "btnAutoSimPause";
+            this.btnAutoSimPause.Size = new System.Drawing.Size(110, 30);
+            this.btnAutoSimPause.TabIndex = 3;
+            this.btnAutoSimPause.Text = "暫停模擬";
+            this.btnAutoSimPause.Click += new System.EventHandler(this.btnAutoSimPause_Click);
+            // 
+            // btnAutoSimStart
+            // 
+            this.btnAutoSimStart.Location = new System.Drawing.Point(362, 10);
+            this.btnAutoSimStart.Name = "btnAutoSimStart";
+            this.btnAutoSimStart.Size = new System.Drawing.Size(110, 30);
+            this.btnAutoSimStart.TabIndex = 2;
+            this.btnAutoSimStart.Text = "啟動自動模擬";
+            this.btnAutoSimStart.Click += new System.EventHandler(this.btnAutoSimStart_Click);
+            // 
+            // btnAutoSimImport
+            // 
+            this.btnAutoSimImport.Location = new System.Drawing.Point(125, 10);
+            this.btnAutoSimImport.Name = "btnAutoSimImport";
+            this.btnAutoSimImport.Size = new System.Drawing.Size(110, 30);
+            this.btnAutoSimImport.TabIndex = 1;
+            this.btnAutoSimImport.Text = "匯入功能";
+            this.btnAutoSimImport.Click += new System.EventHandler(this.btnAutoSimImport_Click);
+            // 
+            // btnAutoSimExport
+            // 
+            this.btnAutoSimExport.Location = new System.Drawing.Point(10, 10);
+            this.btnAutoSimExport.Name = "btnAutoSimExport";
+            this.btnAutoSimExport.Size = new System.Drawing.Size(110, 30);
+            this.btnAutoSimExport.TabIndex = 0;
+            this.btnAutoSimExport.Text = "產生匯入格式";
+            this.btnAutoSimExport.Click += new System.EventHandler(this.btnAutoSimExport_Click);
             // 
             // tabPagePerson
             // 
@@ -177,20 +325,17 @@ namespace APSSimulator
             // 
             this.colCurrentStep.HeaderText = "當前站點";
             this.colCurrentStep.Name = "colCurrentStep";
-            this.colCurrentStep.Width = 100;
             // 
             // colNextStep
             // 
             this.colNextStep.HeaderText = "下一站";
             this.colNextStep.Name = "colNextStep";
-            this.colNextStep.Width = 100;
             // 
             // colTargetEqp
             // 
             this.colTargetEqp.HeaderText = "目標機台";
             this.colTargetEqp.Name = "colTargetEqp";
             this.colTargetEqp.ReadOnly = true;
-            this.colTargetEqp.Width = 100;
             // 
             // colStatus
             // 
@@ -203,6 +348,36 @@ namespace APSSimulator
             this.colAction.HeaderText = "指令紀錄";
             this.colAction.Name = "colAction";
             this.colAction.Width = 200;
+            // 
+            // ctxMenuRow
+            // 
+            this.ctxMenuRow.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.menuScan,
+            this.menuPick,
+            this.menuEnterEq});
+            this.ctxMenuRow.Name = "ctxMenuRow";
+            this.ctxMenuRow.Size = new System.Drawing.Size(179, 70);
+            // 
+            // menuScan
+            // 
+            this.menuScan.Name = "menuScan";
+            this.menuScan.Size = new System.Drawing.Size(178, 22);
+            this.menuScan.Text = "單獨入庫 (Scan)";
+            this.menuScan.Click += new System.EventHandler(this.menuScan_Click);
+            // 
+            // menuPick
+            // 
+            this.menuPick.Name = "menuPick";
+            this.menuPick.Size = new System.Drawing.Size(178, 22);
+            this.menuPick.Text = "單獨取走 (Pick)";
+            this.menuPick.Click += new System.EventHandler(this.menuPick_Click);
+            // 
+            // menuEnterEq
+            // 
+            this.menuEnterEq.Name = "menuEnterEq";
+            this.menuEnterEq.Size = new System.Drawing.Size(178, 22);
+            this.menuEnterEq.Text = "進入機台 (Track-In)";
+            this.menuEnterEq.Click += new System.EventHandler(this.menuEnterEq_Click);
             // 
             // txtClientLog
             // 
@@ -324,11 +499,19 @@ namespace APSSimulator
             // numClientPort
             // 
             this.numClientPort.Location = new System.Drawing.Point(180, 27);
-            this.numClientPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
+            this.numClientPort.Maximum = new decimal(new int[] {
+            65535,
+            0,
+            0,
+            0});
             this.numClientPort.Name = "numClientPort";
             this.numClientPort.Size = new System.Drawing.Size(60, 22);
             this.numClientPort.TabIndex = 3;
-            this.numClientPort.Value = new decimal(new int[] { 5000, 0, 0, 0 });
+            this.numClientPort.Value = new decimal(new int[] {
+            5000,
+            0,
+            0,
+            0});
             // 
             // lblClientPort
             // 
@@ -459,11 +642,19 @@ namespace APSSimulator
             // numMesPort
             // 
             this.numMesPort.Location = new System.Drawing.Point(330, 15);
-            this.numMesPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
+            this.numMesPort.Maximum = new decimal(new int[] {
+            65535,
+            0,
+            0,
+            0});
             this.numMesPort.Name = "numMesPort";
             this.numMesPort.Size = new System.Drawing.Size(60, 22);
             this.numMesPort.TabIndex = 4;
-            this.numMesPort.Value = new decimal(new int[] { 9000, 0, 0, 0 });
+            this.numMesPort.Value = new decimal(new int[] {
+            9000,
+            0,
+            0,
+            0});
             // 
             // lblMesPort
             // 
@@ -473,6 +664,15 @@ namespace APSSimulator
             this.lblMesPort.Size = new System.Drawing.Size(27, 12);
             this.lblMesPort.TabIndex = 3;
             this.lblMesPort.Text = "Port:";
+            // 
+            // lblMesStatus
+            // 
+            this.lblMesStatus.AutoSize = true;
+            this.lblMesStatus.Location = new System.Drawing.Point(230, 19);
+            this.lblMesStatus.Name = "lblMesStatus";
+            this.lblMesStatus.Size = new System.Drawing.Size(76, 12);
+            this.lblMesStatus.TabIndex = 2;
+            this.lblMesStatus.Text = "Status: Stopped";
             // 
             // btnStopMes
             // 
@@ -492,44 +692,10 @@ namespace APSSimulator
             this.btnStartMes.Text = "啟動 Server";
             this.btnStartMes.UseVisualStyleBackColor = true;
             // 
-            // lblMesStatus
+            // tmrAutoSimulation
             // 
-            this.lblMesStatus.AutoSize = true;
-            this.lblMesStatus.Location = new System.Drawing.Point(230, 19);
-            this.lblMesStatus.Name = "lblMesStatus";
-            this.lblMesStatus.Size = new System.Drawing.Size(35, 12);
-            this.lblMesStatus.TabIndex = 2;
-            this.lblMesStatus.Text = "Status: Stopped";
-            // 
-            // ctxMenuRow
-            // 
-            this.ctxMenuRow.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.menuScan,
-            this.menuPick,
-            this.menuEnterEq});
-            this.ctxMenuRow.Name = "ctxMenuRow";
-            this.ctxMenuRow.Size = new System.Drawing.Size(181, 70);
-            // 
-            // menuScan
-            // 
-            this.menuScan.Name = "menuScan";
-            this.menuScan.Size = new System.Drawing.Size(180, 22);
-            this.menuScan.Text = "單獨入庫 (Scan)";
-            this.menuScan.Click += new System.EventHandler(this.menuScan_Click);
-            // 
-            // menuPick
-            // 
-            this.menuPick.Name = "menuPick";
-            this.menuPick.Size = new System.Drawing.Size(180, 22);
-            this.menuPick.Text = "單獨取走 (Pick)";
-            this.menuPick.Click += new System.EventHandler(this.menuPick_Click);
-            // 
-            // menuEnterEq
-            // 
-            this.menuEnterEq.Name = "menuEnterEq";
-            this.menuEnterEq.Size = new System.Drawing.Size(180, 22);
-            this.menuEnterEq.Text = "進入機台 (Track-In)";
-            this.menuEnterEq.Click += new System.EventHandler(this.menuEnterEq_Click);
+            this.tmrAutoSimulation.Interval = 5000;
+            this.tmrAutoSimulation.Tick += new System.EventHandler(this.tmrAutoSimulation_Tick);
             // 
             // FormMain
             // 
@@ -539,10 +705,17 @@ namespace APSSimulator
             this.Controls.Add(this.tabControlMain);
             this.Name = "FormMain";
             this.Text = "APS Simulator (Mock Environment)";
+            this.Load += new System.EventHandler(this.FormMain_Load);
             this.tabControlMain.ResumeLayout(false);
+            this.tabPageDispatch.ResumeLayout(false);
+            this.tabPageDispatch.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvAutoSimOrders)).EndInit();
+            this.pnlAutoSimTool.ResumeLayout(false);
+            this.pnlAutoSimTool.PerformLayout();
             this.tabPagePerson.ResumeLayout(false);
             this.tabPagePerson.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvTestList)).EndInit();
+            this.ctxMenuRow.ResumeLayout(false);
             this.grpPersonOp.ResumeLayout(false);
             this.grpClientConfig.ResumeLayout(false);
             this.grpClientConfig.PerformLayout();
@@ -555,7 +728,6 @@ namespace APSSimulator
             this.panelMesControl.ResumeLayout(false);
             this.panelMesControl.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numMesPort)).EndInit();
-            this.ctxMenuRow.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -564,6 +736,19 @@ namespace APSSimulator
 
         private System.Windows.Forms.TabControl tabControlMain;
         private System.Windows.Forms.TabPage tabPageDispatch;
+        private System.Windows.Forms.DataGridView dgvAutoSimOrders;
+        private System.Windows.Forms.TextBox txtAutoSimLog;
+        private System.Windows.Forms.Panel pnlAutoSimTool;
+        private System.Windows.Forms.Button btnAutoSimExport;
+        private System.Windows.Forms.Button btnAutoSimImport;
+        private System.Windows.Forms.Button btnAutoSimStart;
+        private System.Windows.Forms.Button btnAutoSimPause;
+        private System.Windows.Forms.Button btnAutoSimStop;
+        private System.Windows.Forms.Button btnAutoSimExportData;
+        private System.Windows.Forms.Button btnAutoSimResults;
+        private System.Windows.Forms.Button btnAutoSimExportLog;
+        private System.Windows.Forms.Label lblAutoSimStatus;
+        private System.Windows.Forms.Timer tmrAutoSimulation;
         private System.Windows.Forms.TabPage tabPagePerson;
         private System.Windows.Forms.TabPage tabPageMachine;
         private System.Windows.Forms.TabPage tabPageMES;

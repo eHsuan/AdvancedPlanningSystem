@@ -1,0 +1,165 @@
+基礎設定：
+Base URL: http://localhost:9000/api (模擬器 Self-Host 地址)，可設定
+格式: JSON
+
+1. API a. 工單資訊查詢 (Order Info)
+用於取得工單的詳細屬性，包含流向與優先級。
+Endpoint: /order/batch
+Method: POST
+Content-Type: application/json
+Request Body (輸入):
+一個字串陣列，包含要查詢的所有工單號 (WorkNo List)。
+JSON
+[
+  "2P222026001",
+  "2P222026002",
+  "2P222026003"
+]
+
+Response (200 OK):
+回傳一個工單物件的陣列 (List<OrderInfo>)。
+JSON
+[
+	{
+	  "WorkNo": "2P222026001",
+	  "carrier_id": "CASS-999",
+	  "step_id": "STEP_A",            // 當前站點
+	  "next_step_id": "STEP_B",       // 下一站點 (用於分組)
+	  "prev_out_time": "2026-02-02T10:00:00", // 上一站出站時間 (算QTime用)
+	  "priority_type": 2,             // 0:一般, 1:工程, 2:急件
+	  "due_date": "2026-02-05T12:00:00"
+	},
+	{
+	  "WorkNo": "2P222026002",
+	  "carrier_id": "CASS-999",
+	  "step_id": "STEP_A",            // 當前站點
+	  "next_step_id": "STEP_B",       // 下一站點 (用於分組)
+	  "prev_out_time": "2026-02-02T10:00:00", // 上一站出站時間 (算QTime用)
+	  "priority_type": 2,             // 0:一般, 1:工程, 2:急件
+	  "due_date": "2026-02-05T12:00:00"
+	},
+	{
+	  "WorkNo": "2P222026003",
+	  "carrier_id": "CASS-999",
+	  "step_id": "STEP_A",            // 當前站點
+	  "next_step_id": "STEP_B",       // 下一站點 (用於分組)
+	  "prev_out_time": "2026-02-02T10:00:00", // 上一站出站時間 (算QTime用)
+	  "priority_type": 2,             // 0:一般, 1:工程, 2:急件
+	  "due_date": "2026-02-05T12:00:00"
+	},
+]
+
+2. API b. 標準工時查詢 (Standard Time)
+用於取得所有站點預計的製程時間並儲存起來，以便計算時用來扣除安全時間。
+Endpoint: /steptime/all
+Method: GET
+Response (200 OK):
+code
+JSON
+[
+	{
+	  "step_id": "STEP_B",
+	  "std_time_sec": 3600  // 標準工時 (秒)
+	},
+	{
+	  "step_id": "STEP_A",
+	  "std_time_sec": 3600  // 標準工時 (秒)
+	},
+	{
+	  "step_id": "STEP_C",
+	  "std_time_sec": 3600  // 標準工時 (秒)
+	}
+]
+
+3. API c. QTime 設定查詢 (QTime Limit)
+取得所有站點間的 QTime 限制設定。
+儲存在記憶體中以便計算QTime安全時間時使用
+Endpoint: /qtime/all
+Method: GET
+Response (200 OK):
+code
+JSON
+[
+  {
+    "step_id": "STEP_A",       // 起始站點 (Current Step)
+    "next_step_id": "STEP_B",  // 下一站點 (Next Step)
+    "qtime_limit_min": 120     // QTime 上限 (分鐘)
+  },
+  {
+    "step_id": "STEP_B",
+    "next_step_id": "STEP_C",
+    "qtime_limit_min": 60
+  },
+  ...
+]
+
+4. API d. WIP 監控 (WIP Status)
+用於查詢某個機台目前的堆貨量（包含機台內與等待中）。
+Endpoint: /wip/batch
+Method: POST
+Content-Type: application/json
+Request Body (輸入):
+一個字串陣列，包含要查詢的所有機台編號 (EQ_ID List)。
+JSON
+[
+  "EX0044",
+  "TP1873",
+  "AL0032"
+]
+Response (200 OK):
+回傳一個wip物件的陣列 (List<WipInfo>)。
+JSON
+[
+	{
+	  "eq_id": "EX0044",
+	  "current_wip_qty": 15,
+	  "max_wip_qty": 50
+	},
+	{
+	  "eq_id": "TP1873",
+	  "current_wip_qty": 15,
+	  "max_wip_qty": 50
+	},
+	{
+	  "eq_id": "AL0032",
+	  "current_wip_qty": 15,
+	  "max_wip_qty": 50
+	}
+]
+
+5. API e. 機台狀態查詢 (Equipment Status)
+用於確認機台是否能生產。
+Endpoint: /equipment/batch
+Method: POST
+Content-Type: application/json
+Request Body (輸入):
+一個字串陣列，包含要查詢的所有機台編號 (EQ_ID List)。
+JSON
+[
+  "EX0044",
+  "TP1873",
+  "AL0032"
+]
+Response (200 OK):
+回傳一個EQStatus物件的陣列 (List<EQStatus>)。
+JSON
+[
+	{
+	  "eqp_id": "EX0044",
+	  "status": "RUN",       // RUN, DOWN, IDLE, PM
+	  "duration": "60"	//持續時間
+	  "current_WorkNo": "LOT-Runing01"
+	},
+	{
+	  "eqp_id": "TP1873",
+	  "status": "RUN",       // RUN, DOWN, IDLE, PM
+	  "duration": "60"	//持續時間
+	  "current_WorkNo": "LOT-Runing01"
+	},
+	{
+	  "eqp_id": "AL0032",
+	  "status": "RUN",       // RUN, DOWN, IDLE, PM
+	  "duration": "60"	//持續時間
+	  "current_WorkNo": "LOT-Runing01"
+	},
+]

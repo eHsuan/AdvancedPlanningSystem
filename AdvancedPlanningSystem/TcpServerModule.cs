@@ -31,6 +31,16 @@ namespace AdvancedPlanningSystem
         }
     }
 
+    public class EnterEqpEventArgs : EventArgs
+    {
+        public string EqpID { get; private set; }
+
+        public EnterEqpEventArgs(string eqpID)
+        {
+            EqpID = eqpID;
+        }
+    }
+
     /// <summary>
     /// 負責與硬體模擬器通訊的 TCP Server 模組。
     /// 支援單一客戶端連線，自動處理斷線重連與訊息解析。
@@ -47,6 +57,8 @@ namespace AdvancedPlanningSystem
         // 事件定義
         public event EventHandler<ScanEventArgs> OnScan;
         public event EventHandler<PickEventArgs> OnPick;
+        public event EventHandler<EnterEqpEventArgs> OnEnterEqp; // 新增：進入機台事件
+        public event EventHandler OnQueryEmptyPorts; // 新增：查詢空 Port 事件
         public event EventHandler OnConnected;
         public event EventHandler OnDisconnected;
 
@@ -228,13 +240,21 @@ namespace AdvancedPlanningSystem
 
             switch (cmd)
             {
+                case "IN":
                 case "SCAN":
-                    // SCAN,PortID,Barcode
+                    // 支援兩種格式：
+                    // 1. IN,PortID,Barcode (手動指定)
+                    // 2. IN,Barcode (自動分配)
                     if (parts.Length >= 3)
                     {
                         string portId = parts[1];
                         string barcode = parts[2];
                         RaiseEvent(OnScan, new ScanEventArgs(portId, barcode));
+                    }
+                    else if (parts.Length == 2)
+                    {
+                        string barcode = parts[1];
+                        RaiseEvent(OnScan, new ScanEventArgs(null, barcode)); // PortID 傳 null 表示自動分配
                     }
                     break;
 
@@ -247,9 +267,23 @@ namespace AdvancedPlanningSystem
                     }
                     break;
 
+                case "ENTER":
+                    // ENTER,EqpID
+                    if (parts.Length >= 2)
+                    {
+                        string eqpId = parts[1];
+                        RaiseEvent(OnEnterEqp, new EnterEqpEventArgs(eqpId));
+                    }
+                    break;
+
                 case "HEART":
                     // 心跳包
                     LastHeartbeat = DateTime.Now;
+                    break;
+
+                case "GET_EMPTY_PORTS":
+                    // 查詢空 Port
+                    RaiseEvent(OnQueryEmptyPorts, EventArgs.Empty);
                     break;
 
                 default:

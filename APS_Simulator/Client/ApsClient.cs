@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -18,6 +20,7 @@ namespace APSSimulator.Client
         public event Action<bool> OnConnectionChanged;
         public event Action<string> OnLog;
         public event Action<string> OnMessageReceived;
+        public event Action<string, string> OnPortAssigned; // 新增：接收到分配儲位的事件 (PortId, CstId)
 
         public bool IsConnected => _client != null && _client.Connected;
 
@@ -105,8 +108,19 @@ namespace APSSimulator.Client
                             string msg = msgs[i].Trim();
                             if (!string.IsNullOrEmpty(msg))
                             {
-                                Log($"Received: {msg}");
-                                OnMessageReceived?.Invoke(msg);
+                                if (msg.StartsWith("ASSIGNED_PORT,"))
+                                {
+                                    var parts = msg.Split(',');
+                                    if (parts.Length >= 3)
+                                    {
+                                        OnPortAssigned?.Invoke(parts[1], parts[2]);
+                                    }
+                                }
+                                else
+                                {
+                                    Log($"Received: {msg}");
+                                    OnMessageReceived?.Invoke(msg);
+                                }
                             }
                         }
 

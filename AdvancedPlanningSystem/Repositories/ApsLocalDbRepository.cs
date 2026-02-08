@@ -243,6 +243,15 @@ namespace AdvancedPlanningSystem.Repositories
                         {
                             try
                             {
+                                // 1. 清除此 Port 舊有的所有 Binding 關係，避免一個 Port 對應多個卡匣
+                                string sqlClear = "DELETE FROM local_state_binding WHERE port_id = @p";
+                                using (var cmd = new SQLiteCommand(sqlClear, conn))
+                                {
+                                    cmd.Parameters.AddWithValue("@p", portId);
+                                    cmd.ExecuteNonQuery();
+                                }
+
+                                // 2. 更新 Port 狀態
                                 string sqlPort = "INSERT OR REPLACE INTO local_state_port (port_id, status, last_update) VALUES (@p, 'OCCUPIED', @t)";
                                 using (var cmd = new SQLiteCommand(sqlPort, conn))
                                 {
@@ -251,6 +260,7 @@ namespace AdvancedPlanningSystem.Repositories
                                     cmd.ExecuteNonQuery();
                                 }
 
+                                // 3. 插入新的 Binding
                                 string sqlBind = "INSERT OR REPLACE INTO local_state_binding (carrier_id, port_id, lot_id, bind_time) VALUES (@cid, @pid, @lid, @btime)";
                                 using (var cmd = new SQLiteCommand(sqlBind, conn))
                                 {

@@ -2,6 +2,12 @@ namespace AdvancedPlanningSystem
 {
     public static class AppConfig
     {
+        // 核心計時器設定
+        /// <summary>
+        /// 自動同步與派貨決策計時器間隔 (秒)
+        /// </summary>
+        public static int SyncIntervalSec = 15;
+
         // 貨架設定
         /// <summary>
         /// Port 總數量
@@ -27,7 +33,7 @@ namespace AdvancedPlanningSystem
         public static int MesMockPort = 9000; // 模擬 MES Port
         public static string RealMesUrl = "http://192.168.1.100:80/api"; // 真實 MES URL (備用)
 
-        public static bool ManualMode = true; // 是否啟用手動決策模式
+        public static bool ManualMode = false; // 是否啟用手動決策模式
 
         public static double DueBaseHours = 240.0; // 交期評分基準 (小時)
 

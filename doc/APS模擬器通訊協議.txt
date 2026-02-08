@@ -1,0 +1,20 @@
+APS 與 Simulator 通訊協議規格書 (Ver 2.0 - Final)
+1. 連線基礎 (Connection)
+•	APS 角色：TCP Server (Listener)。
+o	監聽 IP/Port：0.0.0.0 : 5000
+•	Simulator 角色：TCP Client。
+o	啟動時主動連線至 APS IP。
+o	具備斷線自動重連機制 (Auto-reconnect)。
+•	格式：ASCII 純文字，結尾符號為分號 ;。
+2. 指令集：Simulator (Client) -> APS (Server)
+(這是模擬器發生的事件，回報給 APS)
+指令 (CMD)	參數	範例	用途
+SCAN	PortID,Barcode	SCAN,P01,CASS-999;	入料事件。模擬人員放入卡匣。APS 收到後執行綁定與算分。
+PICK	PortID	PICK,P01;	取貨事件。模擬人員取走卡匣。APS 收到後執行過帳 (History) 與清除狀態。
+HEART	(無)	HEART;	心跳。模擬器每 5 秒發送，證明模擬器還活著。
+3. 指令集：APS (Server) -> Simulator (Client)
+(這是 APS 的決策，命令硬體動作)
+指令 (CMD)	參數	範例	用途
+OPEN	PortID	OPEN,P05;	開門指令。APS 決定派貨，要求 P05 亮綠燈/開門。
+MSG	Message	MSG,System Ready;	跑馬燈訊息。可選，讓模擬器顯示 APS 的系統狀態文字。
+

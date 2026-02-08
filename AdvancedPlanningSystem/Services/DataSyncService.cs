@@ -49,10 +49,12 @@ namespace AdvancedPlanningSystem.Services
             _uiContext = SynchronizationContext.Current;
         }
 
-        public void Start(int intervalMs = 60000)
+        public void Start(int intervalMs = -1)
         {
             // Execute system recovery logic
             RestoreSystemState();
+
+            if (intervalMs == -1) intervalMs = AppConfig.SyncIntervalSec * 1000;
 
             if (AppConfig.ManualMode)
             {
@@ -72,6 +74,54 @@ namespace AdvancedPlanningSystem.Services
             if (!AppConfig.ManualMode) return;
             LogAndUI(">>> Manual sync and decision triggered...");
             await SyncRoutine();
+        }
+
+        /// <summary>
+        /// 檢查並移除已抵達目標的運輸中卡匣。
+        /// 可由計時器自動觸發，也可由 TCP 指令 (ENTER) 即時觸發。
+        /// </summary>
+        public async Task CheckAndRemoveArrivedTransitsAsync(List<StateTransit> transits = null, Dictionary<string, OrderInfoResponse> orderDict = null)
+        {
+            try
+            {
+                if (transits == null) transits = _repo.GetAllTransits();
+                if (transits.Count == 0) return;
+
+                if (orderDict == null)
+                {
+                    var transitWorkNos = transits.Where(t => !string.IsNullOrEmpty(t.LotId)).Select(t => t.LotId).ToList();
+                    var orderInfos = await _mesService.GetOrderInfoBatchAsync(transitWorkNos);
+                    orderDict = orderInfos.ToDictionary(o => o.WorkNo, o => o);
+                }
+
+                foreach (var transit in transits)
+                {
+                    if (!orderDict.ContainsKey(transit.LotId)) continue;
+                    var orderInfo = orderDict[transit.LotId];
+
+                    // 判斷是否抵達：MES 目前站點已變更為目標站點
+                    if (orderInfo.step_id == transit.NextStepId)
+                    {
+                        LogAndUI($"[Transit] {transit.CarrierId} arrived at {orderInfo.step_id}.");
+                        _cloudRepo.InsertGenericLog(transit.CarrierId, transit.LotId, $"Arrival Completed: {orderInfo.step_id}");
+                        _repo.RemoveTransit(transit.CarrierId);
+                        continue;
+                    }
+
+                    // 逾期檢查 (僅在背景同步時執行，或是即時檢查也無妨)
+                    var expTime = ParseDbTime(transit.ExpectedArrivalTime);
+                    if (expTime.HasValue && DateTime.Now > expTime.Value)
+                    {
+                        LogAndUI($"[Transit] {transit.CarrierId} overdue! Logging to CloudDB.");
+                        _cloudRepo.InsertGenericLog(transit.CarrierId, transit.LotId, $"Transport Overdue: Exp={transit.ExpectedArrivalTime}");
+                        _repo.RemoveTransit(transit.CarrierId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.Logger.Error("CheckAndRemoveArrivedTransitsAsync Error", ex);
+            }
         }
 
         public void Stop()
@@ -237,31 +287,7 @@ namespace AdvancedPlanningSystem.Services
                     ProcessBindingSyncAndScore(port, orderInfo);
                 }
 
-                foreach (var transit in transits)
-                {
-                    if (!orderDict.ContainsKey(transit.LotId)) continue;
-                    var orderInfo = orderDict[transit.LotId];
-
-                    if (orderInfo.step_id == transit.NextStepId)
-                    {
-                        LogAndUI($"[Transit] {transit.CarrierId} arrived at {orderInfo.step_id}.");
-                        _cloudRepo.InsertGenericLog(transit.CarrierId, transit.LotId, $"Arrival Completed: {orderInfo.step_id}");
-                        _repo.RemoveTransit(transit.CarrierId);
-                        continue;
-                    }
-
-                    var expTime = ParseDbTime(transit.ExpectedArrivalTime);
-                    if (expTime.HasValue)
-                    {
-                        if (DateTime.Now > expTime.Value)
-                        {
-                            LogAndUI($"[Transit] {transit.CarrierId} overdue! Logging to CloudDB.");
-                            _cloudRepo.InsertGenericLog(transit.CarrierId, transit.LotId, $"Transport Overdue: Exp={transit.ExpectedArrivalTime}");
-                            _repo.RemoveTransit(transit.CarrierId);
-                            continue;
-                        }
-                    }
-                }
+                await CheckAndRemoveArrivedTransitsAsync(transits, orderDict);
 
                 LogAndUI(">>> Dispatching Decision Loop Started...");
                 await _dispatchService.ExecuteDispatchAsync();

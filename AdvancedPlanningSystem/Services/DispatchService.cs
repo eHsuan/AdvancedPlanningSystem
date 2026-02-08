@@ -104,6 +104,23 @@ namespace AdvancedPlanningSystem.Services
                     var availableEqps = _stepEqpMapping.Where(m => m.StepId == nextStep).Select(m => m.EqpId).ToList();
                     LogHelper.Dispatch.Debug($"    - Defined Route Eqps: {string.Join(", ", availableEqps)}");
 
+                    // --- [關鍵修正：站點未定義處理] ---
+                    if (availableEqps.Count == 0)
+                    {
+                        if (AppConfig.MesMockEnabled)
+                        {
+                            // 模擬模式：直接 Pass99 過站
+                            await ProcessPass99DispatchAsync(cassetteList);
+                            continue;
+                        }
+                        else
+                        {
+                            // 正式模式：報警並 Hold
+                            ProcessNoRouteHold(cassetteList, nextStep);
+                            continue;
+                        }
+                    }
+
                     // --- [Wait Analysis] ---
                     int totalEqp = availableEqps.Count;
                     int downCount = 0;
@@ -167,6 +184,41 @@ namespace AdvancedPlanningSystem.Services
             catch (Exception ex)
             {
                 LogHelper.Dispatch.Error("ExecuteDispatchAsync Error", ex);
+            }
+        }
+
+        private async Task ProcessPass99DispatchAsync(List<StateBinding> list)
+        {
+            foreach (var cassette in list.Where(c => string.IsNullOrEmpty(c.DispatchTime)))
+            {
+                if (!string.IsNullOrEmpty(cassette.PortId))
+                {
+                    string cmd = $"OPEN,{cassette.PortId},Pass99";
+                    await _tcpServer.SendCommand(cmd);
+
+                    cassette.DispatchTime = DateTime.Now.ToString("yyyyMMddHHmmss");
+                    cassette.TargetEqpId = "Pass99";
+                    _repo.InsertBinding(cassette);
+
+                    LogHelper.Dispatch.Info($"[Dispatch Pass99] {cassette.CarrierId} automatically skipped step due to missing EQ mapping.");
+                }
+            }
+        }
+
+        private void ProcessNoRouteHold(List<StateBinding> list, string stepId)
+        {
+            foreach (var cassette in list.Where(c => string.IsNullOrEmpty(c.DispatchTime)))
+            {
+                if (cassette.IsHold == 0)
+                {
+                    cassette.IsHold = 1;
+                    cassette.WaitReason = "Next Step的EQ未設定";
+                    _repo.InsertBinding(cassette);
+
+                    // 彈出報警
+                    NotificationForm.ShowAsync("派貨異常", $"卡匣 {cassette.CarrierId} 下一站 {stepId} 未設定任何機台，已自動掛單 (HOLD)", NotificationLevel.Critical, 10);
+                    LogHelper.Dispatch.Warn($"[Dispatch ALARM] {cassette.CarrierId} HOLD due to missing EQ mapping for {stepId}");
+                }
             }
         }
 

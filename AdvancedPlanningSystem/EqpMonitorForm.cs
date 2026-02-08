@@ -53,7 +53,7 @@ namespace AdvancedPlanningSystem
             pnlTop.Controls.Add(this.lblLastUpdate);
 
             // lblSearch
-            lblSearch.Text = "Search Machine ID:";
+            lblSearch.Text = "Search Machine/Step:";
             lblSearch.Location = new Point(12, 17);
             lblSearch.AutoSize = true;
 
@@ -154,7 +154,9 @@ namespace AdvancedPlanningSystem
             {
                 if (c is MachineControl mc)
                 {
-                    bool match = string.IsNullOrEmpty(keyword) || mc.EqpId.ToUpper().Contains(keyword);
+                    bool match = string.IsNullOrEmpty(keyword) || 
+                                 mc.EqpId.ToUpper().Contains(keyword) || 
+                                 (mc.StepId != null && mc.StepId.ToUpper().Contains(keyword));
                     mc.Visible = match;
                 }
             }

@@ -7,7 +7,9 @@ namespace AdvancedPlanningSystem
     public partial class MachineControl : UserControl
     {
         private string _eqpId;
+        private string _stepId;
         public string EqpId => _eqpId;
+        public string StepId => _stepId;
 
         // UI Controls (Display Only)
         private GroupBox grpMachine;
@@ -73,6 +75,7 @@ namespace AdvancedPlanningSystem
         public void BindData(string id, string step, string status, int curWip, int maxWip)
         {
             _eqpId = id;
+            _stepId = step;
             grpMachine.Text = id;
             lblStep.Text = $"Step: {step}";
             lblStatus.Text = $"Status: {status}";

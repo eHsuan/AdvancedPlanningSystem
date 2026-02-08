@@ -11,9 +11,34 @@ namespace APSSimulator
         // 方便取得連線字串
         public static string ExternalDbConnectionString => $"Data Source={ExternalDbPath};Version=3;";
 
-        // 其他模擬器設定 (可依需求擴充)
-        public static int MesServerPort = 9000;
-        public static int ApsClientPort = 5000;
-        public static string ApsServerIp = "127.0.0.1";
-    }
-}
+                public static int MesServerPort = 9000;
+
+                public static int ApsClientPort = 5000;
+
+                public static string ApsServerIp = "127.0.0.1";
+
+        
+
+                        // 自動模擬設定
+
+        
+
+                        public static int SimProcessMinSec = 15;
+
+        
+
+                        public static int SimProcessMaxSec = 30;
+
+        
+
+                    }
+
+        
+
+                }
+
+        
+
+                
+
+        

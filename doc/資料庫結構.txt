@@ -1,0 +1,125 @@
+[APSLocalDB.db]
+CREATE TABLE local_config_eqp (
+    eqp_id TEXT PRIMARY KEY,       -- 機台設備ID
+    max_wip_qty INTEGER DEFAULT 10,-- WIP最大容量限制 (防塞車)
+    batch_size INTEGER DEFAULT 1,  -- 標準批次生產數量 (湊批)
+    force_idle_sec INTEGER DEFAULT 600, -- 機台空轉容忍上限 (秒)
+    max_wait_sec INTEGER DEFAULT 1800,  -- 卡匣等待容忍上限 (秒)
+    is_active INTEGER DEFAULT 1    -- 啟用狀態 (0停用 / 1啟用)
+)
+CREATE TABLE "local_config_qtime" (
+	"from_step_id"	TEXT NOT NULL,
+	"to_step_id"	TEXT NOT NULL,
+	"transport_buffer_min"	INTEGER DEFAULT 10,
+	"updated_at"	TEXT,
+	"qtime_limit_min"	INTEGER NOT NULL,
+	PRIMARY KEY("from_step_id","to_step_id")
+)
+CREATE TABLE local_config_step_eqp (
+    step_id TEXT NOT NULL,         -- MES定義的站點ID
+    eqp_id TEXT NOT NULL,          -- 對應的機台ID
+    priority INTEGER DEFAULT 1,    -- 優先序 (1主力/2備援)
+    PRIMARY KEY (step_id, eqp_id)  -- 複合主鍵
+)
+CREATE TABLE local_state_binding (
+    carrier_id TEXT PRIMARY KEY,     -- 卡匣條碼 Barcode
+    port_id TEXT,                    -- 目前所在的 Port 編號
+    lot_id TEXT,                     -- 工單號 (查 ExternalDB 取得)
+    
+    -- 站點與機台流向
+    current_step_id TEXT,            -- 當前站點ID
+    next_step_id TEXT,               -- 下一站點ID (MES來源)
+    target_eqp_id TEXT,              -- 目標機台ID (ADS計算指派)
+    
+    -- 演算法參數
+    qtime_deadline TEXT,             -- QTime 計算出的死線
+    dispatch_score REAL DEFAULT 0,   -- 演算法計算的優先序分數 (使用 REAL 支援小數)
+    priority_type INTEGER DEFAULT 0, -- 優先級 (0:一般 / 1:工程 / 2:急件)
+    is_hold INTEGER DEFAULT 0,       -- 例外鎖定 Flag (0:正常 / 1:鎖定)
+    
+    -- 時間戳記
+    bind_time TEXT,                  -- 人員放入時間
+    dispatch_time TEXT,              -- 系統開門時間 (NULL 代表未派)
+    
+    -- 外鍵關聯 (當 Port 刪除時，這裡的 port_id 設為 NULL 或串聯刪除，視需求而定)
+    FOREIGN KEY (port_id) REFERENCES local_state_port(port_id)
+)
+CREATE TABLE local_state_port (
+    port_id TEXT PRIMARY KEY,        -- 貨架Port編號 (如 P01)
+    status TEXT DEFAULT 'EMPTY',     -- 儲位狀態 (EMPTY / OCCUPIED)
+    door_state TEXT DEFAULT 'CLOSED',-- 門狀態 (OPEN / CLOSED)
+    last_update TEXT                 -- 硬體訊號最後更新時間
+)
+CREATE TABLE local_state_transit (
+    carrier_id TEXT PRIMARY KEY,      -- 卡匣 Barcode
+    lot_id TEXT,                      -- 工單號
+    target_eqp_id TEXT NOT NULL,      -- 目標機台 (關鍵: 用來計算 WIP 佔用)
+    next_step_id TEXT,                -- 目標站點 (用來跟 MES 比對是否到站)
+    
+    dispatch_time TEXT,               -- 系統開門時間
+    pickup_time TEXT,                 -- 人員取走時間 (即寫入此表的時間)
+    
+    expected_arrival_time TEXT,       -- 預計到達時間 (Pickup + 搬運緩衝)
+    is_overdue INTEGER DEFAULT 0      -- 是否超時未達 (0:否 / 1:是)
+)
+[APSLocalDB.db]
+CREATE TABLE cloud_history_log_cache (
+    log_id INTEGER PRIMARY KEY AUTOINCREMENT, -- SQLite 的自動流水號寫法
+    carrier_id TEXT,
+    lot_id TEXT,
+    port_id TEXT,
+    step_id TEXT,
+    next_step_id TEXT,
+    target_eqp_id TEXT,
+    
+    final_score REAL,                -- 派貨當下的最終分數
+    priority_type INTEGER,           -- 優先級
+    
+    bind_time TEXT,                  -- 人員放入時間
+    dispatch_time TEXT,              -- 系統開門時間
+    pickup_time TEXT,                -- 人員取走時間
+    
+    archived_at TEXT DEFAULT CURRENT_TIMESTAMP, -- 資料寫入時間
+    note TEXT                        -- 備註說明
+)
+CREATE TABLE sqlite_sequence(name,seq)
+
+[ExternalDB.db]
+CREATE TABLE "CstID2WorkNo" (
+	"CstID"	TEXT NOT NULL,
+	"WorkNo"	TEXT NOT NULL,
+	PRIMARY KEY("CstID")
+)
+
+[APSSimulatorDB.db]
+CREATE TABLE mock_mes_equipments (
+    eqp_id TEXT PRIMARY KEY,         -- 機台ID
+    
+    -- 用於 API e (機台狀態)
+    status TEXT DEFAULT 'RUN',       -- RUN, DOWN, IDLE, PM
+    status_duration TEXT DEFAULT '60', -- 持續時間 (字串或數字皆可，配合API定義用字串)
+    current_work_no TEXT,            -- 當前正在做的工單
+    
+    -- 用於 API d (WIP 監控)
+    current_wip_qty INTEGER DEFAULT 0, -- 目前 WIP
+    max_wip_qty INTEGER DEFAULT 50     -- 最大容量
+)
+CREATE TABLE mock_mes_orders (
+    work_no TEXT PRIMARY KEY,        -- 工單號 (API: WorkNo)
+    carrier_id TEXT,                 -- 卡匣ID
+    step_id TEXT,                    -- 當前站點
+    next_step_id TEXT,               -- 下一站點
+    prev_out_time TEXT,              -- 上站出站時間 (ISO8601)
+    priority_type INTEGER DEFAULT 0, -- 0:一般, 1:工程, 2:急件
+    due_date TEXT                    -- 交期 (ISO8601)
+)
+CREATE TABLE mock_mes_qtime_rule (
+    step_id TEXT NOT NULL,           -- 起始站點
+    next_step_id TEXT NOT NULL,      -- 下一站點
+    qtime_limit_min INTEGER,         -- QTime 上限 (分)
+    PRIMARY KEY (step_id, next_step_id)
+)
+CREATE TABLE mock_mes_step_time (
+    step_id TEXT PRIMARY KEY,        -- 站點ID
+    std_time_sec INTEGER DEFAULT 3600 -- 標準工時 (秒)
+)

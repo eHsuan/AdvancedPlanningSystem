@@ -275,7 +275,6 @@ namespace APSSimulator.DB
             // 03SEC (完整保留)
             sb.Append("('03SEC', 2, 'UPPA008', 'L/F貼耐熱膠帶'),");
             sb.Append("('03SEC', 501, 'UPDB002', 'D/B-IC D/B'),");
-            sb.Append("('03SEC', 600, 'UPMS001', 'D/B-量測'),");
             sb.Append("('03SEC', 603, 'UPBO003', 'B-ABF 粗化'),");
             sb.Append("('03SEC', 700, 'UPOV076', 'ABF 粗化烘烤'),");
             sb.Append("('03SEC', 800, 'UPLM010', 'ABF 絕緣膠材對壓'),");
@@ -297,7 +296,6 @@ namespace APSSimulator.DB
             sb.Append("('03SEC', 2601, 'UPDF001', 'RDL0-去膜'),");
             sb.Append("('03SEC', 2701, 'UPET018', 'A-RDL0-Cu蝕刻'),");
             sb.Append("('03SEC', 2801, 'UPET007', 'AB-RDL0-NiCr蝕刻'),");
-            sb.Append("('03SEC', 2901, 'UPMS027', 'A-RDL0-尺寸量測'),");
             sb.Append("('03SEC', 2925, 'UPSC049', 'A-RDL0-AOI外觀檢查'),");
             sb.Append("('03SEC', 2950, 'UPSC031', 'RDL-0-外觀檢查'),");
             sb.Append("('03SEC', 3001, 'UPCL012', 'A-ABF-film 酸處理'),");
@@ -312,7 +310,6 @@ namespace APSSimulator.DB
             sb.Append("('03SEC', 3801, 'UPET016', 'Desmear-Cu蝕刻'),");
             sb.Append("('03SEC', 3850, 'UPSC035', 'A-Desmear-AOI外觀檢查'),");
             sb.Append("('03SEC', 3855, 'UPSC038', 'B-Desmear-2-AOI外觀檢查'),");
-            sb.Append("('03SEC', 3901, 'UPMS017', 'Desmear-厚度孔徑量測'),");
             sb.Append("('03SEC', 4000, 'UPSC001', 'Desmear-外觀檢查'),");
             sb.Append("('03SEC', 4100, 'UPQC001', 'QC-1'),");
             sb.Append("('03SEC', 4200, 'UPCL003', 'RDL-1-酸處理'),");
@@ -331,9 +328,6 @@ namespace APSSimulator.DB
             sb.Append("('03SEC', 5400, 'UPET002', 'A-RDL-1-Cu蝕刻'),");
             sb.Append("('03SEC', 5401, 'UPET003', 'B-RDL-1-Cu蝕刻'),");
             sb.Append("('03SEC', 5501, 'UPET017', 'AB-RDL1-NiCr蝕刻'),");
-            sb.Append("('03SEC', 5602, 'UPMS019', 'B-RDL-1-尺寸量測'),");
-            sb.Append("('03SEC', 5603, 'UPMS018', 'A-RDL-1-尺寸量測'),");
-            sb.Append("('03SEC', 5700, 'UPMS046', 'B-RDL-1-尺寸量測線徑'),");
             sb.Append("('03SEC', 5702, 'UPSC039', 'A-RDL1-AOI外觀檢查'),");
             sb.Append("('03SEC', 5800, 'UPSC047', 'B-RDL-1-AOI外觀檢查'),");
             sb.Append("('03SEC', 5900, 'UPSC023', 'RDL-1-外觀檢查(雙面)'),");
@@ -345,7 +339,6 @@ namespace APSSimulator.DB
             sb.Append("('03SEC', 8300, 'UPOV021', 'Via-2-軟烤'),");
             sb.Append("('03SEC', 8401, 'UPEX018', 'B-Via-2-B面曝光'),");
             sb.Append("('03SEC', 8501, 'UPDE008', 'B-Via-2-顯影'),");
-            sb.Append("('03SEC', 8601, 'UPMS012', 'B-Via-2尺寸量測'),");
             sb.Append("('03SEC', 8701, 'UPO2011', 'B-Via-2-O2 plasma'),");
             sb.Append("('03SEC', 8801, 'UPEX019', 'B-Via-2-B面全面曝光'),");
             sb.Append("('03SEC', 8901, 'UPOV044', 'B-Via-2-Oven硬化'),");
@@ -365,7 +358,6 @@ namespace APSSimulator.DB
             sb.Append("('03SEC', 10301, 'UPDF004', 'RDL-2-去膜'),");
             sb.Append("('03SEC', 10401, 'UPET012', 'B-RDL-2-Cu蝕刻#1'),");
             sb.Append("('03SEC', 10501, 'UPET014', 'RDL-2-NiCr蝕刻'),");
-            sb.Append("('03SEC', 10602, 'UPMS026', 'B-RDL-2-尺寸量測'),");
             sb.Append("('03SEC', 10650, 'UPSC052', 'B-RDL-2-AOI外觀檢查'),");
             sb.Append("('03SEC', 10701, 'UPSC015', 'B-RDL-2-外觀檢查'),");
             sb.Append("('03SEC', 10800, 'UPCL007', 'A-SM-酸處理'),");
@@ -375,7 +367,6 @@ namespace APSSimulator.DB
             sb.Append("('03SEC', 11200, 'UPOV027', 'A-SM-軟烤'),");
             sb.Append("('03SEC', 11301, 'UPEX027', 'A-SM-A面曝光'),");
             sb.Append("('03SEC', 11400, 'UPDE006', 'A-SM-顯影'),");
-            sb.Append("('03SEC', 11501, 'UPMS022', 'A-SM-尺寸量測'),");
             sb.Append("('03SEC', 11600, 'UPO2008', 'A-SM-O2 plasma'),");
             sb.Append("('03SEC', 11700, 'UPEX012', 'A-SM-A面全面曝光'),");
             sb.Append("('03SEC', 11800, 'UPOV028', 'A-SM-Oven硬化'),");
@@ -387,7 +378,6 @@ namespace APSSimulator.DB
             sb.Append("('03SEC', 12400, 'UPOV030', 'B-SM-軟烤'),");
             sb.Append("('03SEC', 12500, 'UPEX013', 'B-SM-B面曝光'),");
             sb.Append("('03SEC', 12600, 'UPDE007', 'B-SM-顯影'),");
-            sb.Append("('03SEC', 12701, 'UPMS023', 'B-SM-尺寸量測'),");
             sb.Append("('03SEC', 12800, 'UPO2009', 'B-SM-O2 plasma'),");
             sb.Append("('03SEC', 12900, 'UPEX014', 'B-SM-B面全面曝光'),");
             sb.Append("('03SEC', 13000, 'UPOV031', 'B-SM-Oven硬化'),");
@@ -396,12 +386,9 @@ namespace APSSimulator.DB
             sb.Append("('03SEC', 13300, 'UPCL013', 'B-Cu-酸處理'),");
             sb.Append("('03SEC', 13400, 'UPOV041', 'B-Cu-烘烤'),");
             sb.Append("('03SEC', 13500, 'UPPL015', 'Cu柱雙面電鍍'),");
-            sb.Append("('03SEC', 13600, 'UPMS011', 'B-Cu-尺寸量測'),");
-            sb.Append("('03SEC', 13700, 'UPMS030', 'A-Cu-尺寸量測'),");
             sb.Append("('03SEC', 13800, 'UPCL028', 'NiAu-水平酸洗'),");
             sb.Append("('03SEC', 13900, 'UPOV033', 'A-NiAu-酸洗烘烤'),");
             sb.Append("('03SEC', 14700, 'UPPL014', '雙面電鍍NiAu'),");
-            sb.Append("('03SEC', 14800, 'UPMS036', 'NiAu-厚度量測'),");
             sb.Append("('03SEC', 14900, 'UPSC040', 'A-NiAu-AOI外觀檢查'),");
             sb.Append("('03SEC', 15000, 'UPSC041', 'B-NiAu-AOI外觀檢查'),");
             sb.Append("('03SEC', 15400, 'UPSC008', 'NiAu-外觀檢查'),");
@@ -429,7 +416,6 @@ namespace APSSimulator.DB
             sb.Append("('uBMU', 200, 'UPBO002', 'L/F粗化'),");
             sb.Append("('uBMU', 300, 'UPOV005', 'L/F粗化烘烤'),");
             sb.Append("('uBMU', 400, 'UPST003', 'SMT_IC'),");
-            sb.Append("('uBMU', 500, 'UPMS001', 'D/B-量測'),");
             sb.Append("('uBMU', 600, 'UPOV002', 'ABF壓合預烘'),");
             sb.Append("('uBMU', 700, 'UPLM010', 'ABF 絕緣膠材對壓'),");
             sb.Append("('uBMU', 800, 'UPLM011', 'B-ABF-film 壓合'),");
@@ -449,7 +435,6 @@ namespace APSSimulator.DB
             sb.Append("('uBMU', 2200, 'UPET016', 'Desmear-Cu蝕刻'),");
             sb.Append("('uBMU', 2250, 'UPCL033', 'Desmear-外觀前酸洗'),");
             sb.Append("('uBMU', 2275, 'UPOV060', 'Desmear-酸洗烘烤'),");
-            sb.Append("('uBMU', 2300, 'UPMS034', 'A-Desmear-厚度孔徑量測'),");
             sb.Append("('uBMU', 2350, 'UPSC035', 'A-Desmear-AOI外觀檢查'),");
             sb.Append("('uBMU', 2400, 'UPSC001', 'Desmear-外觀檢查'),");
             sb.Append("('uBMU', 2500, 'UPQC001', 'QC-1'),");
@@ -512,7 +497,6 @@ namespace APSSimulator.DB
                 INSERT INTO mock_mes_step_time (step_id, std_time_sec) VALUES 
                 ('UPPA008', 300),
                 ('UPDB002', 600),
-                ('UPMS001', 120),
                 ('UPCL001', 300),
                 ('UPEX029', 180);
             ";
@@ -526,23 +510,23 @@ namespace APSSimulator.DB
             // 03SEC 完整製程流程順序
             var stepFlow = new[] 
             {
-                "UPPA008", "UPDB002", "UPMS001", "UPBO003", "UPOV076", "UPLM010", "UPLM011", "UPOV003", 
+                "UPPA008", "UPDB002", "UPBO003", "UPOV076", "UPLM010", "UPLM011", "UPOV003", 
                 "UPRM001", "UPOV048", "UPDR003", "UPCL001", "UPOV006", "UPSP006", "UPLM027", "UPEX029", 
                 "UPEX030", "UPOV007", "UPDE010", "UPOV008", "UPPL013", "UPDF001", "UPET018", "UPET007", 
-                "UPMS027", "UPSC049", "UPSC031", "UPCL012", "UPRO005", "UPOV010", "UPLM002", "UPOV057", 
-                "UPLA001", "UPDR004", "UPCL022", "UPO2001", "UPET016", "UPSC035", "UPSC038", "UPMS017", 
+                "UPSC049", "UPSC031", "UPCL012", "UPRO005", "UPOV010", "UPLM002", "UPOV057", 
+                "UPLA001", "UPDR004", "UPCL022", "UPO2001", "UPET016", "UPSC035", "UPSC038", 
                 "UPSC001", "UPQC001", "UPCL003", "UPOV012", "UPSP003", "UPSP002", "UPLM035", "UPEX024", 
                 "UPEX023", "UPOV013", "UPDE012", "UPOV017", "UPO2016", "UPPL018", "UPDF003", "UPET002", 
-                "UPET003", "UPET017", "UPMS019", "UPMS018", "UPMS046", "UPSC039", "UPSC047", "UPSC023", 
+                "UPET003", "UPET017", "UPSC039", "UPSC047", "UPSC023", 
                 "UPQC002", "UPCL025", "UPRO006", "UPOV020", "UPPR005", "UPOV021", "UPEX018", "UPDE008", 
-                "UPMS012", "UPO2011", "UPEX019", "UPOV044", "UPSC059", "UPSC014", "UPET013", "UPCL006", 
+                "UPO2011", "UPEX019", "UPOV044", "UPSC059", "UPSC014", "UPET013", "UPCL006", 
                 "UPOV023", "UPSP005", "UPLM026", "UPEX020", "UPEX021", "UPOV024", "UPDE009", "UPOV025", 
-                "UPPL010", "UPDF004", "UPET012", "UPET014", "UPMS026", "UPSC052", "UPSC015", "UPCL007", 
-                "UPRO003", "UPOV026", "UPPR002", "UPOV027", "UPEX027", "UPDE006", "UPMS022", "UPO2008", 
+                "UPPL010", "UPDF004", "UPET012", "UPET014", "UPSC052", "UPSC015", "UPCL007", 
+                "UPRO003", "UPOV026", "UPPR002", "UPOV027", "UPEX027", "UPDE006", "UPO2008", 
                 "UPEX012", "UPOV028", "UPSC006", "UPCL008", "UPRO004", "UPOV036", "UPPR003", "UPOV030", 
-                "UPEX013", "UPDE007", "UPMS023", "UPO2009", "UPEX014", "UPOV031", "UPSC007", "UPET011", 
-                "UPCL013", "UPOV041", "UPPL015", "UPMS011", "UPMS030", "UPCL028", "UPOV033", "UPPL014", 
-                "UPMS036", "UPSC040", "UPSC041", "UPSC008", "UPQC003", "UPCL010", "UPOV035", "UPPA003", 
+                "UPEX013", "UPDE007", "UPO2009", "UPEX014", "UPOV031", "UPSC007", "UPET011", 
+                "UPCL013", "UPOV041", "UPPL015", "UPCL028", "UPOV033", "UPPL014", 
+                "UPSC040", "UPSC041", "UPSC008", "UPQC003", "UPCL010", "UPOV035", "UPPA003", 
                 "UPPR004", "UPSC010", "UPST001", "UPRE001", "UPSC011", "UPSL001", "UPSC012", "UPSC016", 
                 "UPRE003", "UPTE001", "UPTE002", "UPQC009", "UPPK002", "UPQC008"
             };

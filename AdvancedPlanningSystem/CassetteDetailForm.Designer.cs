@@ -136,7 +136,7 @@ namespace AdvancedPlanningSystem
             this.tlpScores.Controls.Add(this.lblTotalLabel, 0, 6);
             this.tlpScores.Controls.Add(this.lblTotalScore, 1, 6);
             this.tlpScores.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tlpScores.Location = new System.Drawing.Point(10, 56);
+            this.tlpScores.Location = new System.Drawing.Point(10, 29);
             this.tlpScores.Name = "tlpScores";
             this.tlpScores.RowCount = 8;
             this.tlpScores.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -147,7 +147,7 @@ namespace AdvancedPlanningSystem
             this.tlpScores.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.tlpScores.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tlpScores.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tlpScores.Size = new System.Drawing.Size(440, 545);
+            this.tlpScores.Size = new System.Drawing.Size(440, 572);
             this.tlpScores.TabIndex = 0;
             // 
             // lblNameQTime
@@ -156,7 +156,7 @@ namespace AdvancedPlanningSystem
             this.lblNameQTime.AutoSize = true;
             this.lblNameQTime.Location = new System.Drawing.Point(3, 0);
             this.lblNameQTime.Name = "lblNameQTime";
-            this.lblNameQTime.Size = new System.Drawing.Size(194, 92);
+            this.lblNameQTime.Size = new System.Drawing.Size(108, 20);
             this.lblNameQTime.TabIndex = 0;
             this.lblNameQTime.Text = "1. QTime 分數";
             // 
@@ -164,9 +164,9 @@ namespace AdvancedPlanningSystem
             // 
             this.lblValQTime.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblValQTime.AutoSize = true;
-            this.lblValQTime.Location = new System.Drawing.Point(207, 23);
+            this.lblValQTime.Location = new System.Drawing.Point(207, 0);
             this.lblValQTime.Name = "lblValQTime";
-            this.lblValQTime.Size = new System.Drawing.Size(42, 46);
+            this.lblValQTime.Size = new System.Drawing.Size(18, 20);
             this.lblValQTime.TabIndex = 1;
             this.lblValQTime.Text = "0";
             // 
@@ -174,9 +174,9 @@ namespace AdvancedPlanningSystem
             // 
             this.lblNameUrgent.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblNameUrgent.AutoSize = true;
-            this.lblNameUrgent.Location = new System.Drawing.Point(3, 92);
+            this.lblNameUrgent.Location = new System.Drawing.Point(3, 20);
             this.lblNameUrgent.Name = "lblNameUrgent";
-            this.lblNameUrgent.Size = new System.Drawing.Size(184, 138);
+            this.lblNameUrgent.Size = new System.Drawing.Size(153, 20);
             this.lblNameUrgent.TabIndex = 2;
             this.lblNameUrgent.Text = "2. 急件加權 (Urgent)";
             // 
@@ -186,9 +186,9 @@ namespace AdvancedPlanningSystem
             this.lblValUrgent.AutoSize = true;
             this.lblValUrgent.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold);
             this.lblValUrgent.ForeColor = System.Drawing.Color.Red;
-            this.lblValUrgent.Location = new System.Drawing.Point(207, 138);
+            this.lblValUrgent.Location = new System.Drawing.Point(207, 20);
             this.lblValUrgent.Name = "lblValUrgent";
-            this.lblValUrgent.Size = new System.Drawing.Size(206, 46);
+            this.lblValUrgent.Size = new System.Drawing.Size(89, 20);
             this.lblValUrgent.TabIndex = 3;
             this.lblValUrgent.Text = "+ 100,000";
             // 
@@ -196,9 +196,9 @@ namespace AdvancedPlanningSystem
             // 
             this.lblNameEng.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblNameEng.AutoSize = true;
-            this.lblNameEng.Location = new System.Drawing.Point(3, 230);
+            this.lblNameEng.Location = new System.Drawing.Point(3, 40);
             this.lblNameEng.Name = "lblNameEng";
-            this.lblNameEng.Size = new System.Drawing.Size(184, 92);
+            this.lblNameEng.Size = new System.Drawing.Size(133, 20);
             this.lblNameEng.TabIndex = 4;
             this.lblNameEng.Text = "3. 工程加權 (Eng)";
             // 
@@ -206,9 +206,9 @@ namespace AdvancedPlanningSystem
             // 
             this.lblValEng.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblValEng.AutoSize = true;
-            this.lblValEng.Location = new System.Drawing.Point(207, 253);
+            this.lblValEng.Location = new System.Drawing.Point(207, 40);
             this.lblValEng.Name = "lblValEng";
-            this.lblValEng.Size = new System.Drawing.Size(42, 46);
+            this.lblValEng.Size = new System.Drawing.Size(18, 20);
             this.lblValEng.TabIndex = 5;
             this.lblValEng.Text = "0";
             // 
@@ -216,9 +216,9 @@ namespace AdvancedPlanningSystem
             // 
             this.lblNameDue.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblNameDue.AutoSize = true;
-            this.lblNameDue.Location = new System.Drawing.Point(3, 322);
+            this.lblNameDue.Location = new System.Drawing.Point(3, 60);
             this.lblNameDue.Name = "lblNameDue";
-            this.lblNameDue.Size = new System.Drawing.Size(184, 92);
+            this.lblNameDue.Size = new System.Drawing.Size(134, 20);
             this.lblNameDue.TabIndex = 6;
             this.lblNameDue.Text = "4. 交期分數 (Due)";
             // 
@@ -226,9 +226,9 @@ namespace AdvancedPlanningSystem
             // 
             this.lblValDue.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblValDue.AutoSize = true;
-            this.lblValDue.Location = new System.Drawing.Point(207, 345);
+            this.lblValDue.Location = new System.Drawing.Point(207, 60);
             this.lblValDue.Name = "lblValDue";
-            this.lblValDue.Size = new System.Drawing.Size(175, 46);
+            this.lblValDue.Size = new System.Drawing.Size(71, 20);
             this.lblValDue.TabIndex = 7;
             this.lblValDue.Text = "+ 50,000";
             // 
@@ -236,9 +236,9 @@ namespace AdvancedPlanningSystem
             // 
             this.lblNameLead.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblNameLead.AutoSize = true;
-            this.lblNameLead.Location = new System.Drawing.Point(3, 414);
+            this.lblNameLead.Location = new System.Drawing.Point(3, 80);
             this.lblNameLead.Name = "lblNameLead";
-            this.lblNameLead.Size = new System.Drawing.Size(185, 92);
+            this.lblNameLead.Size = new System.Drawing.Size(140, 20);
             this.lblNameLead.TabIndex = 8;
             this.lblNameLead.Text = "5. 排隊分數 (Lead)";
             // 
@@ -246,9 +246,9 @@ namespace AdvancedPlanningSystem
             // 
             this.lblValLead.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblValLead.AutoSize = true;
-            this.lblValLead.Location = new System.Drawing.Point(207, 437);
+            this.lblValLead.Location = new System.Drawing.Point(207, 80);
             this.lblValLead.Name = "lblValLead";
-            this.lblValLead.Size = new System.Drawing.Size(120, 46);
+            this.lblValLead.Size = new System.Drawing.Size(49, 20);
             this.lblValLead.TabIndex = 9;
             this.lblValLead.Text = "+ 500";
             // 
@@ -256,9 +256,9 @@ namespace AdvancedPlanningSystem
             // 
             this.lblSeparator.AutoSize = true;
             this.tlpScores.SetColumnSpan(this.lblSeparator, 2);
-            this.lblSeparator.Location = new System.Drawing.Point(3, 506);
+            this.lblSeparator.Location = new System.Drawing.Point(3, 100);
             this.lblSeparator.Name = "lblSeparator";
-            this.lblSeparator.Size = new System.Drawing.Size(423, 30);
+            this.lblSeparator.Size = new System.Drawing.Size(259, 20);
             this.lblSeparator.TabIndex = 10;
             this.lblSeparator.Text = "--------------------------------------------------";
             // 
@@ -267,9 +267,9 @@ namespace AdvancedPlanningSystem
             this.lblTotalLabel.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblTotalLabel.AutoSize = true;
             this.lblTotalLabel.Font = new System.Drawing.Font("Arial", 14F, System.Drawing.FontStyle.Bold);
-            this.lblTotalLabel.Location = new System.Drawing.Point(3, 536);
+            this.lblTotalLabel.Location = new System.Drawing.Point(3, 135);
             this.lblTotalLabel.Name = "lblTotalLabel";
-            this.lblTotalLabel.Size = new System.Drawing.Size(187, 165);
+            this.lblTotalLabel.Size = new System.Drawing.Size(182, 22);
             this.lblTotalLabel.TabIndex = 11;
             this.lblTotalLabel.Text = "總分 (Total Score):";
             // 
@@ -279,9 +279,9 @@ namespace AdvancedPlanningSystem
             this.lblTotalScore.AutoSize = true;
             this.lblTotalScore.Font = new System.Drawing.Font("Arial", 20F, System.Drawing.FontStyle.Bold);
             this.lblTotalScore.ForeColor = System.Drawing.Color.Blue;
-            this.lblTotalScore.Location = new System.Drawing.Point(207, 540);
+            this.lblTotalScore.Location = new System.Drawing.Point(207, 130);
             this.lblTotalScore.Name = "lblTotalScore";
-            this.lblTotalScore.Size = new System.Drawing.Size(200, 156);
+            this.lblTotalScore.Size = new System.Drawing.Size(112, 32);
             this.lblTotalScore.TabIndex = 12;
             this.lblTotalScore.Text = "150,500";
             // 
@@ -304,9 +304,9 @@ namespace AdvancedPlanningSystem
             this.pnlRightInner.Controls.Add(this.lblEqpInfo);
             this.pnlRightInner.Controls.Add(this.lblDecision);
             this.pnlRightInner.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlRightInner.Location = new System.Drawing.Point(10, 56);
+            this.pnlRightInner.Location = new System.Drawing.Point(10, 29);
             this.pnlRightInner.Name = "pnlRightInner";
-            this.pnlRightInner.Size = new System.Drawing.Size(460, 545);
+            this.pnlRightInner.Size = new System.Drawing.Size(460, 572);
             this.pnlRightInner.TabIndex = 0;
             // 
             // lstBatchQueue
@@ -316,9 +316,9 @@ namespace AdvancedPlanningSystem
             this.lstBatchQueue.Font = new System.Drawing.Font("Consolas", 11F);
             this.lstBatchQueue.FormattingEnabled = true;
             this.lstBatchQueue.ItemHeight = 30;
-            this.lstBatchQueue.Location = new System.Drawing.Point(0, 196);
+            this.lstBatchQueue.Location = new System.Drawing.Point(0, 92);
             this.lstBatchQueue.Name = "lstBatchQueue";
-            this.lstBatchQueue.Size = new System.Drawing.Size(460, 299);
+            this.lstBatchQueue.Size = new System.Drawing.Size(460, 430);
             this.lstBatchQueue.TabIndex = 1;
             // 
             // lblEqpInfo
@@ -328,7 +328,7 @@ namespace AdvancedPlanningSystem
             this.lblEqpInfo.Location = new System.Drawing.Point(0, 0);
             this.lblEqpInfo.Name = "lblEqpInfo";
             this.lblEqpInfo.Padding = new System.Windows.Forms.Padding(0, 0, 0, 12);
-            this.lblEqpInfo.Size = new System.Drawing.Size(501, 196);
+            this.lblEqpInfo.Size = new System.Drawing.Size(199, 92);
             this.lblEqpInfo.TabIndex = 0;
             this.lblEqpInfo.Text = "目標機台: EQP-01 (乾蝕刻)\r\n狀態: RUNNING\r\nWIP: 2 / 10\r\n標準批次量: 4";
             // 
@@ -338,7 +338,7 @@ namespace AdvancedPlanningSystem
             this.lblDecision.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.lblDecision.Font = new System.Drawing.Font("Microsoft Sans Serif", 16F, System.Drawing.FontStyle.Bold);
             this.lblDecision.ForeColor = System.Drawing.Color.White;
-            this.lblDecision.Location = new System.Drawing.Point(0, 495);
+            this.lblDecision.Location = new System.Drawing.Point(0, 522);
             this.lblDecision.Name = "lblDecision";
             this.lblDecision.Size = new System.Drawing.Size(460, 50);
             this.lblDecision.TabIndex = 2;

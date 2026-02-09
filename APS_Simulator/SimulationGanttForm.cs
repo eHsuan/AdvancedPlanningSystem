@@ -14,7 +14,19 @@ namespace APSSimulator
         private FormMain _mainForm;
         private string _logContent;
         private List<GanttEvent> _events = new List<GanttEvent>();
-        private Dictionary<string, int> _cstPriorities = new Dictionary<string, int>(); // 新增：記錄 CST 優先級
+        private Dictionary<string, int> _cstPriorities = new Dictionary<string, int>(); 
+        private List<string> _sortedCstList = new List<string>();
+        private Dictionary<string, int> _cstYMap = new Dictionary<string, int>();
+
+        // 繪圖快取資源
+        private Pen _gridPen = new Pen(Color.LightGray, 1);
+        private Pen _axisPen = new Pen(Color.Black, 1);
+        private Font _labelFont = new Font("Arial", 8);
+        private Font _headerFont = new Font("Arial", 8, FontStyle.Bold);
+        private SolidBrush _shelfBrush = new SolidBrush(Color.LightGreen);
+        private SolidBrush _transportBrush = new SolidBrush(Color.Gold);
+        private SolidBrush _processBrush = new SolidBrush(Color.LightSkyBlue);
+        private SolidBrush _defaultBrush = new SolidBrush(Color.Gray);
         
         // 繪圖參數
         private int _rowHeight = 45;
@@ -47,7 +59,7 @@ namespace APSSimulator
             _autoRefreshTimer = new Timer();
             _autoRefreshTimer.Interval = 10000;
             _autoRefreshTimer.Tick += (s, e) => {
-                if (_mainForm.IsSimulating) btnUpdate_Click(null, null);
+                if (_mainForm.IsSimulating && cbAutoRefresh.Checked) btnUpdate_Click(null, null);
                 else _autoRefreshTimer.Stop();
             };
             _autoRefreshTimer.Start();
@@ -165,14 +177,20 @@ namespace APSSimulator
                 _events.Add(kvp.Value);
             }
 
+            // --- 預處理繪圖資料 ---
+            _sortedCstList = _events.Select(ev => ev.CstId).Distinct().OrderBy(s => s).ToList();
+            _cstYMap.Clear();
+            for (int i = 0; i < _sortedCstList.Count; i++) _cstYMap[_sortedCstList[i]] = i;
+
             if (_events.Count > 0)
             {
-                int totalHeight = _events.Select(e => e.CstId).Distinct().Count() * _rowHeight + 100;
+                int totalHeight = _sortedCstList.Count * _rowHeight + 100;
                 int totalWidth = (int)((_maxTime - _minTime).TotalSeconds * _pixelsPerSecond) + 300;
                 pnlChart.AutoScrollMinSize = new Size(totalWidth, totalHeight);
                 
                 // 自動滾動到最右邊 (最新進度)
-                pnlChart.HorizontalScroll.Value = pnlChart.HorizontalScroll.Maximum;
+                if (pnlChart.HorizontalScroll.Maximum > 0)
+                    pnlChart.HorizontalScroll.Value = pnlChart.HorizontalScroll.Maximum;
             }
             pnlChart.Invalidate();
         }
@@ -274,78 +292,88 @@ namespace APSSimulator
             if (_events.Count == 0) return;
 
             Graphics g = e.Graphics;
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            // 捲動時不需要高品質抗鋸齒，以提升效能
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
 
-            // 取得當前滾動位置
+            // 取得當前可視區域 (Viewport)
             int scrollX = pnlChart.AutoScrollPosition.X;
             int scrollY = pnlChart.AutoScrollPosition.Y;
+            Rectangle viewport = new Rectangle(-scrollX, -scrollY, pnlChart.ClientSize.Width, pnlChart.ClientSize.Height);
 
-            var cstList = _events.Select(ev => ev.CstId).Distinct().OrderBy(s => s).ToList();
-            var cstYMap = new Dictionary<string, int>();
-            for (int i = 0; i < cstList.Count; i++) cstYMap[cstList[i]] = i;
-
-            // --- 第一層：受滾動影響的內容 (甘特條、格線、時間軸) ---
+            // --- 第一層：受滾動影響的內容 ---
             g.TranslateTransform(scrollX, scrollY);
 
-            Pen gridPen = new Pen(Color.LightGray, 1);
-            Font labelFont = new Font("Arial", 8);
+            // 1. 繪製橫向格線 (僅限可視範圍)
+            int startRow = Math.Max(0, (viewport.Y - _topMargin) / _rowHeight);
+            int endRow = Math.Min(_sortedCstList.Count - 1, (viewport.Bottom - _topMargin) / _rowHeight + 1);
 
-            for (int i = 0; i < cstList.Count; i++)
+            for (int i = startRow; i <= endRow; i++)
             {
                 int y = _topMargin + i * _rowHeight;
-                g.DrawLine(gridPen, _leftMargin, y, pnlChart.AutoScrollMinSize.Width, y);
+                g.DrawLine(_gridPen, _leftMargin, y, pnlChart.AutoScrollMinSize.Width, y);
             }
 
+            // 2. 繪製甘特條 (僅限可視範圍)
             foreach (var ev in _events)
             {
-                if (!cstYMap.ContainsKey(ev.CstId)) continue;
+                if (!_cstYMap.ContainsKey(ev.CstId)) continue;
+                int rowIndex = _cstYMap[ev.CstId];
+                
+                // 垂直過濾
+                if (rowIndex < startRow || rowIndex > endRow) continue;
 
-                int y = _topMargin + cstYMap[ev.CstId] * _rowHeight + 5;
                 int xStart = _leftMargin + (int)((ev.Start - _minTime).TotalSeconds * _pixelsPerSecond);
                 int width = (int)((ev.End - ev.Start).TotalSeconds * _pixelsPerSecond);
-                if (width < 5) width = 5; 
+                if (width < 5) width = 5;
 
-                Color barColor = Color.Gray;
+                // 水平過濾
+                if (xStart > viewport.Right || (xStart + width) < viewport.Left) continue;
+
+                int y = _topMargin + rowIndex * _rowHeight + 5;
+                
+                Brush barBrush = _defaultBrush;
                 switch (ev.Type)
                 {
-                    case EventType.Shelf: barColor = Color.LightGreen; break;
-                    case EventType.Transport: barColor = Color.Gold; break;
-                    case EventType.Process: barColor = Color.LightSkyBlue; break;
+                    case EventType.Shelf: barBrush = _shelfBrush; break;
+                    case EventType.Transport: barBrush = _transportBrush; break;
+                    case EventType.Process: barBrush = _processBrush; break;
                 }
 
                 Rectangle rect = new Rectangle(xStart, y, width, _rowHeight - 10);
-                g.FillRectangle(new SolidBrush(barColor), rect);
+                g.FillRectangle(barBrush, rect);
                 g.DrawRectangle(Pens.DimGray, rect);
 
                 if (width > 20)
                 {
-                    g.DrawString(ev.Location, labelFont, Brushes.Black, xStart + 2, y + 8);
+                    g.DrawString(ev.Location, _labelFont, Brushes.Black, xStart + 2, y + 8);
                 }
             }
 
-            // 繪製時間軸刻度
-            int labelCounter = 0;
-            for (int s = 0; s <= (_maxTime - _minTime).TotalSeconds; s += 10)
+            // 3. 繪製時間軸刻度 (僅限可視範圍)
+            int startSec = Math.Max(0, (viewport.X - _leftMargin) / (int)_pixelsPerSecond / 10 * 10);
+            int endSec = Math.Min((int)(_maxTime - _minTime).TotalSeconds, (viewport.Right - _leftMargin) / (int)_pixelsPerSecond + 10);
+
+            for (int s = startSec; s <= endSec; s += 10)
             {
                 int x = _leftMargin + (int)(s * _pixelsPerSecond);
-                g.DrawLine(Pens.Black, x, _topMargin - 5, x, _topMargin);
-                int yPos = (labelCounter % 2 == 0) ? 5 : 20;
-                g.DrawString(_minTime.AddSeconds(s).ToString("HH:mm:ss"), labelFont, Brushes.Black, x - 20, yPos);
-                labelCounter++;
+                g.DrawLine(_axisPen, x, _topMargin - 5, x, _topMargin);
+                
+                int labelIdx = s / 10;
+                int yPos = (labelIdx % 2 == 0) ? 5 : 20;
+                g.DrawString(_minTime.AddSeconds(s).ToString("HH:mm:ss"), _labelFont, Brushes.Black, x - 20, yPos);
             }
 
             // --- 第二層：固定不動的標題列 (CST ID) ---
             g.ResetTransform();
             
-            // 繪製標題列背景 (遮住水平滾動過來的內容)
-            g.FillRectangle(new SolidBrush(this.BackColor), 0, 0, _leftMargin, pnlChart.Height);
+            // 遮住背景
+            g.FillRectangle(new SolidBrush(this.BackColor), 0, _topMargin - 5, _leftMargin, pnlChart.Height);
             g.DrawLine(Pens.Gray, _leftMargin, 0, _leftMargin, pnlChart.Height);
 
-            // 重新繪製標籤 (標籤只需跟隨「垂直」滾動，不隨水平滾動移動)
             g.TranslateTransform(0, scrollY);
-            for (int i = 0; i < cstList.Count; i++)
+            for (int i = startRow; i <= endRow; i++)
             {
-                string cid = cstList[i];
+                string cid = _sortedCstList[i];
                 int y = _topMargin + i * _rowHeight;
                 
                 Brush textBrush = Brushes.Black;
@@ -356,7 +384,7 @@ namespace APSSimulator
                     else if (p == 2) textBrush = Brushes.Red;
                 }
 
-                g.DrawString(cid, labelFont, textBrush, 10, y + 15);
+                g.DrawString(cid, _headerFont, textBrush, 10, y + 15);
             }
         }
     }

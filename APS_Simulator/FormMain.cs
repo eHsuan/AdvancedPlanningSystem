@@ -445,7 +445,6 @@ namespace APSSimulator
             if (targetEqp != "Pass99")
             {
                 ChangeMachineWipInDb(targetEqp, 1);
-                this.Invoke(new Action(() => LoadMachines())); 
             }
             
             // --- [關鍵修正] 先更新 MES 狀態，再通知 APS ---
@@ -490,7 +489,6 @@ namespace APSSimulator
                 if (targetEqp != "Pass99")
                 {
                     ChangeMachineWipInDb(targetEqp, -1);
-                    this.Invoke(new Action(() => LoadMachines()));
                 }
 
                 AppendAutoSimLog($"[製程結束] {cstId} 已完成過站並離開機台 {targetEqp}");
@@ -505,25 +503,50 @@ namespace APSSimulator
 
         private void InitializeCustomComponents()
         {
-            // --- External DB Sync Prompt ---
-            var result = MessageBox.Show(
-                "是否要根據目前 Mock MES 工單重新生成 ExternalDB 測試資料？\n(這將同步 CstID 與 WorkNo 的對應關係)", 
-                "資料同步", 
-                MessageBoxButtons.YesNo, 
+            // 1. 詢問是否隨機重新生成 Mock MES 工單
+            var result_First = MessageBox.Show(
+                "\"是否要先隨機重新生成測試工單資料 (Generate Random Orders)？)",
+                "測試資料生成",
+                MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
-
-            if (result == DialogResult.Yes)
+            if (result_First == DialogResult.Yes)
             {
-                try
+                string input = DatabaseHelper.ShowInputDialog("請輸入欲生成的工單筆數：", "50");
+                int count;
+                if (int.TryParse(input, out count) && count > 0)
                 {
+                    DatabaseHelper.GenerateRandomOrders(count);
+                    RefreshAutoSimGrid(); // 更新介面顯示
+                    AppendClientLog($"已重新生成 {count} 筆測試工單。");
+                    // 2. 執行同步至 ExternalDB
                     DatabaseHelper.SyncExternalDbFromMesOrders();
                     AppendClientLog("ExternalDB 測試資料同步完成。");
                 }
-                catch (Exception ex)
+            }
+            // --- External DB Sync Prompt ---
+            if (result_First == DialogResult.No)
+            {
+                var result = MessageBox.Show(
+                "是否要根據目前 Mock MES 工單重新生成 ExternalDB 測試資料？\n(這將同步 CstID 與 WorkNo 的對應關係)",
+                "資料同步",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
                 {
-                    MessageBox.Show("同步失敗: " + ex.Message);
+                    try
+                    {
+                        // 2. 執行同步至 ExternalDB
+                        DatabaseHelper.SyncExternalDbFromMesOrders();
+                        AppendClientLog("ExternalDB 測試資料同步完成。");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("同步失敗: " + ex.Message);
+                    }
                 }
             }
+            
 
             // --- Log Init ---
             UiLogAppender.LogReceived = (msg) => AppendMesLog(msg);
@@ -714,7 +737,6 @@ namespace APSSimulator
             if (!string.IsNullOrEmpty(targetEqp) && targetEqp != "STOCK")
             {
                 ChangeMachineWipInDb(targetEqp, 1);
-                LoadMachines(); 
             }
 
             row.Cells["colStatus"].Value = "Track-In (Processing)...";
@@ -738,7 +760,6 @@ namespace APSSimulator
                     row.Cells["colTargetEqp"].Value = ""; 
                     AppendClientLog($"[Sim] {workNo} processed and WIP updated.");
                     RefreshRowData(row, workNo);
-                    LoadMachines();
                 }));
             });
         }
@@ -1050,7 +1071,6 @@ namespace APSSimulator
                     cmd.ExecuteNonQuery();
                 }
             }
-            LoadMachines(); // Reload UI
         }
 
         private void UpdateMachineWip(string eqpId, int wip)
@@ -1066,7 +1086,6 @@ namespace APSSimulator
                     cmd.ExecuteNonQuery();
                 }
             }
-            LoadMachines(); // Reload UI
         }
         
         protected override void OnFormClosing(FormClosingEventArgs e)

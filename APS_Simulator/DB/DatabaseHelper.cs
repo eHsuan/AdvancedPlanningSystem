@@ -71,6 +71,84 @@ namespace APSSimulator.DB
             }
         }
 
+        public static void GenerateRandomOrders(int count)
+        {
+            var random = new Random();
+            var routeList = new System.Collections.Generic.List<dynamic>();
+
+            using (var conn = new SQLiteConnection(ConnectionString))
+            {
+                conn.Open();
+                
+                // 1. 取得 Route 資訊 (03SEC)
+                using (var cmd = new SQLiteCommand("SELECT seq_no, step_id FROM mock_mes_route_def WHERE route_id = '03SEC' ORDER BY seq_no", conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        routeList.Add(new { SeqNo = Convert.ToInt32(reader["seq_no"]), StepId = reader["step_id"].ToString() });
+                    }
+                }
+
+                if (routeList.Count < 2) return;
+
+                // 2. 清空舊工單
+                using (var cmd = new SQLiteCommand("DELETE FROM mock_mes_orders", conn)) { cmd.ExecuteNonQuery(); }
+
+                // 3. 生成並插入
+                using (var trans = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        string insSql = @"INSERT INTO mock_mes_orders 
+                            (work_no, carrier_id, step_id, next_step_id, prev_out_time, priority_type, due_date, route_id, current_seq_no) 
+                            VALUES (@wn, @cid, @sid, @nid, @prev, @pri, @due, '03SEC', @cseq)";
+
+                        for (int i = 0; i < count; i++)
+                        {
+                            string wn = "2P" + RandomAlphanumeric(10, random);
+                            string cid = RandomAlphanumeric(6, random);
+                            
+                            // 隨機選一個步驟，必須有下一個步驟
+                            int idx = random.Next(0, routeList.Count - 1);
+                            var current = routeList[idx];
+                            var next = routeList[idx + 1];
+
+                            string prevOut = DateTime.Now.AddMinutes(-random.Next(1, 101)).ToString("yyyyMMddHHmmss");
+                            string dueDate = DateTime.Now.AddDays(random.Next(1, 11)).ToString("yyyyMMddHHmmss");
+                            int priority = random.Next(0, 3);
+
+                            using (var cmd = new SQLiteCommand(insSql, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@wn", wn);
+                                cmd.Parameters.AddWithValue("@cid", cid);
+                                cmd.Parameters.AddWithValue("@sid", current.StepId);
+                                cmd.Parameters.AddWithValue("@nid", next.StepId);
+                                cmd.Parameters.AddWithValue("@prev", prevOut);
+                                cmd.Parameters.AddWithValue("@pri", priority);
+                                cmd.Parameters.AddWithValue("@due", dueDate);
+                                cmd.Parameters.AddWithValue("@cseq", current.SeqNo);
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                        trans.Commit();
+                    }
+                    catch { trans.Rollback(); throw; }
+                }
+            }
+        }
+
+        private static string RandomAlphanumeric(int length, Random random)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var result = new char[length];
+            for (int i = 0; i < length; i++)
+            {
+                result[i] = chars[random.Next(chars.Length)];
+            }
+            return new string(result);
+        }
+
         public static void ResetDatabase()
         {
             using (var conn = new SQLiteConnection(ConnectionString))
@@ -188,81 +266,161 @@ namespace APSSimulator.DB
             sb.Append("INSERT INTO mock_mes_equipments (eqp_id, status, status_duration, current_work_no, current_wip_qty, max_wip_qty) VALUES ");
 
             // 1. ABF壓合 (LF)
-            sb.Append("('LF0003', 'RUN', '3600', '2P2552A1B2C3', 5, 20),");
+            sb.Append("('LF0003', 'RUN', '3600', NULL, 0, 1),");
 
             // 2. 雷射 (Laser)
-            sb.Append("('DR0026', 'RUN', '1200', '2P25523A7B9C', 8, 30), ('DR0009', 'RUN', '1200', '2P25525D2E4F', 10, 30),");
+            sb.Append("('DR0026', 'RUN', '1200', NULL, 0, 1), ('DR0009', 'RUN', '1200', '', 0, 1),");
 
             // 3. CF4 Plasma
-            sb.Append("('DL0017', 'RUN', '500', '2P25526G8H0I', 2, 20), ('DS0003', 'DOWN', '0', NULL, 0, 20),");
+            sb.Append("('DL0017', 'RUN', '500', NULL, 0, 2), ('DS0003', 'DOWN', '0', NULL, 0, 2),");
 
             // 4. 酸洗 (Acid Clean)
-            sb.Append("('CL0201', 'RUN', '300', '2P2552J2K4L6', 15, 50), ('CL0022', 'IDLE', '0', NULL, 0, 50),");
+            sb.Append("('CL0201', 'RUN', '300', NULL, 0, 4), ('CL0022', 'IDLE', '0', NULL, 0, 4),");
 
             // 5. 粗化 (Roughness)
-            sb.Append("('CL0200', 'RUN', '300', '2P2552M8N0O2', 10, 50),");
+            sb.Append("('CL0200', 'RUN', '300', NULL, 0, 1),");
 
             // 6. 著膜 (Sputter)
-            sb.Append("('SP0002', 'RUN', '4000', '2P2552P4Q6R8', 4, 15), ('SP0004', 'IDLE', '0', NULL, 0, 15),");
+            sb.Append("('SP0002', 'RUN', '4000', NULL, 0, 1), ('SP0004', 'IDLE', '0', NULL, 0, 1),");
 
             // 7. 乾膜壓合 (Dry Film)
-            sb.Append("('LF0014', 'RUN', '600', '2P2552Z1A2B3', 3, 20),");
+            sb.Append("('LF0014', 'RUN', '600', NULL, 0, 1),");
 
             // 8. 綠漆印刷 (Solder Mask)
-            sb.Append("('PR0254', 'RUN', '600', '2P2552C4D5E6', 3, 20), ('PR0518', 'RUN', '600', '2P2552F7G8H9', 2, 20),");
+            sb.Append("('PR0254', 'RUN', '600', NULL, 0, 1), ('PR0518', 'RUN', '600', NULL, 0, 1),");
 
             // 9. 曝光 (Exposure)
-            sb.Append("('EX0028', 'RUN', '300', '2P2552S0T2U4', 5, 10), ('EX0044', 'RUN', '250', '2P2552V6W8X0', 6, 10),");
+            sb.Append("('EX0028', 'RUN', '300', NULL, 0, 1), ('EX0044', 'RUN', '250', NULL, 0, 1),");
 
             // 10. 乾膜/濕膜顯影 (Developer)
-            sb.Append("('DE0025', 'RUN', '450', '2P2552Y2Z4A6', 8, 40), ('DE0005', 'RUN', '500', '2P2552B8C0D2', 7, 40),");
+            sb.Append("('DE0025', 'RUN', '450', NULL, 0, 4), ('DE0005', 'RUN', '500', NULL, 0, 4),");
 
             // 11. 電鍍 (Plating)
-            sb.Append("('PL0084', 'RUN', '3600', '2P2552E4F6G8', 20, 50), ('PL0007', 'IDLE', '0', NULL, 0, 50),");
+            sb.Append("('PL0084', 'RUN', '3600', NULL, 0, 2), ('PL0007', 'IDLE', '0', NULL, 0, 2),");
 
             // 12. 去膜 (Stripper)
-            sb.Append("('ST0012', 'RUN', '600', '2P2552H0I2J4', 5, 40),");
+            sb.Append("('ST0012', 'RUN', '600', NULL, 0, 1),");
 
             // 13. Cu蝕刻 (Etch)
-            sb.Append("('ET0023', 'RUN', '300', '2P2552Q1R2S3', 38, 40),");
+            sb.Append("('ET0023', 'RUN', '300', NULL, 0, 2),");
 
             // 14. NiCr蝕刻
-            sb.Append("('ET0026', 'RUN', '350', '2P2552K6L8M0', 8, 40),");
+            sb.Append("('ET0026', 'RUN', '350', NULL, 0, 1),");
 
             // 15. AOI
-            sb.Append("('VC0680', 'RUN', '200', '2P2552N2O4P6', 2, 10),");
+            sb.Append("('VC0680', 'RUN', '200', NULL, 0, 1),");
 
             // 16. SMT (大量機台)
-            sb.Append("('PR0008', 'RUN', '600', '2P2552T4U5V6', 5, 30), ('PR0187', 'RUN', '600', '2P2552W7X8Y9', 4, 30),");
-            sb.Append("('VC0164', 'IDLE', '0', NULL, 0, 30), ('OV0805', 'RUN', '600', '2P2552Q8R0S2', 2, 30),");
-            sb.Append("('VC0497', 'RUN', '600', '2P2552X1Y2Z3', 3, 30), ('SM0007', 'RUN', '500', '2P2552A4B5C6', 6, 30),");
-            sb.Append("('SM0015', 'RUN', '500', '2P2552D7E8F9', 5, 30), ('AC1837', 'RUN', '400', '2P2552G0H1I2', 2, 30),");
-            sb.Append("('VC0498', 'RUN', '600', '2P2552J3K4L5', 1, 30), ('VC1346', 'RUN', '600', '2P2552M6N7O8', 1, 30),");
-            sb.Append("('VC1347', 'RUN', '600', '2P2552P9Q0R1', 1, 30), ('VC1348', 'IDLE', '0', NULL, 0, 30),");
-            sb.Append("('OV1241', 'RUN', '600', '2P2552S2T3U4', 2, 30),");
+            sb.Append("('PR0008', 'RUN', '600', NULL, 0, 1), ('PR0187', 'RUN', '600', NULL, 0, 1),");
+            sb.Append("('VC0164', 'IDLE', '0', NULL, 0, 1), ('OV0805', 'RUN', '600', NULL, 0, 1),");
+            sb.Append("('VC0497', 'RUN', '600', NULL, 0, 1), ('SM0007', 'RUN', '500', NULL, 0, 1),");
+            sb.Append("('SM0015', 'RUN', '500', NULL, 0, 1), ('AC1837', 'RUN', '400', NULL, 0, 1),");
+            sb.Append("('VC0498', 'RUN', '600', NULL, 0, 1), ('VC1346', 'RUN', '600', NULL, 0, 1),");
+            sb.Append("('VC1347', 'RUN', '600', NULL, 0, 1), ('VC1348', 'IDLE', '0', NULL, 0, 1),");
+            sb.Append("('OV1241', 'RUN', '600', NULL, 0, 1),");
 
             // 17. Slicer (切片)
-            sb.Append("('CU0551', 'RUN', '300', '2P2552V5W6X7', 10, 50), ('CU0646', 'RUN', '300', '2P2552Y8Z9A0', 8, 50),");
-            sb.Append("('CU0665', 'IDLE', '0', NULL, 0, 50), ('CU0454', 'RUN', '300', '2P2552B1C2D3', 9, 50),");
-            sb.Append("('CU0481', 'RUN', '300', '2P2552E4F5G6', 7, 50), ('CU0567', 'IDLE', '0', NULL, 0, 50),");
-            sb.Append("('CU0722', 'RUN', '300', '2P2552H7I8J9', 11, 50),");
+            sb.Append("('CU0551', 'RUN', '300', NULL, 0, 1), ('CU0646', 'RUN', '300', NULL, 0, 1),");
+            sb.Append("('CU0665', 'IDLE', '0', NULL, 0, 1), ('CU0454', 'RUN', '300', NULL, 0, 1),");
+            sb.Append("('CU0481', 'RUN', '300', NULL, 0, 1), ('CU0567', 'IDLE', '0', NULL, 0, 1),");
+            sb.Append("('CU0722', 'RUN', '300', NULL, 0, 1),");
 
             // 18. NiAu (化金)
-            sb.Append("('PL0088', 'RUN', '3600', '2P2552K0L1M2', 15, 50),");
+            sb.Append("('PL0088', 'RUN', '3600', NULL, 0, 4),");
 
             // 19. uPOL-DB
-            sb.Append("('SM0006', 'RUN', '800', '2P2552N3O4P5', 3, 20), ('SM0014', 'RUN', '800', '2P2552Q6R7S8', 2, 20), ('SM0054', 'IDLE', '0', NULL, 0, 20),");
+            sb.Append("('SM0006', 'RUN', '800', NULL, 0, 2), ('SM0014', 'RUN', '800', NULL, 0, 2), ('SM0054', 'IDLE', '0', NULL, 0, 2),");
 
             // 20. uPOL-TP (測試包裝)
-            sb.Append("('TP1660', 'RUN', '900', '2P2552T9U0V1', 1, 10), ('TP1661', 'RUN', '900', '2P2552W2X3Y4', 1, 10),");
-            sb.Append("('TP1662', 'RUN', '900', '2P2552Z5A6B7', 1, 10), ('TP1663', 'RUN', '900', '2P2552C8D9E0', 1, 10),");
-            sb.Append("('TP1664', 'IDLE', '0', NULL, 0, 10), ('TP1793', 'RUN', '900', '2P2552F1G2H3', 1, 10),");
-            sb.Append("('TP1796', 'RUN', '900', '2P2552I4J5K6', 1, 10), ('TP1797', 'RUN', '900', '2P2552L7M8N9', 1, 10),");
-            sb.Append("('TP1872', 'RUN', '900', '2P2552O0P1Q2', 1, 10), ('TP1873', 'DOWN', '0', NULL, 0, 10),");
-            sb.Append("('TP1874', 'RUN', '900', '2P2552R3S4T5', 1, 10), ('TP2007', 'RUN', '900', '2P2552U6V7W8', 1, 10),");
-            sb.Append("('TP2006', 'RUN', '900', '2P2552X9Y0Z1', 1, 10), ('TP0873', 'RUN', '900', '2P2552A2B3C4', 1, 10),");
-            sb.Append("('TP2174', 'RUN', '900', '2P2552D5E6F7', 1, 10), ('TP2175', 'IDLE', '0', NULL, 0, 10),");
-            sb.Append("('TP2223', 'RUN', '900', '2P2552G8H9I0', 1, 10), ('TP2224', 'RUN', '900', '2P2552J1K2L3', 1, 10);");
+            sb.Append("('TP1660', 'RUN', '900', NULL, 0, 2), ('TP1661', 'RUN', '900', NULL, 0, 2),");
+            sb.Append("('TP1662', 'RUN', '900', NULL, 0, 2), ('TP1663', 'RUN', '900', NULL, 0, 2),");
+            sb.Append("('TP1664', 'IDLE', '0', NULL, 0, 2), ('TP1793', 'RUN', '900', NULL, 0, 2),");
+            sb.Append("('TP1796', 'RUN', '900', NULL, 0, 2), ('TP1797', 'RUN', '900', NULL, 0, 2),");
+            sb.Append("('TP1872', 'RUN', '900', NULL, 0, 2), ('TP1873', 'DOWN', '0', NULL, 0, 2),");
+            sb.Append("('TP1874', 'RUN', '900', NULL, 0, 2), ('TP2007', 'RUN', '900', NULL, 0, 2),");
+            sb.Append("('TP2006', 'RUN', '900', NULL, 0, 2), ('TP0873', 'RUN', '900', NULL, 0, 2),");
+            sb.Append("('TP2174', 'RUN', '900', NULL, 0, 2), ('TP2175', 'IDLE', '0', NULL, 0, 2),");
+            sb.Append("('TP2223', 'RUN', '900', NULL, 0, 2), ('TP2224', 'RUN', '900', NULL, 0, 2);");
+            //var sb = new StringBuilder();
+            //// 移除 group_name, 配合 DB 結構
+            //sb.Append("INSERT INTO mock_mes_equipments (eqp_id, status, status_duration, current_work_no, current_wip_qty, max_wip_qty) VALUES ");
+
+            //// 1. ABF壓合 (LF)
+            //sb.Append("('LF0003', 'RUN', '3600', '2P2552A1B2C3', 5, 20),");
+
+            //// 2. 雷射 (Laser)
+            //sb.Append("('DR0026', 'RUN', '1200', '2P25523A7B9C', 8, 30), ('DR0009', 'RUN', '1200', '2P25525D2E4F', 10, 30),");
+
+            //// 3. CF4 Plasma
+            //sb.Append("('DL0017', 'RUN', '500', '2P25526G8H0I', 2, 20), ('DS0003', 'DOWN', '0', NULL, 0, 20),");
+
+            //// 4. 酸洗 (Acid Clean)
+            //sb.Append("('CL0201', 'RUN', '300', '2P2552J2K4L6', 15, 50), ('CL0022', 'IDLE', '0', NULL, 0, 50),");
+
+            //// 5. 粗化 (Roughness)
+            //sb.Append("('CL0200', 'RUN', '300', '2P2552M8N0O2', 10, 50),");
+
+            //// 6. 著膜 (Sputter)
+            //sb.Append("('SP0002', 'RUN', '4000', '2P2552P4Q6R8', 4, 15), ('SP0004', 'IDLE', '0', NULL, 0, 15),");
+
+            //// 7. 乾膜壓合 (Dry Film)
+            //sb.Append("('LF0014', 'RUN', '600', '2P2552Z1A2B3', 3, 20),");
+
+            //// 8. 綠漆印刷 (Solder Mask)
+            //sb.Append("('PR0254', 'RUN', '600', '2P2552C4D5E6', 3, 20), ('PR0518', 'RUN', '600', '2P2552F7G8H9', 2, 20),");
+
+            //// 9. 曝光 (Exposure)
+            //sb.Append("('EX0028', 'RUN', '300', '2P2552S0T2U4', 5, 10), ('EX0044', 'RUN', '250', '2P2552V6W8X0', 6, 10),");
+
+            //// 10. 乾膜/濕膜顯影 (Developer)
+            //sb.Append("('DE0025', 'RUN', '450', '2P2552Y2Z4A6', 8, 40), ('DE0005', 'RUN', '500', '2P2552B8C0D2', 7, 40),");
+
+            //// 11. 電鍍 (Plating)
+            //sb.Append("('PL0084', 'RUN', '3600', '2P2552E4F6G8', 20, 50), ('PL0007', 'IDLE', '0', NULL, 0, 50),");
+
+            //// 12. 去膜 (Stripper)
+            //sb.Append("('ST0012', 'RUN', '600', '2P2552H0I2J4', 5, 40),");
+
+            //// 13. Cu蝕刻 (Etch)
+            //sb.Append("('ET0023', 'RUN', '300', '2P2552Q1R2S3', 38, 40),");
+
+            //// 14. NiCr蝕刻
+            //sb.Append("('ET0026', 'RUN', '350', '2P2552K6L8M0', 8, 40),");
+
+            //// 15. AOI
+            //sb.Append("('VC0680', 'RUN', '200', '2P2552N2O4P6', 2, 10),");
+
+            //// 16. SMT (大量機台)
+            //sb.Append("('PR0008', 'RUN', '600', '2P2552T4U5V6', 5, 30), ('PR0187', 'RUN', '600', '2P2552W7X8Y9', 4, 30),");
+            //sb.Append("('VC0164', 'IDLE', '0', NULL, 0, 30), ('OV0805', 'RUN', '600', '2P2552Q8R0S2', 2, 30),");
+            //sb.Append("('VC0497', 'RUN', '600', '2P2552X1Y2Z3', 3, 30), ('SM0007', 'RUN', '500', '2P2552A4B5C6', 6, 30),");
+            //sb.Append("('SM0015', 'RUN', '500', '2P2552D7E8F9', 5, 30), ('AC1837', 'RUN', '400', '2P2552G0H1I2', 2, 30),");
+            //sb.Append("('VC0498', 'RUN', '600', '2P2552J3K4L5', 1, 30), ('VC1346', 'RUN', '600', '2P2552M6N7O8', 1, 30),");
+            //sb.Append("('VC1347', 'RUN', '600', '2P2552P9Q0R1', 1, 30), ('VC1348', 'IDLE', '0', NULL, 0, 30),");
+            //sb.Append("('OV1241', 'RUN', '600', '2P2552S2T3U4', 2, 30),");
+
+            //// 17. Slicer (切片)
+            //sb.Append("('CU0551', 'RUN', '300', '2P2552V5W6X7', 10, 50), ('CU0646', 'RUN', '300', '2P2552Y8Z9A0', 8, 50),");
+            //sb.Append("('CU0665', 'IDLE', '0', NULL, 0, 50), ('CU0454', 'RUN', '300', '2P2552B1C2D3', 9, 50),");
+            //sb.Append("('CU0481', 'RUN', '300', '2P2552E4F5G6', 7, 50), ('CU0567', 'IDLE', '0', NULL, 0, 50),");
+            //sb.Append("('CU0722', 'RUN', '300', '2P2552H7I8J9', 11, 50),");
+
+            //// 18. NiAu (化金)
+            //sb.Append("('PL0088', 'RUN', '3600', '2P2552K0L1M2', 15, 50),");
+
+            //// 19. uPOL-DB
+            //sb.Append("('SM0006', 'RUN', '800', '2P2552N3O4P5', 3, 20), ('SM0014', 'RUN', '800', '2P2552Q6R7S8', 2, 20), ('SM0054', 'IDLE', '0', NULL, 0, 20),");
+
+            //// 20. uPOL-TP (測試包裝)
+            //sb.Append("('TP1660', 'RUN', '900', '2P2552T9U0V1', 1, 10), ('TP1661', 'RUN', '900', '2P2552W2X3Y4', 1, 10),");
+            //sb.Append("('TP1662', 'RUN', '900', '2P2552Z5A6B7', 1, 10), ('TP1663', 'RUN', '900', '2P2552C8D9E0', 1, 10),");
+            //sb.Append("('TP1664', 'IDLE', '0', NULL, 0, 10), ('TP1793', 'RUN', '900', '2P2552F1G2H3', 1, 10),");
+            //sb.Append("('TP1796', 'RUN', '900', '2P2552I4J5K6', 1, 10), ('TP1797', 'RUN', '900', '2P2552L7M8N9', 1, 10),");
+            //sb.Append("('TP1872', 'RUN', '900', '2P2552O0P1Q2', 1, 10), ('TP1873', 'DOWN', '0', NULL, 0, 10),");
+            //sb.Append("('TP1874', 'RUN', '900', '2P2552R3S4T5', 1, 10), ('TP2007', 'RUN', '900', '2P2552U6V7W8', 1, 10),");
+            //sb.Append("('TP2006', 'RUN', '900', '2P2552X9Y0Z1', 1, 10), ('TP0873', 'RUN', '900', '2P2552A2B3C4', 1, 10),");
+            //sb.Append("('TP2174', 'RUN', '900', '2P2552D5E6F7', 1, 10), ('TP2175', 'IDLE', '0', NULL, 0, 10),");
+            //sb.Append("('TP2223', 'RUN', '900', '2P2552G8H9I0', 1, 10), ('TP2224', 'RUN', '900', '2P2552J1K2L3', 1, 10);");
 
             return sb.ToString();
         }
@@ -549,6 +707,30 @@ namespace APSSimulator.DB
             }
 
             return sb.ToString();
+        }
+
+        public static string ShowInputDialog(string text, string defaultVal)
+        {
+            using (System.Windows.Forms.Form prompt = new System.Windows.Forms.Form())
+            {
+                prompt.Width = 300;
+                prompt.Height = 150;
+                prompt.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+                prompt.Text = "測試資料生成";
+                prompt.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+
+                System.Windows.Forms.Label textLabel = new System.Windows.Forms.Label() { Left = 20, Top = 20, Text = text, Width = 250 };
+                System.Windows.Forms.TextBox textBox = new System.Windows.Forms.TextBox() { Left = 20, Top = 50, Width = 240, Text = defaultVal };
+                System.Windows.Forms.Button confirmation = new System.Windows.Forms.Button() { Text = "確定", Left = 180, Width = 80, Top = 80, DialogResult = System.Windows.Forms.DialogResult.OK };
+                
+                confirmation.Click += (sender, e) => { prompt.Close(); };
+                prompt.Controls.Add(textBox);
+                prompt.Controls.Add(confirmation);
+                prompt.Controls.Add(textLabel);
+                prompt.AcceptButton = confirmation;
+
+                return prompt.ShowDialog() == System.Windows.Forms.DialogResult.OK ? textBox.Text : "";
+            }
         }
     }
 }

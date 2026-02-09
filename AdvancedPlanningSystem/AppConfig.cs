@@ -12,7 +12,7 @@ namespace AdvancedPlanningSystem
         /// <summary>
         /// Port 總數量
         /// </summary>
-        public static int TotalPortCount = 12;
+        public static int TotalPortCount = 10;
 
         // 資料庫設定
         public static bool UseMockExternalDb = false; // 預設為 true (模擬模式)

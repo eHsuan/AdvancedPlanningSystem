@@ -28,6 +28,7 @@ namespace AdvancedPlanningSystem
 
         private int _currentRows = 0;
         private int _currentCols = 0;
+        private Dictionary<string, PortControl> _portMap = new Dictionary<string, PortControl>();
 
         // --- 入庫處理佇列 ---
         private ConcurrentQueue<ScanEventArgs> _stockInQueue = new ConcurrentQueue<ScanEventArgs>();
@@ -60,22 +61,28 @@ namespace AdvancedPlanningSystem
 
         private void RefreshShelfGrid()
         {
-            // Read active ports from DB
-            var activePorts = _repo.GetActivePorts(); 
-            
-            // Create lookup dictionary
-            var portDict = activePorts.ToDictionary(p => p.PortId, p => p);
-
-            foreach (Control c in tlpShelf.Controls)
+            try
             {
-                if (c is PortControl portCtrl)
+                tlpShelf.SuspendLayout();
+
+                // 1. 從資料庫讀取 active ports 資料
+                var activePorts = _repo.GetActivePorts(); 
+                var portDataDict = activePorts.ToDictionary(p => p.PortId, p => p);
+
+                // 2. 直接遍歷索引中的控制項 (不再遍歷 tlpShelf.Controls)
+                foreach (var kvp in _portMap)
                 {
-                    if (portDict.ContainsKey(portCtrl.PortID))
+                    string portId = kvp.Key;
+                    PortControl portCtrl = kvp.Value;
+
+                    if (portDataDict.ContainsKey(portId))
                     {
-                        var data = portDict[portCtrl.PortID];
+                        var data = portDataDict[portId];
                         portCtrl.CassetteID = data.CarrierId ?? "";
                         portCtrl.WorkNo = data.LotId ?? "";
                         portCtrl.TargetEqpId = data.TargetEqpId ?? ""; 
+                        portCtrl.WaitReason = data.WaitReason ?? "";
+                        portCtrl.NextStepId = data.NextStepId ?? "";
                         
                         if (!string.IsNullOrEmpty(data.DispatchTime))
                         {
@@ -95,11 +102,16 @@ namespace AdvancedPlanningSystem
                     }
                     else
                     {
+                        // 若資料庫中沒有該 Port 的 Occupied 資料，重設為空
                         portCtrl.CassetteID = "";
                         portCtrl.WorkNo = "";
                         portCtrl.Status = PortStatus.Empty;
                     }
                 }
+            }
+            finally
+            {
+                tlpShelf.ResumeLayout();
             }
         }
 
@@ -147,6 +159,7 @@ namespace AdvancedPlanningSystem
             _currentCols = cols;
             EnableDoubleBuffering(tlpShelf);
             tlpShelf.SuspendLayout();
+            _portMap.Clear();
             
             try
             {
@@ -177,6 +190,9 @@ namespace AdvancedPlanningSystem
                     port.Status = PortStatus.Empty;
                     port.Click += Port_Click;
                     tlpShelf.Controls.Add(port);
+                    
+                    // 加入索引
+                    _portMap[port.PortID] = port;
                 }
 
                 RefreshShelfGrid();

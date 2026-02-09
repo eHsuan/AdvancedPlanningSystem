@@ -9,6 +9,8 @@ namespace AdvancedPlanningSystem
     {
         private PortStatus _status;
         private string _targetEqpId;
+        private string _waitReason;
+        private string _nextStepId;
         private bool _isFlashing;
         private Timer _flashTimer;
         private bool _flashToggle;
@@ -66,35 +68,96 @@ namespace AdvancedPlanningSystem
         public string PortID
         {
             get { return lblPortID.Text; }
-            set { lblPortID.Text = value; }
+            set { if (lblPortID.Text != value) lblPortID.Text = value; }
         }
 
         [Category("Custom Properties")]
         public string CassetteID
         {
             get { return lblCstInfo.Text.Replace("CstID : ", ""); }
-            set { lblCstInfo.Text = "CstID : " + value; UpdateToolTip(); }
+            set 
+            { 
+                string newVal = "CstID : " + value;
+                if (lblCstInfo.Text != newVal)
+                {
+                    lblCstInfo.Text = newVal; 
+                    UpdateToolTip(); 
+                }
+            }
         }
 
         [Category("Custom Properties")]
         public string WorkNo
         {
             get { return lblWorkInfo.Text.Replace("WorkNo : ", ""); }
-            set { lblWorkInfo.Text = "WorkNo : " + value; UpdateToolTip(); }
+            set 
+            { 
+                string newVal = "WorkNo : " + value;
+                if (lblWorkInfo.Text != newVal)
+                {
+                    lblWorkInfo.Text = newVal; 
+                    UpdateToolTip(); 
+                }
+            }
         }
 
         [Category("Custom Properties")]
         public string TargetEqpId
         {
             get { return _targetEqpId; }
-            set { _targetEqpId = value; lblTargetInfo.Text = "Target : " + value; UpdateToolTip(); UpdateBackColor(); }
+            set 
+            { 
+                if (_targetEqpId != value)
+                {
+                    _targetEqpId = value; 
+                    lblTargetInfo.Text = "Target : " + value; 
+                    UpdateToolTip(); 
+                    UpdateBackColor(); 
+                }
+            }
+        }
+
+        [Category("Custom Properties")]
+        public string WaitReason
+        {
+            get { return _waitReason; }
+            set 
+            { 
+                if (_waitReason != value)
+                {
+                    _waitReason = value; 
+                    UpdateBackColor(); 
+                }
+            }
+        }
+
+        [Category("Custom Properties")]
+        public string NextStepId
+        {
+            get { return _nextStepId; }
+            set 
+            { 
+                if (_nextStepId != value)
+                {
+                    _nextStepId = value; 
+                    UpdateBackColor(); 
+                }
+            }
         }
 
         [Category("Custom Properties")]
         public PortStatus Status
         {
             get { return _status; }
-            set { _status = value; UpdateBackColor(); AdjustLayout(); }
+            set 
+            { 
+                if (_status != value)
+                {
+                    _status = value; 
+                    UpdateBackColor(); 
+                    AdjustLayout(); 
+                }
+            }
         }
 
         [Category("Custom Properties")]
@@ -104,9 +167,12 @@ namespace AdvancedPlanningSystem
             get { return _isFlashing; }
             set 
             { 
-                _isFlashing = value;
-                if (_isFlashing) _flashTimer.Start();
-                else { _flashTimer.Stop(); _flashToggle = false; UpdateBackColor(); }
+                if (_isFlashing != value)
+                {
+                    _isFlashing = value;
+                    if (_isFlashing) _flashTimer.Start();
+                    else { _flashTimer.Stop(); _flashToggle = false; UpdateBackColor(); }
+                }
             }
         }
 
@@ -130,6 +196,7 @@ namespace AdvancedPlanningSystem
             lblCstStatus.Visible = hasContent;
             lblCstInfo.Visible = hasContent;
             lblTargetInfo.Visible = hasContent && !string.IsNullOrEmpty(_targetEqpId);
+            
             if (!hasContent) lblWorkInfo.Visible = false;
 
             switch (_status)

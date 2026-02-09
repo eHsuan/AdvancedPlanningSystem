@@ -49,6 +49,7 @@ namespace AdvancedPlanningSystem.Models
         public string NextStepId { get; set; }     // 下一站 (用於判斷是否完工)
         public string TargetEqpId { get; set; }    // 目標機台
         public int IsHold { get; set; }            // 是否異常攔截
+        public string WaitReason { get; set; }     // 等待原因
         public double DispatchScore { get; set; }  // 派貨分數
         public double TReal { get; set; }          // 真實剩餘時間
     }

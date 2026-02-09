@@ -16,23 +16,34 @@ namespace APSSimulator
         private void InitializeComponent()
         {
             this.pnlTop = new System.Windows.Forms.Panel();
+            this.lblInfo = new System.Windows.Forms.Label();
             this.btnLoadFile = new System.Windows.Forms.Button();
             this.btnUpdate = new System.Windows.Forms.Button();
-            this.lblInfo = new System.Windows.Forms.Label();
             this.pnlChart = new System.Windows.Forms.Panel();
+            this.cbAutoRefresh = new System.Windows.Forms.CheckBox();
             this.pnlTop.SuspendLayout();
             this.SuspendLayout();
             // 
             // pnlTop
             // 
+            this.pnlTop.Controls.Add(this.cbAutoRefresh);
             this.pnlTop.Controls.Add(this.lblInfo);
             this.pnlTop.Controls.Add(this.btnLoadFile);
             this.pnlTop.Controls.Add(this.btnUpdate);
             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlTop.Location = new System.Drawing.Point(0, 0);
             this.pnlTop.Name = "pnlTop";
-            this.pnlTop.Size = new System.Drawing.Size(1000, 50);
+            this.pnlTop.Size = new System.Drawing.Size(1200, 50);
             this.pnlTop.TabIndex = 0;
+            // 
+            // lblInfo
+            // 
+            this.lblInfo.AutoSize = true;
+            this.lblInfo.Location = new System.Drawing.Point(260, 19);
+            this.lblInfo.Name = "lblInfo";
+            this.lblInfo.Size = new System.Drawing.Size(207, 12);
+            this.lblInfo.TabIndex = 2;
+            this.lblInfo.Text = "顏色說明: 貨架(綠) | 搬運(黃) | 加工(藍)";
             // 
             // btnLoadFile
             // 
@@ -54,15 +65,6 @@ namespace APSSimulator
             this.btnUpdate.UseVisualStyleBackColor = true;
             this.btnUpdate.Click += new System.EventHandler(this.btnUpdate_Click);
             // 
-            // lblInfo
-            // 
-            this.lblInfo.AutoSize = true;
-            this.lblInfo.Location = new System.Drawing.Point(260, 19);
-            this.lblInfo.Name = "lblInfo";
-            this.lblInfo.Size = new System.Drawing.Size(200, 12);
-            this.lblInfo.TabIndex = 2;
-            this.lblInfo.Text = "顏色說明: 貨架(綠) | 搬運(黃) | 加工(藍)";
-            // 
             // pnlChart
             // 
             this.pnlChart.AutoScroll = true;
@@ -70,9 +72,22 @@ namespace APSSimulator
             this.pnlChart.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlChart.Location = new System.Drawing.Point(0, 50);
             this.pnlChart.Name = "pnlChart";
-            this.pnlChart.Size = new System.Drawing.Size(1000, 550);
+            this.pnlChart.Size = new System.Drawing.Size(1200, 750);
             this.pnlChart.TabIndex = 1;
             this.pnlChart.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlChart_Paint);
+            // 
+            // cbAutoRefresh
+            // 
+            this.cbAutoRefresh.AutoSize = true;
+            this.cbAutoRefresh.Checked = true;
+            this.cbAutoRefresh.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cbAutoRefresh.Font = new System.Drawing.Font("新細明體", 12F);
+            this.cbAutoRefresh.Location = new System.Drawing.Point(1061, 15);
+            this.cbAutoRefresh.Name = "cbAutoRefresh";
+            this.cbAutoRefresh.Size = new System.Drawing.Size(90, 20);
+            this.cbAutoRefresh.TabIndex = 3;
+            this.cbAutoRefresh.Text = "自動更新";
+            this.cbAutoRefresh.UseVisualStyleBackColor = true;
             // 
             // SimulationGanttForm
             // 
@@ -95,5 +110,6 @@ namespace APSSimulator
         private System.Windows.Forms.Button btnLoadFile;
         private System.Windows.Forms.Label lblInfo;
         private System.Windows.Forms.Panel pnlChart;
+        private System.Windows.Forms.CheckBox cbAutoRefresh;
     }
 }

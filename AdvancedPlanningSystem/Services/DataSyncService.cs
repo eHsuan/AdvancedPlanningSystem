@@ -17,8 +17,8 @@ namespace AdvancedPlanningSystem.Services
     public class DataSyncService
     {
         private IMesService _mesService;
-        private ApsLocalDbRepository _repo;
-        private ApsCloudDbRepository _cloudRepo;
+        private IApsLocalDbRepository _repo;
+        private IApsCloudDbRepository _cloudRepo;
         private DispatchService _dispatchService;
         private System.Windows.Forms.ListBox _logBox;
         private SynchronizationContext _uiContext;
@@ -27,19 +27,19 @@ namespace AdvancedPlanningSystem.Services
         private bool _isSyncing = false;
 
         // --- Phase 2: MES Caching ---
-        private Dictionary<string, WipInfoResponse> _cachedWip = new Dictionary<string, WipInfoResponse>();
-        private Dictionary<string, EqStatusResponse> _cachedEqpStatus = new Dictionary<string, EqStatusResponse>();
+        internal Dictionary<string, WipInfoResponse> _cachedWip = new Dictionary<string, WipInfoResponse>();
+        internal Dictionary<string, EqStatusResponse> _cachedEqpStatus = new Dictionary<string, EqStatusResponse>();
         // [New] QTime Cache from MES API
-        private List<QTimeLimitResponse> _qTimeCache = new List<QTimeLimitResponse>();
+        internal List<QTimeLimitResponse> _qTimeCache = new List<QTimeLimitResponse>();
         // [New] StepTime Cache from MES API
-        private List<StepTimeResponse> _stepTimeCache = new List<StepTimeResponse>();
+        internal List<StepTimeResponse> _stepTimeCache = new List<StepTimeResponse>();
         
-        private DateTime _lastMesSyncTime = DateTime.MinValue;
+        internal DateTime _lastMesSyncTime = DateTime.MinValue;
         private readonly object _cacheLock = new object();
         private const int MES_SYNC_INTERVAL_SEC = 60;
         private const int DATA_STALE_LIMIT_MIN = 5;
 
-        public DataSyncService(IMesService mesService, ApsLocalDbRepository repo, ApsCloudDbRepository cloudRepo, DispatchService dispatchService, System.Windows.Forms.ListBox logBox)
+        public DataSyncService(IMesService mesService, IApsLocalDbRepository repo, IApsCloudDbRepository cloudRepo, DispatchService dispatchService, System.Windows.Forms.ListBox logBox = null)
         {
             _mesService = mesService;
             _repo = repo;
@@ -358,7 +358,7 @@ namespace AdvancedPlanningSystem.Services
         /// 單一卡匣的資料同步與評分邏輯 (Step 1~3)
         /// 三段式 QTime 判定實作 (Green/Red/Dead Zone)
         /// </summary>
-        private void ProcessBindingSyncAndScore(StatePort port, OrderInfoResponse orderInfo)
+        internal void ProcessBindingSyncAndScore(StatePort port, OrderInfoResponse orderInfo)
         {
             LogHelper.Score.Debug($"[Scoring Start] Carrier: {port.CarrierId}, Lot: {port.LotId}, Step: {orderInfo.step_id} -> {orderInfo.next_step_id}");
 

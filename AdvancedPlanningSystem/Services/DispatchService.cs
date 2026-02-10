@@ -15,12 +15,12 @@ namespace AdvancedPlanningSystem.Services
     public class DispatchService
     {
         private DataSyncService _dataSyncService;
-        private ApsLocalDbRepository _repo;
-        private ApsCloudDbRepository _cloudRepo;
-        private TcpServerModule _tcpServer;
+        private IApsLocalDbRepository _repo;
+        private IApsCloudDbRepository _cloudRepo;
+        private ITcpServerModule _tcpServer;
         private List<ConfigStepEqp> _stepEqpMapping;
 
-        public DispatchService(ApsLocalDbRepository repo, ApsCloudDbRepository cloudRepo, TcpServerModule tcpServer)
+        public DispatchService(IApsLocalDbRepository repo, IApsCloudDbRepository cloudRepo, ITcpServerModule tcpServer)
         {
             _repo = repo;
             _cloudRepo = cloudRepo;

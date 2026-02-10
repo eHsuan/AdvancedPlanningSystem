@@ -7,7 +7,7 @@ using AdvancedPlanningSystem.Models;
 
 namespace AdvancedPlanningSystem.Repositories
 {
-    public class ApsLocalDbRepository
+    public class ApsLocalDbRepository : IApsLocalDbRepository
     {
         private string _connectionString;
         private string _dbPath;

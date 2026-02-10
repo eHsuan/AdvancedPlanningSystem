@@ -511,7 +511,7 @@ namespace APSSimulator
                 MessageBoxIcon.Question);
             if (result_First == DialogResult.Yes)
             {
-                string input = DatabaseHelper.ShowInputDialog("請輸入欲生成的工單筆數：", "50");
+                string input = DatabaseHelper.ShowInputDialog("請輸入欲生成的工單筆數：", "10");
                 int count;
                 if (int.TryParse(input, out count) && count > 0)
                 {

@@ -13,6 +13,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCopyright("Copyright © 2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("AdvancedPlanningSystem.Tests")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("DynamicProxyGenAssembly2")]
 
 // 將 ComVisible 設定為 false 會使得這個組件中的型別
 // 對 COM 元件而言為不可見。如果您需要從 COM 存取這個組件中

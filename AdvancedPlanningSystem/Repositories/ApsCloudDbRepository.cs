@@ -5,7 +5,7 @@ using AdvancedPlanningSystem.Models;
 
 namespace AdvancedPlanningSystem.Repositories
 {
-    public class ApsCloudDbRepository
+    public class ApsCloudDbRepository : IApsCloudDbRepository
     {
         private string _connectionString;
         private static readonly object _cloudLock = new object();

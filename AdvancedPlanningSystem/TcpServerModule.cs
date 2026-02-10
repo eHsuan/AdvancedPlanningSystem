@@ -45,7 +45,7 @@ namespace AdvancedPlanningSystem
     /// 負責與硬體模擬器通訊的 TCP Server 模組。
     /// 支援單一客戶端連線，自動處理斷線重連與訊息解析。
     /// </summary>
-    public class TcpServerModule
+    public class TcpServerModule : ITcpServerModule
     {
         private TcpListener _listener;
         private TcpClient _currentClient;
@@ -76,7 +76,7 @@ namespace AdvancedPlanningSystem
         /// 啟動 TCP Server 監聽
         /// </summary>
         /// <param name="port">監聽埠號 (預設 5000)</param>
-        public async void Start(int port = 5000)
+        public virtual async void Start(int port = 5000)
         {
             if (_isRunning) return;
 
@@ -100,7 +100,7 @@ namespace AdvancedPlanningSystem
         /// <summary>
         /// 停止伺服器
         /// </summary>
-        public void Stop()
+        public virtual void Stop()
         {
             _isRunning = false;
             _cts?.Cancel();
@@ -112,7 +112,7 @@ namespace AdvancedPlanningSystem
         /// 發送指令給模擬器
         /// </summary>
         /// <param name="cmd">指令內容 (e.g., "OPEN,P01")</param>
-        public async Task SendCommand(string cmd)
+        public virtual async Task SendCommand(string cmd)
         {
             if (_currentClient == null || !_currentClient.Connected || _clientStream == null)
             {

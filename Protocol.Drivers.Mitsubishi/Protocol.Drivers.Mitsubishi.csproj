@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>Protocol.Drivers.Mitsubishi</AssemblyName>
+    <RootNamespace>Protocol.Drivers.Mitsubishi</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="IoTClient" Version="1.0.42" />
+  </ItemGroup>
+</Project>

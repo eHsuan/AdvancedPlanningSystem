@@ -1,0 +1,7 @@
+{
+	"Result": "success",
+	"ResultCode": "",
+	"Message": "",
+	"APSInfo_ByEqp_Request": "",
+	"APSInfo_ByEqp_Result": "[{\"MachID\":50128,\"MachNo\":\"CL0006\",\"MachAlias\":\"粗化機 roughening\",\"MachName\":\"水平粗化線\",\"MaxLot\":0,\"By_Eqp_Now_Used_Lot_Count\":20,\"WONo_List\":\"2HS2211507,2HS2211603,2HS2211802,2HS2220705,2HS2220801,2HU2211005,2HU2211006,2HU2211007,2HU2212209,2HU2213001,2HU2213002,2HU2213003,2HU2213004,2HU2220801,2HU2220802,2HU2220803,2HU2220804,2HU2220805,2HU2220806,2HU3524T01\",\"StartTime\":\"2023-11-30T10:15:59.497\",\"NowTimeStamp\":\"2026-05-25 13:46:48.990\",\"StatusDurationSec\":78377449,\"DataConnect\":\"1\",\"OriStatuCode\":\"-1\",\"StatusCode\":null,\"StatusName\":null,\"Remark\":null,\"MyNote\":\"說明:[DataConnect=連線燈號版本];[OriStatuCode=機台上報原始狀態值];[StatusCode=最終狀態碼];[StatusName=最終狀態說明];[Remark=最終狀態碼分類]\",\"LightColor\":null},{\"MachID\":51387,\"MachNo\":\"CL0188\",\"MachAlias\":\"壓合清洗模組\",\"MachName\":\"清洗模組\",\"MaxLot\":0,\"By_Eqp_Now_Used_Lot_Count\":1,\"WONo_List\":\"2SY2212260\",\"StartTime\":null,\"NowTimeStamp\":\"2026-05-25 13:46:48.990\",\"StatusDurationSec\":0,\"DataConnect\":\"1\",\"OriStatuCode\":null,\"StatusCode\":null,\"StatusName\":null,\"Remark\":null,\"MyNote\":\"說明:[DataConnect=連線燈號版本];[OriStatuCode=機台上報原始狀態值];[StatusCode=最終狀態碼];[StatusName=最終狀態說明];[Remark=最終狀態碼分類]\",\"LightColor\":null}]"
+}

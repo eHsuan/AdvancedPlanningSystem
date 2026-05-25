@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PlcAddressConfig>
+  <Ports>
+    <Port PortId="P01" Index="0">
+      <X_Door>X010</X_Door>
+      <X_Presence>X011</X_Presence>
+      <Y_Red>Y010</Y_Red>
+      <Y_Lock>Y011</Y_Lock>
+      <Y_Green>Y012</Y_Green>
+    </Port>
+    <Port PortId="P02" Index="1">
+      <X_Door>X013</X_Door>
+      <X_Presence>X014</X_Presence>
+      <Y_Red>Y013</Y_Red>
+      <Y_Lock>Y014</Y_Lock>
+      <Y_Green>Y015</Y_Green>
+    </Port>
+    <Port PortId="P03" Index="2">
+      <X_Door>X016</X_Door>
+      <X_Presence>X017</X_Presence>
+      <Y_Red>Y016</Y_Red>
+      <Y_Lock>Y017</Y_Lock>
+      <Y_Green>Y020</Y_Green>
+    </Port>
+    <Port PortId="P04" Index="3">
+      <X_Door>X021</X_Door>
+      <X_Presence>X022</X_Presence>
+      <Y_Red>Y021</Y_Red>
+      <Y_Lock>Y022</Y_Lock>
+      <Y_Green>Y023</Y_Green>
+    </Port>
+    <Port PortId="P05" Index="4">
+      <X_Door>X024</X_Door>
+      <X_Presence>X025</X_Presence>
+      <Y_Red>Y024</Y_Red>
+      <Y_Lock>Y025</Y_Lock>
+      <Y_Green>Y026</Y_Green>
+    </Port>
+    <Port PortId="P06" Index="5">
+      <X_Door>X027</X_Door>
+      <X_Presence>X030</X_Presence>
+      <Y_Red>Y027</Y_Red>
+      <Y_Lock>Y030</Y_Lock>
+      <Y_Green>Y031</Y_Green>
+    </Port>
+    <Port PortId="P07" Index="6">
+      <X_Door>X032</X_Door>
+      <X_Presence>X033</X_Presence>
+      <Y_Red>Y032</Y_Red>
+      <Y_Lock>Y033</Y_Lock>
+      <Y_Green>Y034</Y_Green>
+    </Port>
+    <Port PortId="P08" Index="7">
+      <X_Door>X035</X_Door>
+      <X_Presence>X036</X_Presence>
+      <Y_Red>Y035</Y_Red>
+      <Y_Lock>Y036</Y_Lock>
+      <Y_Green>Y037</Y_Green>
+    </Port>
+    <Port PortId="P09" Index="8">
+      <X_Door>X040</X_Door>
+      <X_Presence>X041</X_Presence>
+      <Y_Red>Y040</Y_Red>
+      <Y_Lock>Y041</Y_Lock>
+      <Y_Green>Y042</Y_Green>
+    </Port>
+    <Port PortId="P10" Index="9">
+      <X_Door>X043</X_Door>
+      <X_Presence>X044</X_Presence>
+      <Y_Red>Y043</Y_Red>
+      <Y_Lock>Y044</Y_Lock>
+      <Y_Green>Y045</Y_Green>
+    </Port>
+  </Ports>
+</PlcAddressConfig>

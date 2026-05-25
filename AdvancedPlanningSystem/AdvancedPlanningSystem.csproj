@@ -63,4 +63,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Protocol.Drivers.Mitsubishi\Protocol.Drivers.Mitsubishi.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="PLC_Adress.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

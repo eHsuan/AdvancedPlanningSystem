@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using AdvancedPlanningSystem.Repositories;
 using Protocol.Drivers.Mitsubishi;
 
@@ -25,26 +27,15 @@ namespace AdvancedPlanningSystem.Services
         public event EventHandler<PlcScanEventArgs> OnScan;
         public event EventHandler<PlcPickEventArgs> OnPick;
 
-        // PLC 實體點位對照設定
-        private static readonly List<PortIoConfig> PortConfigs = new List<PortIoConfig>
-        {
-            new PortIoConfig { PortId = "P01", Index = 0, X_Door = "X010", X_Presence = "X011", Y_Red = "Y010", Y_Lock = "Y011", Y_Green = "Y012" },
-            new PortIoConfig { PortId = "P02", Index = 1, X_Door = "X013", X_Presence = "X014", Y_Red = "Y013", Y_Lock = "Y014", Y_Green = "Y015" },
-            new PortIoConfig { PortId = "P03", Index = 2, X_Door = "X016", X_Presence = "X017", Y_Red = "Y016", Y_Lock = "Y017", Y_Green = "Y020" },
-            new PortIoConfig { PortId = "P04", Index = 3, X_Door = "X021", X_Presence = "X022", Y_Red = "Y021", Y_Lock = "Y022", Y_Green = "Y023" },
-            new PortIoConfig { PortId = "P05", Index = 4, X_Door = "X024", X_Presence = "X025", Y_Red = "Y024", Y_Lock = "Y025", Y_Green = "Y026" },
-            new PortIoConfig { PortId = "P06", Index = 5, X_Door = "X027", X_Presence = "X030", Y_Red = "Y027", Y_Lock = "Y030", Y_Green = "Y031" },
-            new PortIoConfig { PortId = "P07", Index = 6, X_Door = "X032", X_Presence = "X033", Y_Red = "Y032", Y_Lock = "Y033", Y_Green = "Y034" },
-            new PortIoConfig { PortId = "P08", Index = 7, X_Door = "X035", X_Presence = "X036", Y_Red = "Y035", Y_Lock = "Y036", Y_Green = "Y037" },
-            new PortIoConfig { PortId = "P09", Index = 8, X_Door = "X040", X_Presence = "X041", Y_Red = "Y040", Y_Lock = "Y041", Y_Green = "Y042" },
-            new PortIoConfig { PortId = "P10", Index = 9, X_Door = "X043", X_Presence = "X044", Y_Red = "Y043", Y_Lock = "Y044", Y_Green = "Y045" }
-        };
-
-        public PlcService(IApsLocalDbRepository repo)
+        public PlcService(IApsLocalDbRepository repo, string xmlPath = null)
         {
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
             _driver = new McDriver();
-            _portStates = PortConfigs.Select(cfg => new PortRuntimeState
+
+            string path = xmlPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "PLC_Adress.xml");
+            var configs = LoadPortConfigsFromXml(path);
+
+            _portStates = configs.Select(cfg => new PortRuntimeState
             {
                 Config = cfg,
                 DebouncedDoor = true,       // 預設門關閉 (true)
@@ -52,6 +43,40 @@ namespace AdvancedPlanningSystem.Services
                 PrevDoor = true,
                 PrevPresence = false
             }).ToList();
+        }
+
+        private List<PortIoConfig> LoadPortConfigsFromXml(string path)
+        {
+            if (!File.Exists(path))
+            {
+                string msg = string.Format("[PLC] XML 位址設定檔不存在: {0}", path);
+                LogHelper.Dispatch.Error(msg);
+                throw new FileNotFoundException(msg);
+            }
+
+            try
+            {
+                var doc = XDocument.Load(path);
+                var configs = doc.Descendants("Port").Select(p => new PortIoConfig
+                {
+                    PortId = p.Attribute("PortId")?.Value,
+                    Index = int.Parse(p.Attribute("Index")?.Value ?? "0"),
+                    X_Door = p.Element("X_Door")?.Value,
+                    X_Presence = p.Element("X_Presence")?.Value,
+                    Y_Red = p.Element("Y_Red")?.Value,
+                    Y_Lock = p.Element("Y_Lock")?.Value,
+                    Y_Green = p.Element("Y_Green")?.Value
+                }).ToList();
+
+                LogHelper.Dispatch.Info(string.Format("[PLC] 成功從 XML 載入 {0} 個 Port 設定資訊。", configs.Count));
+                return configs;
+            }
+            catch (Exception ex)
+            {
+                string msg = string.Format("[PLC] 解析 XML 設定檔失敗: {0}", path);
+                LogHelper.Dispatch.Error(msg, ex);
+                throw new InvalidOperationException(msg, ex);
+            }
         }
 
         public void Start()

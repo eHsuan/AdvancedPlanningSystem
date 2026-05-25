@@ -41,5 +41,12 @@ namespace AdvancedPlanningSystem
 
         // 其他未來可能的設定
         // public static string ConnectionString = "...";
+
+        // PLC 設定
+        public static bool PlcEnabled = true;
+        public static string PlcIp = "192.168.1.10";
+        public static int PlcPort = 6000;
+        public static string PlcBarcodeBaseAddress = "D1000";
+        public static int PlcPollIntervalMs = 100;
     }
 }

@@ -17,6 +17,7 @@ namespace AdvancedPlanningSystem
     {
         // Communication components
         private TcpServerModule _tcpServer;
+        private AdvancedPlanningSystem.Services.PlcService _plcService;
         private IMesService _mesService;
         private AdvancedPlanningSystem.Services.ExternalDataService _externalDb;
         private AdvancedPlanningSystem.Repositories.ApsLocalDbRepository _repo; 
@@ -57,6 +58,10 @@ namespace AdvancedPlanningSystem
             uiTimer.Interval = 1000;
             uiTimer.Tick += (s, e) => RefreshShelfGrid();
             uiTimer.Start();
+
+            this.FormClosing += (s, e) => {
+                _plcService?.Dispose();
+            };
         }
 
         private void RefreshShelfGrid()
@@ -285,38 +290,7 @@ namespace AdvancedPlanningSystem
             };
 
             _tcpServer.OnPick += async (s, e) => {
-                string rawPortId = e.PortID;
-                string portId = rawPortId;
-                int pNum;
-                if (int.TryParse(rawPortId, out pNum)) portId = "P" + pNum.ToString("D2");
-
-                AddLog($"[PICK] Port: {portId}");
-
-                var portState = _repo.GetActivePorts().FirstOrDefault(p => p.PortId == portId);
-                if (portState != null && !string.IsNullOrEmpty(portState.CarrierId))
-                {
-                    var binding = _repo.GetBinding(portState.CarrierId);
-                    if (binding != null)
-                    {
-                        int bufferMin = 30; 
-                        var transit = new AdvancedPlanningSystem.Models.StateTransit
-                        {
-                            CarrierId = binding.CarrierId,
-                            LotId = binding.LotId,
-                            TargetEqpId = binding.TargetEqpId,
-                            NextStepId = binding.NextStepId,
-                            DispatchTime = binding.DispatchTime ?? DateTime.Now.ToString("yyyyMMddHHmmss"),
-                            PickupTime = DateTime.Now.ToString("yyyyMMddHHmmss"),
-                            ExpectedArrivalTime = DateTime.Now.AddMinutes(bufferMin).ToString("yyyyMMddHHmmss"),
-                            IsOverdue = 0
-                        };
-
-                        _repo.MoveToTransit(transit);
-                        AddLog($"[Transit] {binding.CarrierId} picked up, expected arrival in {bufferMin} mins.");
-                    }
-                }
-                UpdatePortStatus(portId, "", "", PortStatus.Empty);
-                _repo.UpdatePortStateOnly(portId, "EMPTY");
+                await HandleCarrierPickupAsync(e.PortID);
             };
 
             _tcpServer.OnEnterEqp += async (s, e) => {
@@ -337,7 +311,26 @@ namespace AdvancedPlanningSystem
                 lblSimStatus.Text = "Simulator Disabled";
             }
 
-            _dispatchService = new AdvancedPlanningSystem.Services.DispatchService(_repo, _cloudRepo, _tcpServer);
+            // 初始化與啟動 PLC 控制服務
+            _plcService = new AdvancedPlanningSystem.Services.PlcService(_repo);
+            _plcService.OnScan += (s, e) => {
+                _stockInQueue.Enqueue(new ScanEventArgs(e.PortID, e.Barcode));
+            };
+            _plcService.OnPick += async (s, e) => {
+                await HandleCarrierPickupAsync(e.PortID);
+            };
+
+            if (AppConfig.PlcEnabled)
+            {
+                _plcService.Start();
+                AddLog("PLC Control Service Enabled and Started.");
+            }
+            else
+            {
+                AddLog("PLC Control Service Disabled.");
+            }
+
+            _dispatchService = new AdvancedPlanningSystem.Services.DispatchService(_repo, _cloudRepo, _tcpServer, _plcService);
             _syncService = new AdvancedPlanningSystem.Services.DataSyncService(_mesService, _repo, _cloudRepo, _dispatchService, lstLog);
             _dispatchService.SetDataSyncService(_syncService);
 
@@ -457,6 +450,42 @@ namespace AdvancedPlanningSystem
                 null, 
                 control, 
                 new object[] { true });
+        }
+
+        private async Task HandleCarrierPickupAsync(string rawPortId)
+        {
+            string portId = rawPortId;
+            int pNum;
+            if (int.TryParse(rawPortId, out pNum)) portId = "P" + pNum.ToString("D2");
+
+            AddLog($"[PICK] Port: {portId}");
+
+            var portState = _repo.GetActivePorts().FirstOrDefault(p => p.PortId == portId);
+            if (portState != null && !string.IsNullOrEmpty(portState.CarrierId))
+            {
+                var binding = _repo.GetBinding(portState.CarrierId);
+                if (binding != null)
+                {
+                    int bufferMin = (int)AppConfig.TransportBufferMin; 
+                    var transit = new AdvancedPlanningSystem.Models.StateTransit
+                    {
+                        CarrierId = binding.CarrierId,
+                        LotId = binding.LotId,
+                        TargetEqpId = binding.TargetEqpId,
+                        NextStepId = binding.NextStepId,
+                        DispatchTime = binding.DispatchTime ?? DateTime.Now.ToString("yyyyMMddHHmmss"),
+                        PickupTime = DateTime.Now.ToString("yyyyMMddHHmmss"),
+                        ExpectedArrivalTime = DateTime.Now.AddMinutes(bufferMin).ToString("yyyyMMddHHmmss"),
+                        IsOverdue = 0
+                    };
+
+                    _repo.MoveToTransit(transit);
+                    AddLog($"[Transit] {binding.CarrierId} picked up, expected arrival in {bufferMin} mins.");
+                }
+            }
+            UpdatePortStatus(portId, "", "", PortStatus.Empty);
+            _repo.UpdatePortStateOnly(portId, "EMPTY");
+            await Task.CompletedTask;
         }
     }
 }

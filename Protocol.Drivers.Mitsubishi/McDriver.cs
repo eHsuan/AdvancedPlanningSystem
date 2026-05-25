@@ -103,7 +103,7 @@ namespace Protocol.Drivers.Mitsubishi
         {
             if (_client == null) return false;
             string addr = NormalizeAddress(address);
-            if (addr.StartsWith("M") && bitOffset == 0)
+            if ((addr.StartsWith("M") || addr.StartsWith("X") || addr.StartsWith("Y")) && bitOffset == 0)
             {
                 var res = _client.ReadBoolean(addr);
                 if (res.IsSucceed) return await Task.FromResult(res.Value);
@@ -117,7 +117,7 @@ namespace Protocol.Drivers.Mitsubishi
         {
             if (_client == null) throw new Exception("[MC_DRIVER] Client not initialized.");
             string addr = NormalizeAddress(address);
-            if (addr.StartsWith("M") && bitOffset == 0)
+            if ((addr.StartsWith("M") || addr.StartsWith("X") || addr.StartsWith("Y")) && bitOffset == 0)
             {
                 var res = _client.Write(addr, value);
                 if (!res.IsSucceed) throw new Exception(string.Format("MC Write Bit Failed: {0}, Error: {1}", addr, res.Err));

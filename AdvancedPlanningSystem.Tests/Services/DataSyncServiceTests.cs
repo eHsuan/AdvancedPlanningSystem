@@ -25,7 +25,7 @@ namespace AdvancedPlanningSystem.Tests.Services
             _mockCloud = new Mock<IApsCloudDbRepository>();
             
             var tcpMock = new Mock<TcpServerModule>();
-            _mockDispatch = new Mock<DispatchService>(_mockRepo.Object, _mockCloud.Object, tcpMock.Object);
+            _mockDispatch = new Mock<DispatchService>(_mockRepo.Object, _mockCloud.Object, tcpMock.Object, null);
 
             _service = new DataSyncService(
                 _mockMes.Object, 

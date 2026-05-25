@@ -18,13 +18,15 @@ namespace AdvancedPlanningSystem.Services
         private IApsLocalDbRepository _repo;
         private IApsCloudDbRepository _cloudRepo;
         private ITcpServerModule _tcpServer;
+        private PlcService _plcService;
         private List<ConfigStepEqp> _stepEqpMapping;
 
-        public DispatchService(IApsLocalDbRepository repo, IApsCloudDbRepository cloudRepo, ITcpServerModule tcpServer)
+        public DispatchService(IApsLocalDbRepository repo, IApsCloudDbRepository cloudRepo, ITcpServerModule tcpServer, PlcService plcService)
         {
             _repo = repo;
             _cloudRepo = cloudRepo;
             _tcpServer = tcpServer;
+            _plcService = plcService;
         }
 
         public void SetDataSyncService(DataSyncService dataSyncService)
@@ -193,8 +195,15 @@ namespace AdvancedPlanningSystem.Services
             {
                 if (!string.IsNullOrEmpty(cassette.PortId))
                 {
-                    string cmd = $"OPEN,{cassette.PortId},Pass99";
-                    await _tcpServer.SendCommand(cmd);
+                    if (AppConfig.PlcEnabled && _plcService != null)
+                    {
+                        await _plcService.UnlockDoorAsync(cassette.PortId);
+                    }
+                    else
+                    {
+                        string cmd = $"OPEN,{cassette.PortId},Pass99";
+                        await _tcpServer.SendCommand(cmd);
+                    }
 
                     cassette.DispatchTime = DateTime.Now.ToString("yyyyMMddHHmmss");
                     cassette.TargetEqpId = "Pass99";
@@ -233,8 +242,15 @@ namespace AdvancedPlanningSystem.Services
                 {
                     if (!string.IsNullOrEmpty(cassette.PortId))
                     {
-                        string cmd = $"OPEN,{cassette.PortId},STOCK";
-                        await _tcpServer.SendCommand(cmd);
+                        if (AppConfig.PlcEnabled && _plcService != null)
+                        {
+                            await _plcService.UnlockDoorAsync(cassette.PortId);
+                        }
+                        else
+                        {
+                            string cmd = $"OPEN,{cassette.PortId},STOCK";
+                            await _tcpServer.SendCommand(cmd);
+                        }
 
                         cassette.DispatchTime = DateTime.Now.ToString("yyyyMMddHHmmss");
                         cassette.TargetEqpId = "STOCK"; 
@@ -339,8 +355,15 @@ namespace AdvancedPlanningSystem.Services
                         {
                             if (!string.IsNullOrEmpty(cassette.PortId))
                             {
-                                string cmd = $"OPEN,{cassette.PortId},{eqpId}";
-                                await _tcpServer.SendCommand(cmd);
+                                if (AppConfig.PlcEnabled && _plcService != null)
+                                {
+                                    await _plcService.UnlockDoorAsync(cassette.PortId);
+                                }
+                                else
+                                {
+                                    string cmd = $"OPEN,{cassette.PortId},{eqpId}";
+                                    await _tcpServer.SendCommand(cmd);
+                                }
                                 cassette.DispatchTime = DateTime.Now.ToString("yyyyMMddHHmmss");
                                 cassette.TargetEqpId = eqpId;
                                 _repo.InsertBinding(cassette); 

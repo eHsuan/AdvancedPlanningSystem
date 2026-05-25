@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net452</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <RootNamespace>APSSimulator</RootNamespace>
     <AssemblyName>APSSimulator</AssemblyName>
     <UseWindowsForms>true</UseWindowsForms>

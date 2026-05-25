@@ -27,7 +27,7 @@ namespace AdvancedPlanningSystem.Tests.Services
             _mockTcp = new Mock<ITcpServerModule>();
             _mockMes = new Mock<IMesService>();
 
-            _dispatchService = new DispatchService(_mockRepo.Object, _mockCloud.Object, _mockTcp.Object);
+            _dispatchService = new DispatchService(_mockRepo.Object, _mockCloud.Object, _mockTcp.Object, null);
             
             // 建立 DataSyncService 並初始化內部狀態
             _dataSyncService = new DataSyncService(_mockMes.Object, _mockRepo.Object, _mockCloud.Object, _dispatchService, null);

@@ -90,6 +90,14 @@ namespace APSSimulator.Server
                 }
             }
 
+            bool isFormParam = false;
+            if (method == "POST" && requestBody.StartsWith("pParameter=", StringComparison.OrdinalIgnoreCase))
+            {
+                isFormParam = true;
+                string encodedVal = requestBody.Substring("pParameter=".Length);
+                requestBody = Uri.UnescapeDataString(encodedVal);
+            }
+
             log.Info($"--- Incoming Request ---");
             log.Info($"{method} {path}");
             if (!string.IsNullOrEmpty(requestBody))
@@ -304,9 +312,19 @@ namespace APSSimulator.Server
             }
             log.Info($"------------------------");
 
-            byte[] buffer = Encoding.UTF8.GetBytes(responseString);
+            byte[] buffer;
+            if (isFormParam && path.EndsWith("/woqry"))
+            {
+                string responseXml = $"<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<string xmlns=\"CyntecMES\">{responseString}</string>";
+                buffer = Encoding.UTF8.GetBytes(responseXml);
+                context.Response.ContentType = "text/xml; charset=utf-8";
+            }
+            else
+            {
+                buffer = Encoding.UTF8.GetBytes(responseString);
+                context.Response.ContentType = "application/json";
+            }
             context.Response.StatusCode = statusCode;
-            context.Response.ContentType = "application/json";
             context.Response.ContentLength64 = buffer.Length;
             await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
             context.Response.Close();

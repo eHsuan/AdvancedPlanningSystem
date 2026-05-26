@@ -324,8 +324,17 @@ namespace AdvancedPlanningSystem
 
                     if (method == "POST")
                     {
-                        var content = new System.Net.Http.StringContent(jsonBody, Encoding.UTF8, "application/json");
-                        response = await client.PostAsync(fullUrl, content);
+                        if (endpoint.Equals("/WOQRY", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var dict = new Dictionary<string, string> { { "pParameter", jsonBody } };
+                            var content = new System.Net.Http.FormUrlEncodedContent(dict);
+                            response = await client.PostAsync(fullUrl, content);
+                        }
+                        else
+                        {
+                            var content = new System.Net.Http.StringContent(jsonBody, Encoding.UTF8, "application/json");
+                            response = await client.PostAsync(fullUrl, content);
+                        }
                     }
                     else
                     {
@@ -335,9 +344,23 @@ namespace AdvancedPlanningSystem
                     string resBody = await response.Content.ReadAsStringAsync();
                     Log($"Response Status: {(int)response.StatusCode} ({response.StatusCode})");
 
+                    string jsonToDecode = resBody;
+                    if (resBody.TrimStart().StartsWith("<"))
+                    {
+                        try
+                        {
+                            var doc = System.Xml.Linq.XDocument.Parse(resBody);
+                            jsonToDecode = doc.Root.Value;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log($"Failed to parse XML response: {ex.Message}");
+                        }
+                    }
+
                     try
                     {
-                        var parsedJson = _jsonSerializer.DeserializeObject(resBody);
+                        var parsedJson = _jsonSerializer.DeserializeObject(jsonToDecode);
                         txtOutput.AppendText($"=== Response Body ==={Environment.NewLine}{FormatJson(parsedJson)}{Environment.NewLine}");
                     }
                     catch

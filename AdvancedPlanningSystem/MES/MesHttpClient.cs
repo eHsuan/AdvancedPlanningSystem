@@ -57,17 +57,41 @@ namespace AdvancedPlanningSystem.MES
             string json = _serializer.Serialize(data);
             LogHelper.MES.Info($"[MES POST] {url} Body: {json}");
 
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            HttpResponseMessage response = await _httpClient.PostAsync(url, content);
+            HttpResponseMessage response;
+            if (endpoint.Equals("/WOQRY", StringComparison.OrdinalIgnoreCase))
+            {
+                var dict = new Dictionary<string, string> { { "pParameter", json } };
+                var content = new FormUrlEncodedContent(dict);
+                response = await _httpClient.PostAsync(url, content);
+            }
+            else
+            {
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                response = await _httpClient.PostAsync(url, content);
+            }
             
-            string responseJson = await response.Content.ReadAsStringAsync();
-            LogHelper.MES.Info($"[MES Response] {response.StatusCode}: {responseJson}");
+            string responseContent = await response.Content.ReadAsStringAsync();
+            LogHelper.MES.Info($"[MES Response] {response.StatusCode}: {responseContent}");
 
             if (response.IsSuccessStatusCode)
             {
+                string jsonToDecode = responseContent;
+                if (responseContent.TrimStart().StartsWith("<"))
+                {
+                    try
+                    {
+                        var doc = System.Xml.Linq.XDocument.Parse(responseContent);
+                        jsonToDecode = doc.Root.Value;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogHelper.MES.Error($"Failed to parse XML response from {url}: {ex.Message}. Using raw response.");
+                    }
+                }
+
                 try
                 {
-                    var wrapper = _serializer.Deserialize<MesApiResponse<T>>(responseJson);
+                    var wrapper = _serializer.Deserialize<MesApiResponse<T>>(jsonToDecode);
                     if (wrapper != null && wrapper.Data != null)
                     {
                         return wrapper.Data;
@@ -75,11 +99,11 @@ namespace AdvancedPlanningSystem.MES
                 }
                 catch { }
 
-                return _serializer.Deserialize<T>(responseJson);
+                return _serializer.Deserialize<T>(jsonToDecode);
             }
             
             // Throw exception if not success
-            throw new HttpRequestException($"MES POST Failed: {response.StatusCode} - {responseJson}");
+            throw new HttpRequestException($"MES POST Failed: {response.StatusCode} - {responseContent}");
         }
 
         // --- Batch Implementations ---

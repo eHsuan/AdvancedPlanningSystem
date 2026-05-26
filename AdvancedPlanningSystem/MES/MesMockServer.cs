@@ -63,6 +63,14 @@ namespace AdvancedPlanningSystem.MES
                 requestBody = reader.ReadToEnd();
             }
 
+            bool isFormParam = false;
+            if (method == "POST" && requestBody.StartsWith("pParameter=", StringComparison.OrdinalIgnoreCase))
+            {
+                isFormParam = true;
+                string encodedVal = requestBody.Substring("pParameter=".Length);
+                requestBody = Uri.UnescapeDataString(encodedVal);
+            }
+
             object responseObj = null;
 
             if (method == "POST")
@@ -198,8 +206,18 @@ namespace AdvancedPlanningSystem.MES
             }
 
             string responseJson = responseObj != null ? _serializer.Serialize(responseObj) : "{}";
-            byte[] buffer = Encoding.UTF8.GetBytes(responseJson);
-            context.Response.ContentType = "application/json";
+            byte[] buffer;
+            if (isFormParam && path.EndsWith("/woqry"))
+            {
+                string responseXml = $"<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<string xmlns=\"CyntecMES\">{responseJson}</string>";
+                buffer = Encoding.UTF8.GetBytes(responseXml);
+                context.Response.ContentType = "text/xml; charset=utf-8";
+            }
+            else
+            {
+                buffer = Encoding.UTF8.GetBytes(responseJson);
+                context.Response.ContentType = "application/json";
+            }
             context.Response.ContentLength64 = buffer.Length;
             context.Response.OutputStream.Write(buffer, 0, buffer.Length);
             context.Response.OutputStream.Close();

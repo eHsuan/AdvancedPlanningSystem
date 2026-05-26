@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using AdvancedPlanningSystem.MES;
+using AdvancedPlanningSystem.Models;
 using System.Web.Script.Serialization;
 
 namespace AdvancedPlanningSystem
@@ -107,6 +108,16 @@ namespace AdvancedPlanningSystem
                 
                 var ids = input.Split(',').Select(s => s.Trim()).ToList();
                 
+                var ask = new ApsEqpAsk
+                {
+                    TransactionName = "WOQRY",
+                    EqpNo = ids.Count > 0 ? ids[0] : "",
+                    WONO = "0000000000",
+                    UserID = "000000",
+                    GetAPSInfo_ByEqp = string.Join(",", ids)
+                };
+                txtOutput.AppendText($"=== Request Body ==={Environment.NewLine}{FormatJson(ask)}{Environment.NewLine}{Environment.NewLine}");
+
                 Log("1/2: Fetching WIP Batch...");
                 var wipResult = await _mesService.GetWipBatchAsync(ids);
                 Log($"WIP Result Count: {wipResult.Count}");
@@ -136,6 +147,17 @@ namespace AdvancedPlanningSystem
                 }
 
                 var ids = input.Split(',').Select(s => s.Trim()).ToList();
+                
+                var ask = new ApsLotAsk
+                {
+                    TransactionName = "WOQRY",
+                    EqpNo = AppConfig.MesDefaultEqpNo,
+                    WONO = "0000000000",
+                    UserID = "000000",
+                    GetAPSInfo_ByLot = string.Join(",", ids)
+                };
+                txtOutput.AppendText($"=== Request Body ==={Environment.NewLine}{FormatJson(ask)}{Environment.NewLine}{Environment.NewLine}");
+
                 var result = await _mesService.GetOrderInfoBatchAsync(ids);
 
                 Log($"Result Count: {result.Count}");
@@ -152,6 +174,17 @@ namespace AdvancedPlanningSystem
             try
             {
                 Log("Executing GetAllQTimeLimitsAsync...");
+                
+                var ask = new ApsQTimeAsk
+                {
+                    TransactionName = "WOQRY",
+                    EqpNo = AppConfig.MesDefaultEqpNo,
+                    WONO = "0000000000",
+                    UserID = "000000",
+                    GetAPSInfo_QTime = "UP"
+                };
+                txtOutput.AppendText($"=== Request Body ==={Environment.NewLine}{FormatJson(ask)}{Environment.NewLine}{Environment.NewLine}");
+
                 var result = await _mesService.GetAllQTimeLimitsAsync();
                 
                 Log($"Result Count: {result.Count}");
@@ -168,6 +201,8 @@ namespace AdvancedPlanningSystem
             try
             {
                 Log("Executing GetAllStepTimesAsync...");
+                txtOutput.AppendText($"[Info] No request sent. StepTime API is removed in formal MES spec (using 5 mins default fallback).{Environment.NewLine}{Environment.NewLine}");
+
                 var result = await _mesService.GetAllStepTimesAsync();
 
                 Log($"Result Count: {result.Count}");

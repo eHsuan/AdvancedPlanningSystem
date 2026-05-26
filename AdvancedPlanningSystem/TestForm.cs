@@ -97,7 +97,7 @@ namespace AdvancedPlanningSystem
         {
             try
             {
-                Log("Executing GetWipBatchAsync...");
+                Log("Executing Get WIP and EqStatus for APS_Eqp...");
                 string input = txtInput.Text.Trim();
                 if (string.IsNullOrEmpty(input))
                 {
@@ -106,34 +106,16 @@ namespace AdvancedPlanningSystem
                 }
                 
                 var ids = input.Split(',').Select(s => s.Trim()).ToList();
-                var result = await _mesService.GetWipBatchAsync(ids);
                 
-                Log($"Result Count: {result.Count}");
-                txtOutput.AppendText(FormatJson(result) + Environment.NewLine);
-            }
-            catch (Exception ex)
-            {
-                Log($"Error: {ex.Message}");
-            }
-        }
-
-        private async void btnTestGetEqStatus_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                Log("Executing GetEquipmentStatusBatchAsync...");
-                string input = txtInput.Text.Trim();
-                if (string.IsNullOrEmpty(input))
-                {
-                    input = "EQP01,EQP02,EQP03"; 
-                    Log($"Using default IDs: {input}");
-                }
-
-                var ids = input.Split(',').Select(s => s.Trim()).ToList();
-                var result = await _mesService.GetEquipmentStatusBatchAsync(ids);
-
-                Log($"Result Count: {result.Count}");
-                txtOutput.AppendText(FormatJson(result) + Environment.NewLine);
+                Log("1/2: Fetching WIP Batch...");
+                var wipResult = await _mesService.GetWipBatchAsync(ids);
+                Log($"WIP Result Count: {wipResult.Count}");
+                txtOutput.AppendText("=== WIP Info ===" + Environment.NewLine + FormatJson(wipResult) + Environment.NewLine);
+                
+                Log("2/2: Fetching Equipment Status...");
+                var statusResult = await _mesService.GetEquipmentStatusBatchAsync(ids);
+                Log($"Status Result Count: {statusResult.Count}");
+                txtOutput.AppendText("=== EqStatus Info ===" + Environment.NewLine + FormatJson(statusResult) + Environment.NewLine);
             }
             catch (Exception ex)
             {

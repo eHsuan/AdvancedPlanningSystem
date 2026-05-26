@@ -26,7 +26,6 @@ namespace AdvancedPlanningSystem
             this.btnTestStepTime = new System.Windows.Forms.Button();
             this.btnTestQTime = new System.Windows.Forms.Button();
             this.btnTestGetOrder = new System.Windows.Forms.Button();
-            this.btnTestGetEqStatus = new System.Windows.Forms.Button();
             this.btnTestGetWip = new System.Windows.Forms.Button();
             this.txtOutput = new System.Windows.Forms.TextBox();
             this.tabControl1.SuspendLayout();
@@ -118,7 +117,6 @@ namespace AdvancedPlanningSystem
             this.grpActions.Controls.Add(this.btnTestStepTime);
             this.grpActions.Controls.Add(this.btnTestQTime);
             this.grpActions.Controls.Add(this.btnTestGetOrder);
-            this.grpActions.Controls.Add(this.btnTestGetEqStatus);
             this.grpActions.Controls.Add(this.btnTestGetWip);
             this.grpActions.Dock = System.Windows.Forms.DockStyle.Right;
             this.grpActions.Location = new System.Drawing.Point(436, 0);
@@ -140,7 +138,7 @@ namespace AdvancedPlanningSystem
             // 
             // btnTestStepTime
             // 
-            this.btnTestStepTime.Location = new System.Drawing.Point(168, 100);
+            this.btnTestStepTime.Location = new System.Drawing.Point(168, 60);
             this.btnTestStepTime.Name = "btnTestStepTime";
             this.btnTestStepTime.Size = new System.Drawing.Size(140, 30);
             this.btnTestStepTime.TabIndex = 5;
@@ -150,41 +148,31 @@ namespace AdvancedPlanningSystem
             // 
             // btnTestQTime
             // 
-            this.btnTestQTime.Location = new System.Drawing.Point(168, 60);
+            this.btnTestQTime.Location = new System.Drawing.Point(168, 20);
             this.btnTestQTime.Name = "btnTestQTime";
             this.btnTestQTime.Size = new System.Drawing.Size(140, 30);
             this.btnTestQTime.TabIndex = 3;
-            this.btnTestQTime.Text = "Get All QTimes";
+            this.btnTestQTime.Text = "Get APS_Qtime";
             this.btnTestQTime.UseVisualStyleBackColor = true;
             this.btnTestQTime.Click += new System.EventHandler(this.btnTestQTime_Click);
             // 
             // btnTestGetOrder
             // 
-            this.btnTestGetOrder.Location = new System.Drawing.Point(168, 20);
+            this.btnTestGetOrder.Location = new System.Drawing.Point(16, 20);
             this.btnTestGetOrder.Name = "btnTestGetOrder";
             this.btnTestGetOrder.Size = new System.Drawing.Size(140, 30);
             this.btnTestGetOrder.TabIndex = 2;
-            this.btnTestGetOrder.Text = "Get Order Info (Batch)";
+            this.btnTestGetOrder.Text = "Get APS_Lot";
             this.btnTestGetOrder.UseVisualStyleBackColor = true;
             this.btnTestGetOrder.Click += new System.EventHandler(this.btnTestGetOrder_Click);
             // 
-            // btnTestGetEqStatus
-            // 
-            this.btnTestGetEqStatus.Location = new System.Drawing.Point(16, 60);
-            this.btnTestGetEqStatus.Name = "btnTestGetEqStatus";
-            this.btnTestGetEqStatus.Size = new System.Drawing.Size(140, 30);
-            this.btnTestGetEqStatus.TabIndex = 1;
-            this.btnTestGetEqStatus.Text = "Get EqStatus (Batch)";
-            this.btnTestGetEqStatus.UseVisualStyleBackColor = true;
-            this.btnTestGetEqStatus.Click += new System.EventHandler(this.btnTestGetEqStatus_Click);
-            // 
             // btnTestGetWip
             // 
-            this.btnTestGetWip.Location = new System.Drawing.Point(16, 20);
+            this.btnTestGetWip.Location = new System.Drawing.Point(16, 60);
             this.btnTestGetWip.Name = "btnTestGetWip";
             this.btnTestGetWip.Size = new System.Drawing.Size(140, 30);
             this.btnTestGetWip.TabIndex = 0;
-            this.btnTestGetWip.Text = "Get WIP (Batch)";
+            this.btnTestGetWip.Text = "Get APS_Eqp";
             this.btnTestGetWip.UseVisualStyleBackColor = true;
             this.btnTestGetWip.Click += new System.EventHandler(this.btnTestGetWip_Click);
             // 
@@ -228,7 +216,6 @@ namespace AdvancedPlanningSystem
         private System.Windows.Forms.TextBox txtInput;
         private System.Windows.Forms.Label lblHelp;
         private System.Windows.Forms.Button btnTestGetWip;
-        private System.Windows.Forms.Button btnTestGetEqStatus;
         private System.Windows.Forms.Button btnTestGetOrder;
         private System.Windows.Forms.Button btnTestQTime;
         private System.Windows.Forms.Button btnTestStepTime;

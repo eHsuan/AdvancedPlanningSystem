@@ -312,6 +312,10 @@ namespace AdvancedPlanningSystem
             try
             {
                 Log($"Sending {method} Request to: {fullUrl} ...");
+                if (method == "POST" && !string.IsNullOrEmpty(jsonBody))
+                {
+                    txtOutput.AppendText($"=== Request Body ==={Environment.NewLine}{jsonBody}{Environment.NewLine}{Environment.NewLine}");
+                }
 
                 using (var client = new System.Net.Http.HttpClient())
                 {

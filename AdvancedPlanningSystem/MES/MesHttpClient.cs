@@ -126,7 +126,7 @@ namespace AdvancedPlanningSystem.MES
             var ask = new ApsEqpAsk
             {
                 TransactionName = "WOQRY",
-                EqpNo = eqpIds[0],
+                EqpNo = AppConfig.MesDefaultEqpNo,
                 WONO = "0000000000",
                 UserID = "000000",
                 GetAPSInfo_ByEqp = string.Join(",", eqpIds)

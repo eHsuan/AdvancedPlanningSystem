@@ -324,7 +324,7 @@ namespace AdvancedPlanningSystem
 
                     if (method == "POST")
                     {
-                        if (endpoint.Equals("/WOQRY", StringComparison.OrdinalIgnoreCase))
+                        if (endpoint.Equals("/WOQRY", StringComparison.OrdinalIgnoreCase) || endpoint.Equals("/EqpTransaction", StringComparison.OrdinalIgnoreCase))
                         {
                             var dict = new Dictionary<string, string> { { "pParameter", jsonBody } };
                             var content = new System.Net.Http.FormUrlEncodedContent(dict);

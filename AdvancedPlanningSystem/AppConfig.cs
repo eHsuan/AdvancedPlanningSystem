@@ -33,6 +33,11 @@ namespace AdvancedPlanningSystem
         public static int MesMockPort = 9000; // 模擬 MES Port
         public static string RealMesUrl = "http://twcynmeswebqa01/CyntecDataCenter/service/Eqp/Eqp_Portal.asmx"; // 真實 MES URL (備用)
 
+        /// <summary>
+        /// MES 預設查詢機台編號 (避免 WONO 查詢時 EqpNo 為空)
+        /// </summary>
+        public static string MesDefaultEqpNo = "CL0006";
+
         public static bool ManualMode = true; // 是否啟用手動決策模式
 
         public static double DueBaseHours = 240.0; // 交期評分基準 (小時)

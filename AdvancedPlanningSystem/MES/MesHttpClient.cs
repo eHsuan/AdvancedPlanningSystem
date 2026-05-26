@@ -149,7 +149,7 @@ namespace AdvancedPlanningSystem.MES
             var ask = new ApsLotAsk
             {
                 TransactionName = "WOQRY",
-                EqpNo = "",
+                EqpNo = AppConfig.MesDefaultEqpNo,
                 WONO = "0000000000",
                 UserID = "000000",
                 GetAPSInfo_ByLot = string.Join(",", workNos)
@@ -192,7 +192,7 @@ namespace AdvancedPlanningSystem.MES
             var ask = new ApsQTimeAsk
             {
                 TransactionName = "WOQRY",
-                EqpNo = "",
+                EqpNo = AppConfig.MesDefaultEqpNo,
                 WONO = "0000000000",
                 UserID = "000000",
                 GetAPSInfo_QTime = "UP"

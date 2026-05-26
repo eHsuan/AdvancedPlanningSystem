@@ -115,6 +115,9 @@ namespace AdvancedPlanningSystem.Models
         public string prev_out_time { get; set; }
         public int priority_type { get; set; }
         public string due_date { get; set; }
+        public string estimate_end_date { get; set; }
+        public string customer_delivery_time { get; set; }
+        public string route_no { get; set; }
     }
 
     public class StepTimeResponse

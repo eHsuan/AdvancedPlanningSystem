@@ -44,6 +44,15 @@ namespace APSSimulator.Models
 
         [JsonProperty("prev_out_time")]
         public string PrevOutTime { get; set; }
+
+        [JsonProperty("estimate_end_date")]
+        public string EstimateEndDate { get; set; }
+
+        [JsonProperty("customer_delivery_time")]
+        public string CustomerDeliveryTime { get; set; }
+
+        [JsonProperty("route_no")]
+        public string RouteNo { get; set; }
     }
 
     // 對應 /steptime/all 回應

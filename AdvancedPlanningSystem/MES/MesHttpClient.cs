@@ -175,7 +175,10 @@ namespace AdvancedPlanningSystem.MES
                     next_step_id = l.WCNext1,
                     prev_out_time = ParseToDbTimeStr(l.PreStepOutTime),
                     priority_type = (l.Urgent == "Y") ? 1 : 0,
-                    due_date = ParseToDbTimeStr(l.EstimateProcessEndDate)
+                    due_date = ParseToDbTimeStr(l.EstimateProcessEndDate),
+                    estimate_end_date = ParseToDbTimeStr(l.EstimateProcessEndDate),
+                    customer_delivery_time = ParseToDbTimeStr(l.CustomerDeliveryTime),
+                    route_no = l.RouteNo
                 });
             }
             return list;

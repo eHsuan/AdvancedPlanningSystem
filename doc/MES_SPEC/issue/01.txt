@@ -1,0 +1,21 @@
+[14:32:30] Executing GetOrderInfoBatchAsync...
+[14:32:33] Error: MES GetOrderInfoBatch Failed: EqpNo 不可為空白！
+[14:33:09] Sending POST Request to: http://twcynmeswebqa01/CyntecDataCenter/service/Eqp/Eqp_Portal.asmx/EqpTransaction ...
+=== Request Body ===
+{
+	"TransactionName": "WOQRY",
+	"EqpNo": "CL0006",
+	"WONO": "1234567890",
+	"UserID": "000000",
+	"GetAPSInfo_ByLot": "2HU3A13T01,2HU3A13T02"
+}
+
+[14:33:10] Response Status: 200 (OK)
+=== Response Body ===
+{
+  "APSInfo_ByLot_Request":"2HU3A13T01,2HU3A13T02",
+  "APSInfo_ByLot_Result":"[{\"WONo\":\"2HU3A13T01\",\"WorkCenterNo\":\"UPBO003\",\"WorkCenterName\":\"IC粗化\",\"DeliverDate\":\"9999-12-31T00:00:00\",\"NextWCName1\":\"B-BUF-壓合預烘\",\"NextWCName2\":\"(R)B-BUF-BU-film對壓\",\"NextWCName3\":\"(R)B-BUF-BU-film一次壓合\",\"NextWCName4\":\"B-BUF-Half Cure\",\"NextWCName5\":\"撕耐熱膠帶\",\"WCNext1\":\"UPOV010\",\"WCNext2\":\"UPLM023\",\"WCNext3\":\"UPLM024\",\"WCNext4\":\"UPOV037\",\"WCNext5\":\"UPRM001\",\"Urgent\":\"N\",\"ProcessEndDate\":null,\"EstimateProcessEndDate\":\"2026-06-27T12:39:09.257\",\"CustomerDeliveryTime\":null,\"RouteNo\":\"UP-22\",\"PreStepOutTime\":null},{\"WONo\":\"2HU3A13T02\",\"WorkCenterNo\":\"UPBO003\",\"WorkCenterName\":\"IC粗化\",\"DeliverDate\":\"9999-12-31T00:00:00\",\"NextWCName1\":\"B-BUF-壓合預烘\",\"NextWCName2\":\"(R)B-BUF-BU-film對壓\",\"NextWCName3\":\"(R)B-BUF-BU-film一次壓合\",\"NextWCName4\":\"B-BUF-Half Cure\",\"NextWCName5\":\"撕耐熱膠帶\",\"WCNext1\":\"UPOV010\",\"WCNext2\":\"UPLM023\",\"WCNext3\":\"UPLM024\",\"WCNext4\":\"UPOV037\",\"WCNext5\":\"UPRM001\",\"Urgent\":\"N\",\"ProcessEndDate\":null,\"EstimateProcessEndDate\":\"2026-06-27T12:39:09.257\",\"CustomerDeliveryTime\":null,\"RouteNo\":\"UP-22\",\"PreStepOutTime\":null}]",
+  "Result":"success",
+  "ResultCode":"",
+  "Message":""
+}

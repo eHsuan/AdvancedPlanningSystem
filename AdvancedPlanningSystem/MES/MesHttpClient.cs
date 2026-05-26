@@ -84,29 +84,157 @@ namespace AdvancedPlanningSystem.MES
 
         // --- Batch Implementations ---
 
+        private string ParseToDbTimeStr(string timeStr)
+        {
+            if (string.IsNullOrEmpty(timeStr)) return null;
+            DateTime dt;
+            if (DateTime.TryParse(timeStr, out dt))
+            {
+                return dt.ToString("yyyyMMddHHmmss");
+            }
+            return null;
+        }
+
+        private async Task<List<ApsEqpInfo>> GetApsEqpInfoListAsync(List<string> eqpIds)
+        {
+            if (eqpIds == null || eqpIds.Count == 0) return new List<ApsEqpInfo>();
+
+            var ask = new ApsEqpAsk
+            {
+                TransactionName = "WOQRY",
+                EqpNo = eqpIds[0],
+                WONO = "",
+                UserID = "System",
+                GetAPSInfo_ByEqp = string.Join(",", eqpIds)
+            };
+
+            var reply = await PostAsync<ApsEqpReply>("/WOQRY", ask);
+            if (reply == null || reply.Result != "success")
+            {
+                throw new Exception($"MES GetApsEqpInfo Failed: {(reply != null ? reply.Message : "Null Response")}");
+            }
+
+            if (string.IsNullOrEmpty(reply.APSInfo_ByEqp_Result)) return new List<ApsEqpInfo>();
+            return _serializer.Deserialize<List<ApsEqpInfo>>(reply.APSInfo_ByEqp_Result) ?? new List<ApsEqpInfo>();
+        }
+
         public async Task<List<OrderInfoResponse>> GetOrderInfoBatchAsync(List<string> workNos)
         {
-            return await PostAsync<List<OrderInfoResponse>>("/order/batch", workNos) ?? new List<OrderInfoResponse>();
+            if (workNos == null || workNos.Count == 0) return new List<OrderInfoResponse>();
+
+            var ask = new ApsLotAsk
+            {
+                TransactionName = "WOQRY",
+                EqpNo = "",
+                WONO = workNos[0],
+                UserID = "System",
+                GetAPSInfo_ByLot = string.Join(",", workNos)
+            };
+
+            var reply = await PostAsync<ApsLotReply>("/WOQRY", ask);
+            if (reply == null || reply.Result != "success")
+            {
+                throw new Exception($"MES GetOrderInfoBatch Failed: {(reply != null ? reply.Message : "Null Response")}");
+            }
+
+            if (string.IsNullOrEmpty(reply.APSInfo_ByLot_Result)) return new List<OrderInfoResponse>();
+            var lotInfos = _serializer.Deserialize<List<ApsLotInfo>>(reply.APSInfo_ByLot_Result) ?? new List<ApsLotInfo>();
+
+            var list = new List<OrderInfoResponse>();
+            foreach (var l in lotInfos)
+            {
+                list.Add(new OrderInfoResponse
+                {
+                    WorkNo = l.WONo,
+                    carrier_id = "CASS-MOCK",
+                    step_id = l.WorkCenterNo,
+                    next_step_id = l.WCNext1,
+                    prev_out_time = ParseToDbTimeStr(l.PreStepOutTime),
+                    priority_type = (l.Urgent == "Y") ? 1 : 0,
+                    due_date = ParseToDbTimeStr(l.EstimateProcessEndDate)
+                });
+            }
+            return list;
         }
 
         public async Task<List<StepTimeResponse>> GetAllStepTimesAsync()
         {
-            return await GetAsync<List<StepTimeResponse>>("/steptime/all") ?? new List<StepTimeResponse>();
+            // 正式 MES API spec 中已無 StepTime，直接回傳空 List 降級為預設 5 分鐘
+            return await Task.FromResult(new List<StepTimeResponse>());
         }
 
         public async Task<List<QTimeLimitResponse>> GetAllQTimeLimitsAsync()
         {
-            return await GetAsync<List<QTimeLimitResponse>>("/qtime/all") ?? new List<QTimeLimitResponse>();
+            var ask = new ApsQTimeAsk
+            {
+                TransactionName = "WOQRY",
+                EqpNo = "",
+                WONO = "",
+                UserID = "System",
+                GetAPSInfo_QTime = "UP"
+            };
+
+            var reply = await PostAsync<ApsQTimeReply>("/WOQRY", ask);
+            if (reply == null || reply.Result != "success")
+            {
+                throw new Exception($"MES GetAllQTimeLimits Failed: {(reply != null ? reply.Message : "Null Response")}");
+            }
+
+            if (string.IsNullOrEmpty(reply.APSInfo_QTime_Result)) return new List<QTimeLimitResponse>();
+            var rawQTimes = _serializer.Deserialize<List<ApsQTimeInfo>>(reply.APSInfo_QTime_Result) ?? new List<ApsQTimeInfo>();
+
+            var list = new List<QTimeLimitResponse>();
+            foreach (var q in rawQTimes)
+            {
+                if (q.Enable != "Y") continue;
+                list.Add(new QTimeLimitResponse
+                {
+                    step_id = q.StartWorkcenterNo,
+                    next_step_id = q.EndWorkcenterNo,
+                    qtime_limit_min = (int)q.QuotaTimes
+                });
+            }
+            return list;
         }
 
         public async Task<List<WipInfoResponse>> GetWipBatchAsync(List<string> eqpIds)
         {
-            return await PostAsync<List<WipInfoResponse>>("/wip/batch", eqpIds) ?? new List<WipInfoResponse>();
+            var eqpInfos = await GetApsEqpInfoListAsync(eqpIds);
+            var list = new List<WipInfoResponse>();
+            foreach (var e in eqpInfos)
+            {
+                list.Add(new WipInfoResponse
+                {
+                    eq_id = e.MachNo,
+                    current_wip_qty = e.By_Eqp_Now_Used_Lot_Count,
+                    max_wip_qty = e.MaxLot
+                });
+            }
+            return list;
         }
 
         public async Task<List<EqStatusResponse>> GetEquipmentStatusBatchAsync(List<string> eqpIds)
         {
-            return await PostAsync<List<EqStatusResponse>>("/equipment/batch", eqpIds) ?? new List<EqStatusResponse>();
+            var eqpInfos = await GetApsEqpInfoListAsync(eqpIds);
+            var list = new List<EqStatusResponse>();
+            foreach (var e in eqpInfos)
+            {
+                string curWorkNo = "";
+                if (!string.IsNullOrEmpty(e.WONo_List))
+                {
+                    var parts = e.WONo_List.Split(',');
+                    if (parts.Length > 0) curWorkNo = parts[0].Trim();
+                }
+
+                list.Add(new EqStatusResponse
+                {
+                    eqp_id = e.MachNo,
+                    status = e.StatusCode ?? "IDLE",
+                    duration = e.StatusDurationSec.ToString(),
+                    current_WorkNo = curWorkNo
+                });
+            }
+            return list;
         }
 
         public async Task<StandardResponse> ValidateMoveAsync(string cassetteId, string source, string destination)

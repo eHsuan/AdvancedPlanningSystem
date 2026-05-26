@@ -144,4 +144,115 @@ namespace AdvancedPlanningSystem.Models
         public string duration { get; set; } 
         public string current_WorkNo { get; set; }
     }
+
+    // --- 正式 MES API DTOs ---
+    public class ApsEqpAsk
+    {
+        public string TransactionName { get; set; } = "WOQRY";
+        public string EqpNo { get; set; } = "";
+        public string WONO { get; set; } = "";
+        public string UserID { get; set; } = "System";
+        public string GetAPSInfo_ByEqp { get; set; } = "";
+    }
+
+    public class ApsEqpReply
+    {
+        public string Result { get; set; }
+        public string ResultCode { get; set; }
+        public string Message { get; set; }
+        public string APSInfo_ByEqp_Request { get; set; }
+        public string APSInfo_ByEqp_Result { get; set; }
+    }
+
+    public class ApsEqpInfo
+    {
+        public long MachID { get; set; }
+        public string MachNo { get; set; }
+        public string MachAlias { get; set; }
+        public string MachName { get; set; }
+        public int MaxLot { get; set; }
+        public int By_Eqp_Now_Used_Lot_Count { get; set; }
+        public string WONo_List { get; set; }
+        public string StartTime { get; set; }
+        public string NowTimeStamp { get; set; }
+        public long StatusDurationSec { get; set; }
+        public string DataConnect { get; set; }
+        public string OriStatuCode { get; set; }
+        public string StatusCode { get; set; }
+        public string StatusName { get; set; }
+        public string Remark { get; set; }
+        public string LightColor { get; set; }
+    }
+
+    public class ApsLotAsk
+    {
+        public string TransactionName { get; set; } = "WOQRY";
+        public string EqpNo { get; set; } = "";
+        public string WONO { get; set; } = "";
+        public string UserID { get; set; } = "System";
+        public string GetAPSInfo_ByLot { get; set; } = "";
+    }
+
+    public class ApsLotReply
+    {
+        public string Result { get; set; }
+        public string ResultCode { get; set; }
+        public string Message { get; set; }
+        public string APSInfo_ByLot_Request { get; set; }
+        public string APSInfo_ByLot_Result { get; set; }
+    }
+
+    public class ApsLotInfo
+    {
+        public string WONo { get; set; }
+        public string WorkCenterNo { get; set; }
+        public string WorkCenterName { get; set; }
+        public string DeliverDate { get; set; }
+        public string NextWCName1 { get; set; }
+        public string NextWCName2 { get; set; }
+        public string NextWCName3 { get; set; }
+        public string NextWCName4 { get; set; }
+        public string NextWCName5 { get; set; }
+        public string WCNext1 { get; set; }
+        public string WCNext2 { get; set; }
+        public string WCNext3 { get; set; }
+        public string WCNext4 { get; set; }
+        public string WCNext5 { get; set; }
+        public string Urgent { get; set; }
+        public string ProcessEndDate { get; set; }
+        public string EstimateProcessEndDate { get; set; }
+        public string CustomerDeliveryTime { get; set; }
+        public string RouteNo { get; set; }
+        public string PreStepOutTime { get; set; }
+    }
+
+    public class ApsQTimeAsk
+    {
+        public string TransactionName { get; set; } = "WOQRY";
+        public string EqpNo { get; set; } = "";
+        public string WONO { get; set; } = "";
+        public string UserID { get; set; } = "System";
+        public string GetAPSInfo_QTime { get; set; } = "UP";
+    }
+
+    public class ApsQTimeReply
+    {
+        public string Result { get; set; }
+        public string ResultCode { get; set; }
+        public string Message { get; set; }
+        public string APSInfo_QTime_Request { get; set; }
+        public string APSInfo_QTime_Result { get; set; }
+    }
+
+    public class ApsQTimeInfo
+    {
+        public string MatGroupNo { get; set; }
+        public string RouteNo { get; set; }
+        public string StartWorkcenterNo { get; set; }
+        public string EndWorkcenterNo { get; set; }
+        public double QuotaTimes { get; set; }
+        public string Enable { get; set; }
+        public string CreateUser { get; set; }
+        public string CreateDate { get; set; }
+    }
 }

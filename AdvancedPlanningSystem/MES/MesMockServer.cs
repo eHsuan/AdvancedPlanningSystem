@@ -67,7 +67,77 @@ namespace AdvancedPlanningSystem.MES
 
             if (method == "POST")
             {
-                if (path.EndsWith("/order/batch"))
+                if (path.EndsWith("/woqry"))
+                {
+                    var reqDict = _serializer.Deserialize<Dictionary<string, object>>(requestBody) ?? new Dictionary<string, object>();
+                    if (reqDict.ContainsKey("GetAPSInfo_ByEqp"))
+                    {
+                        string eqpStr = reqDict["GetAPSInfo_ByEqp"]?.ToString() ?? "";
+                        var eqpIds = eqpStr.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                        var list = new List<ApsEqpInfo>();
+                        foreach (var eq in eqpIds)
+                        {
+                            list.Add(new ApsEqpInfo
+                            {
+                                MachNo = eq.Trim(),
+                                MaxLot = 20,
+                                By_Eqp_Now_Used_Lot_Count = 5,
+                                StatusCode = "RUN",
+                                StatusDurationSec = 120,
+                                WONo_List = "LOT-001",
+                                MachName = "Mock Machine",
+                                MachAlias = "Mock Mach Alias"
+                            });
+                        }
+                        responseObj = new ApsEqpReply
+                        {
+                            Result = "success",
+                            APSInfo_ByEqp_Result = _serializer.Serialize(list)
+                        };
+                    }
+                    else if (reqDict.ContainsKey("GetAPSInfo_ByLot"))
+                    {
+                        string lotStr = reqDict["GetAPSInfo_ByLot"]?.ToString() ?? "";
+                        var lotIds = lotStr.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                        var list = new List<ApsLotInfo>();
+                        foreach (var lot in lotIds)
+                        {
+                            list.Add(new ApsLotInfo
+                            {
+                                WONo = lot.Trim(),
+                                WorkCenterNo = "STEP_A",
+                                WCNext1 = "STEP_B",
+                                PreStepOutTime = DateTime.Now.AddHours(-1).ToString("yyyy-MM-ddTHH:mm:ss"),
+                                Urgent = "N",
+                                EstimateProcessEndDate = DateTime.Now.AddDays(2).ToString("yyyy-MM-ddTHH:mm:ss")
+                            });
+                        }
+                        responseObj = new ApsLotReply
+                        {
+                            Result = "success",
+                            APSInfo_ByLot_Result = _serializer.Serialize(list)
+                        };
+                    }
+                    else if (reqDict.ContainsKey("GetAPSInfo_QTime"))
+                    {
+                        var list = new List<ApsQTimeInfo>
+                        {
+                            new ApsQTimeInfo
+                            {
+                                StartWorkcenterNo = "STEP_A",
+                                EndWorkcenterNo = "STEP_B",
+                                QuotaTimes = 120,
+                                Enable = "Y"
+                            }
+                        };
+                        responseObj = new ApsQTimeReply
+                        {
+                            Result = "success",
+                            APSInfo_QTime_Result = _serializer.Serialize(list)
+                        };
+                    }
+                }
+                else if (path.EndsWith("/order/batch"))
                 {
                     // Mock: Return info for requested WorkNos
                     var workNos = _serializer.Deserialize<List<string>>(requestBody) ?? new List<string>();

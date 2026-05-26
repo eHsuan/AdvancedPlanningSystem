@@ -10,6 +10,7 @@ using APSSimulator.DB;
 using APSSimulator.Models;
 using Newtonsoft.Json;
 using log4net;
+using System.Linq;
 
 namespace APSSimulator.Server
 {
@@ -108,7 +109,84 @@ namespace APSSimulator.Server
                     conn.Open();
 
                     // API 路徑加上 /api 前綴
-                    if (path == "/api/steptime/all" && method == "GET")
+                    if (path == "/api/woqry" && method == "POST")
+                    {
+                        var reqDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(requestBody) ?? new Dictionary<string, object>();
+                        if (reqDict.ContainsKey("GetAPSInfo_ByEqp"))
+                        {
+                            string eqpStr = reqDict["GetAPSInfo_ByEqp"]?.ToString() ?? "";
+                            var eqpIds = eqpStr.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(id => id.Trim()).ToList();
+                            var list = new List<object>();
+                            string sql = "SELECT eqp_id, current_wip_qty, max_wip_qty, status, status_duration, current_work_no FROM mock_mes_equipments";
+                            using (var cmd = new SQLiteCommand(sql, conn))
+                            using (var reader = cmd.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    string id = reader["eqp_id"].ToString();
+                                    if (eqpIds.Count == 0 || eqpIds.Contains(id))
+                                    {
+                                        list.Add(new {
+                                            MachNo = id,
+                                            MaxLot = Convert.ToInt32(reader["max_wip_qty"]),
+                                            By_Eqp_Now_Used_Lot_Count = Convert.ToInt32(reader["current_wip_qty"]),
+                                            StatusCode = reader["status"].ToString(),
+                                            StatusDurationSec = Convert.ToInt64(reader["status_duration"]),
+                                            WONo_List = reader["current_work_no"] == DBNull.Value ? "" : reader["current_work_no"].ToString(),
+                                            MachName = "Mock Machine",
+                                            MachAlias = "Mock Mach Alias"
+                                        });
+                                    }
+                                }
+                            }
+                            var reply = new { Result = "success", APSInfo_ByEqp_Result = JsonConvert.SerializeObject(list) };
+                            responseString = JsonConvert.SerializeObject(reply);
+                        }
+                        else if (reqDict.ContainsKey("GetAPSInfo_ByLot"))
+                        {
+                            string lotStr = reqDict["GetAPSInfo_ByLot"]?.ToString() ?? "";
+                            var lotIds = lotStr.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(lot => lot.Trim()).ToList();
+                            var repo = new MockMesRepository();
+                            var orders = repo.GetOrders(conn, lotIds);
+                            var list = new List<object>();
+                            foreach (var o in orders)
+                            {
+                                list.Add(new {
+                                    WONo = o.WorkOrderNumber,
+                                    WorkCenterNo = o.StepId,
+                                    WorkCenterName = "Mock Center",
+                                    WCNext1 = o.NextStepId,
+                                    PreStepOutTime = DateTime.TryParse(o.PrevOutTime, out var t) ? t.ToString("yyyy-MM-dd HH:mm:ss") : DateTime.Now.AddHours(-1).ToString("yyyy-MM-dd HH:mm:ss"),
+                                    Urgent = o.PriorityType > 0 ? "Y" : "N",
+                                    EstimateProcessEndDate = DateTime.TryParse(o.DueDate, out var d) ? d.ToString("yyyy-MM-dd HH:mm:ss") : DateTime.Now.AddDays(2).ToString("yyyy-MM-dd HH:mm:ss")
+                                });
+                            }
+                            var reply = new { Result = "success", APSInfo_ByLot_Result = JsonConvert.SerializeObject(list) };
+                            responseString = JsonConvert.SerializeObject(reply);
+                        }
+                        else if (reqDict.ContainsKey("GetAPSInfo_QTime"))
+                        {
+                            var list = new List<object>();
+                            using (var cmd = new SQLiteCommand("SELECT * FROM mock_mes_qtime_rule", conn))
+                            using (var reader = cmd.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    list.Add(new {
+                                        MatGroupNo = "UP",
+                                        RouteNo = "UP-01",
+                                        StartWorkcenterNo = reader["step_id"].ToString(),
+                                        EndWorkcenterNo = reader["next_step_id"].ToString(),
+                                        QuotaTimes = Convert.ToDouble(reader["qtime_limit_min"]),
+                                        Enable = "Y"
+                                    });
+                                }
+                            }
+                            var reply = new { Result = "success", APSInfo_QTime_Result = JsonConvert.SerializeObject(list) };
+                            responseString = JsonConvert.SerializeObject(reply);
+                        }
+                    }
+                    else if (path == "/api/steptime/all" && method == "GET")
                     {
                         var list = new List<StepTimeResponse>();
                         using (var cmd = new SQLiteCommand("SELECT * FROM mock_mes_step_time", conn))

@@ -127,8 +127,8 @@ namespace AdvancedPlanningSystem.MES
             {
                 TransactionName = "WOQRY",
                 EqpNo = eqpIds[0],
-                WONO = "",
-                UserID = "System",
+                WONO = "0000000000",
+                UserID = "000000",
                 GetAPSInfo_ByEqp = string.Join(",", eqpIds)
             };
 
@@ -150,8 +150,8 @@ namespace AdvancedPlanningSystem.MES
             {
                 TransactionName = "WOQRY",
                 EqpNo = "",
-                WONO = workNos[0],
-                UserID = "System",
+                WONO = "0000000000",
+                UserID = "000000",
                 GetAPSInfo_ByLot = string.Join(",", workNos)
             };
 
@@ -193,8 +193,8 @@ namespace AdvancedPlanningSystem.MES
             {
                 TransactionName = "WOQRY",
                 EqpNo = "",
-                WONO = "",
-                UserID = "System",
+                WONO = "0000000000",
+                UserID = "000000",
                 GetAPSInfo_QTime = "UP"
             };
 

@@ -75,7 +75,7 @@ namespace AdvancedPlanningSystem.MES
 
             if (method == "POST")
             {
-                if (path.EndsWith("/woqry"))
+                if (path.EndsWith("/eqptransaction") || path.EndsWith("/woqry"))
                 {
                     var reqDict = _serializer.Deserialize<Dictionary<string, object>>(requestBody) ?? new Dictionary<string, object>();
                     if (reqDict.ContainsKey("GetAPSInfo_ByEqp"))
@@ -207,7 +207,7 @@ namespace AdvancedPlanningSystem.MES
 
             string responseJson = responseObj != null ? _serializer.Serialize(responseObj) : "{}";
             byte[] buffer;
-            if (isFormParam && path.EndsWith("/woqry"))
+            if (isFormParam && (path.EndsWith("/eqptransaction") || path.EndsWith("/woqry")))
             {
                 string responseXml = $"<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<string xmlns=\"CyntecMES\">{responseJson}</string>";
                 buffer = Encoding.UTF8.GetBytes(responseXml);

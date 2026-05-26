@@ -237,7 +237,7 @@ namespace AdvancedPlanningSystem
             lblEndpoint.Size = new Size(200, 15);
 
             txtEndpoint = new TextBox();
-            txtEndpoint.Text = "/woqry";
+            txtEndpoint.Text = "/EqpTransaction";
             txtEndpoint.Location = new Point(15, 45);
             txtEndpoint.Width = 280;
             txtEndpoint.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
@@ -324,7 +324,7 @@ namespace AdvancedPlanningSystem
 
                     if (method == "POST")
                     {
-                        if (endpoint.Equals("/WOQRY", StringComparison.OrdinalIgnoreCase) || endpoint.Equals("/EqpTransaction", StringComparison.OrdinalIgnoreCase))
+                        if (endpoint.Equals("/EqpTransaction", StringComparison.OrdinalIgnoreCase) || endpoint.Equals("/WOQRY", StringComparison.OrdinalIgnoreCase))
                         {
                             var dict = new Dictionary<string, string> { { "pParameter", jsonBody } };
                             var content = new System.Net.Http.FormUrlEncodedContent(dict);

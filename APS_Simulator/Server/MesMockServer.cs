@@ -117,7 +117,7 @@ namespace APSSimulator.Server
                     conn.Open();
 
                     // API 路徑加上 /api 前綴
-                    if (path == "/api/woqry" && method == "POST")
+                    if ((path == "/api/eqptransaction" || path == "/api/woqry") && method == "POST")
                     {
                         var reqDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(requestBody) ?? new Dictionary<string, object>();
                         if (reqDict.ContainsKey("GetAPSInfo_ByEqp"))
@@ -313,7 +313,7 @@ namespace APSSimulator.Server
             log.Info($"------------------------");
 
             byte[] buffer;
-            if (isFormParam && path.EndsWith("/woqry"))
+            if (isFormParam && (path.EndsWith("/eqptransaction") || path.EndsWith("/woqry")))
             {
                 string responseXml = $"<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<string xmlns=\"CyntecMES\">{responseString}</string>";
                 buffer = Encoding.UTF8.GetBytes(responseXml);

@@ -58,7 +58,7 @@ namespace AdvancedPlanningSystem.MES
             LogHelper.MES.Info($"[MES POST] {url} Body: {json}");
 
             HttpResponseMessage response;
-            if (endpoint.Equals("/WOQRY", StringComparison.OrdinalIgnoreCase))
+            if (endpoint.Equals("/EqpTransaction", StringComparison.OrdinalIgnoreCase) || endpoint.Equals("/WOQRY", StringComparison.OrdinalIgnoreCase))
             {
                 var dict = new Dictionary<string, string> { { "pParameter", json } };
                 var content = new FormUrlEncodedContent(dict);
@@ -132,7 +132,7 @@ namespace AdvancedPlanningSystem.MES
                 GetAPSInfo_ByEqp = string.Join(",", eqpIds)
             };
 
-            var reply = await PostAsync<ApsEqpReply>("/WOQRY", ask);
+            var reply = await PostAsync<ApsEqpReply>("/EqpTransaction", ask);
             if (reply == null || reply.Result != "success")
             {
                 throw new Exception($"MES GetApsEqpInfo Failed: {(reply != null ? reply.Message : "Null Response")}");
@@ -155,7 +155,7 @@ namespace AdvancedPlanningSystem.MES
                 GetAPSInfo_ByLot = string.Join(",", workNos)
             };
 
-            var reply = await PostAsync<ApsLotReply>("/WOQRY", ask);
+            var reply = await PostAsync<ApsLotReply>("/EqpTransaction", ask);
             if (reply == null || reply.Result != "success")
             {
                 throw new Exception($"MES GetOrderInfoBatch Failed: {(reply != null ? reply.Message : "Null Response")}");
@@ -198,7 +198,7 @@ namespace AdvancedPlanningSystem.MES
                 GetAPSInfo_QTime = "UP"
             };
 
-            var reply = await PostAsync<ApsQTimeReply>("/WOQRY", ask);
+            var reply = await PostAsync<ApsQTimeReply>("/EqpTransaction", ask);
             if (reply == null || reply.Result != "success")
             {
                 throw new Exception($"MES GetAllQTimeLimits Failed: {(reply != null ? reply.Message : "Null Response")}");

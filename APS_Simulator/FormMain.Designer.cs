@@ -66,7 +66,6 @@ namespace APSSimulator
             this.btnBatchPick = new System.Windows.Forms.Button();
             this.btnBatchScan = new System.Windows.Forms.Button();
             this.btnLoadDefault = new System.Windows.Forms.Button();
-            this.btnGenerateMockSql = new System.Windows.Forms.Button();
             this.grpClientConfig = new System.Windows.Forms.GroupBox();
             this.btnClientDisconnect = new System.Windows.Forms.Button();
             this.btnClientConnect = new System.Windows.Forms.Button();
@@ -399,7 +398,6 @@ namespace APSSimulator
             this.grpPersonOp.Controls.Add(this.btnBatchScan);
             this.grpPersonOp.Controls.Add(this.btnLoadDefault);
             this.grpPersonOp.Controls.Add(this.grpClientConfig);
-            this.grpPersonOp.Controls.Add(this.btnGenerateMockSql);
             this.grpPersonOp.Dock = System.Windows.Forms.DockStyle.Top;
             this.grpPersonOp.Location = new System.Drawing.Point(3, 3);
             this.grpPersonOp.Name = "grpPersonOp";
@@ -464,15 +462,6 @@ namespace APSSimulator
             this.btnLoadDefault.TabIndex = 7;
             this.btnLoadDefault.Text = "載入預設列表";
             this.btnLoadDefault.UseVisualStyleBackColor = true;
-            // 
-            // btnGenerateMockSql
-            // 
-            this.btnGenerateMockSql.Location = new System.Drawing.Point(150, 70);
-            this.btnGenerateMockSql.Name = "btnGenerateMockSql";
-            this.btnGenerateMockSql.Size = new System.Drawing.Size(120, 25);
-            this.btnGenerateMockSql.TabIndex = 13;
-            this.btnGenerateMockSql.Text = "生成模擬 SQL";
-            this.btnGenerateMockSql.UseVisualStyleBackColor = true;
             // 
             // grpClientConfig
             // 
@@ -779,7 +768,6 @@ namespace APSSimulator
         
         private System.Windows.Forms.GroupBox grpPersonOp;
         private System.Windows.Forms.Button btnLoadDefault;
-        private System.Windows.Forms.Button btnGenerateMockSql;
         private System.Windows.Forms.Button btnBatchScan;
         private System.Windows.Forms.Button btnBatchPick;
         private System.Windows.Forms.Button btnEnterEq;

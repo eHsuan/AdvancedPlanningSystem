@@ -505,7 +505,7 @@ namespace APSSimulator
         {
             // 1. 詢問是否隨機重新生成 Mock MES 工單
             var result_First = MessageBox.Show(
-                "\"是否要先隨機重新生成測試工單資料 (Generate Random Orders)？)",
+                "是否要先隨機重新生成測試工單資料 (Generate Random Orders)？",
                 "測試資料生成",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
@@ -521,6 +521,13 @@ namespace APSSimulator
                     // 2. 執行同步至 ExternalDB
                     DatabaseHelper.SyncExternalDbFromMesOrders();
                     AppendClientLog("ExternalDB 測試資料同步完成。");
+
+                    // 詢問是否生成 SQL 語法
+                    var dr = MessageBox.Show("是否要生成 SQL 語法？", "確認生成", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (dr == DialogResult.Yes)
+                    {
+                        GenerateAndShowSqlFromMesOrders();
+                    }
                 }
             }
             // --- External DB Sync Prompt ---
@@ -655,8 +662,6 @@ namespace APSSimulator
                     await ProcessEnterEqForRow(row);
                 }
             };
-
-            btnGenerateMockSql.Click += (s, e) => btnGenerateMockSql_Click(s, e);
 
             // Machine Page
             btnRefreshMachines.Click += (s, e) => LoadMachines();
@@ -1102,103 +1107,75 @@ namespace APSSimulator
             StartMESServer();
         }
 
-        private string ShowInputPrompt(string text, string caption, string defaultValue = "")
-        {
-            Form prompt = new Form()
-            {
-                Width = 350,
-                Height = 150,
-                FormBorderStyle = FormBorderStyle.FixedDialog,
-                Text = caption,
-                StartPosition = FormStartPosition.CenterScreen,
-                MaximizeBox = false,
-                MinimizeBox = false,
-                ShowIcon = false
-            };
-            Label textLabel = new Label() { Left = 20, Top = 20, Text = text, Width = 300 };
-            TextBox textBox = new TextBox() { Left = 20, Top = 50, Width = 290, Text = defaultValue };
-            Button confirmation = new Button() { Text = "確定", Left = 120, Width = 80, Top = 80, DialogResult = DialogResult.OK };
-            Button cancel = new Button() { Text = "取消", Left = 210, Width = 80, Top = 80, DialogResult = DialogResult.Cancel };
-            confirmation.Click += (sender, e) => { prompt.Close(); };
-            cancel.Click += (sender, e) => { prompt.Close(); };
-            prompt.Controls.Add(textBox);
-            prompt.Controls.Add(confirmation);
-            prompt.Controls.Add(cancel);
-            prompt.Controls.Add(textLabel);
-            prompt.AcceptButton = confirmation;
-            prompt.CancelButton = cancel;
-            return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
-        }
-
-        private void btnGenerateMockSql_Click(object sender, EventArgs e)
+        private void GenerateAndShowSqlFromMesOrders()
         {
             try
             {
-                string input = ShowInputPrompt("請輸入欲生成的資料筆數（大於 0 代表生成）：", "詢問是否生成模擬資料", "5");
-                if (string.IsNullOrEmpty(input)) return;
-
-                int count;
-                if (int.TryParse(input, out count) && count > 0)
+                var list = new List<Tuple<string, string>>();
+                using (var conn = new SQLiteConnection(DatabaseHelper.ConnectionString))
                 {
-                    var dr = MessageBox.Show($"已輸入 {count} 筆。是否要生成 SQL 語法？", "確認生成", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                    if (dr == DialogResult.Yes)
+                    conn.Open();
+                    string sql = "SELECT carrier_id, work_no FROM mock_mes_orders";
+                    using (var cmd = new SQLiteCommand(sql, conn))
+                    using (var reader = cmd.ExecuteReader())
                     {
-                        System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                        sb.AppendLine("-- ========================================================");
-                        sb.AppendLine($"-- 模擬資料 INSERT 語法 (共 {count} 筆)");
-                        sb.AppendLine($"-- 產生時間: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                        sb.AppendLine("-- ========================================================");
-                        sb.AppendLine("INSERT INTO [DIAEAP].[dbo].[EAP_CassetteBind] ([CassetteID], [WorkOrder], [BindTime]) VALUES ");
-
-                        Random rand = new Random();
-                        string timeStr = DateTime.Now.ToString("yyyyMMddHHmmss");
-
-                        for (int i = 0; i < count; i++)
+                        while (reader.Read())
                         {
-                            int randNum = rand.Next(1000, 9999);
-                            string cassetteId = $"CASS-{randNum}-{i + 1:D3}";
-                            string workOrder = $"WO-{DateTime.Now:yyyyMMdd}-{randNum}";
-
-                            sb.Append($"('{cassetteId}', '{workOrder}', '{timeStr}')");
-                            if (i < count - 1)
-                            {
-                                sb.AppendLine(",");
-                            }
-                            else
-                            {
-                                sb.AppendLine(";");
-                            }
+                            list.Add(Tuple.Create(reader["carrier_id"].ToString(), reader["work_no"].ToString()));
                         }
-
-                        Form sqlForm = new Form()
-                        {
-                            Width = 650,
-                            Height = 450,
-                            Text = "產生的 SQL 語法",
-                            StartPosition = FormStartPosition.CenterScreen,
-                            MaximizeBox = true,
-                            MinimizeBox = false,
-                            ShowIcon = false
-                        };
-
-                        TextBox txtSql = new TextBox()
-                        {
-                            Multiline = true,
-                            ScrollBars = ScrollBars.Both,
-                            Dock = DockStyle.Fill,
-                            ReadOnly = true,
-                            Text = sb.ToString(),
-                            Font = new Font("Consolas", 10)
-                        };
-
-                        sqlForm.Controls.Add(txtSql);
-                        sqlForm.ShowDialog();
                     }
                 }
+
+                if (list.Count == 0)
+                {
+                    MessageBox.Show("目前 Mock MES 中沒有任何工單資料。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                sb.AppendLine("-- ========================================================");
+                sb.AppendLine($"-- 模擬資料 INSERT 語法 (共 {list.Count} 筆)");
+                sb.AppendLine($"-- 產生時間: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                sb.AppendLine("-- ========================================================");
+                sb.AppendLine("INSERT INTO [DIAEAP].[dbo].[EAP_CassetteBind] ([CassetteID], [WorkOrder], [BindTime]) VALUES ");
+
+                string timeStr = DateTime.Now.ToString("yyyyMMddHHmmss");
+                for (int i = 0; i < list.Count; i++)
+                {
+                    sb.Append($"('{list[i].Item1}', '{list[i].Item2}', '{timeStr}')");
+                    if (i < list.Count - 1)
+                        sb.AppendLine(",");
+                    else
+                        sb.AppendLine(";");
+                }
+
+                Form sqlForm = new Form()
+                {
+                    Width = 650,
+                    Height = 450,
+                    Text = "產生的 SQL 語法",
+                    StartPosition = FormStartPosition.CenterScreen,
+                    MaximizeBox = true,
+                    MinimizeBox = false,
+                    ShowIcon = false
+                };
+
+                TextBox txtSql = new TextBox()
+                {
+                    Multiline = true,
+                    ScrollBars = ScrollBars.Both,
+                    Dock = DockStyle.Fill,
+                    ReadOnly = true,
+                    Text = sb.ToString(),
+                    Font = new Font("Consolas", 10)
+                };
+
+                sqlForm.Controls.Add(txtSql);
+                sqlForm.ShowDialog();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"生成失敗: {ex.Message}", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"生成 SQL 失敗: {ex.Message}", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

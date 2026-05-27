@@ -27,7 +27,6 @@ namespace AdvancedPlanningSystem
             this.btnTestQTime = new System.Windows.Forms.Button();
             this.btnTestGetOrder = new System.Windows.Forms.Button();
             this.btnTestGetWip = new System.Windows.Forms.Button();
-            this.btnGenerateMockSql = new System.Windows.Forms.Button();
             this.txtOutput = new System.Windows.Forms.TextBox();
             this.tabControl1.SuspendLayout();
             this.tabPageMes.SuspendLayout();
@@ -119,7 +118,6 @@ namespace AdvancedPlanningSystem
             this.grpActions.Controls.Add(this.btnTestQTime);
             this.grpActions.Controls.Add(this.btnTestGetOrder);
             this.grpActions.Controls.Add(this.btnTestGetWip);
-            this.grpActions.Controls.Add(this.btnGenerateMockSql);
             this.grpActions.Dock = System.Windows.Forms.DockStyle.Right;
             this.grpActions.Location = new System.Drawing.Point(436, 0);
             this.grpActions.Name = "grpActions";
@@ -178,16 +176,6 @@ namespace AdvancedPlanningSystem
             this.btnTestGetWip.UseVisualStyleBackColor = true;
             this.btnTestGetWip.Click += new System.EventHandler(this.btnTestGetWip_Click);
             // 
-            // btnGenerateMockSql
-            // 
-            this.btnGenerateMockSql.Location = new System.Drawing.Point(168, 100);
-            this.btnGenerateMockSql.Name = "btnGenerateMockSql";
-            this.btnGenerateMockSql.Size = new System.Drawing.Size(140, 30);
-            this.btnGenerateMockSql.TabIndex = 6;
-            this.btnGenerateMockSql.Text = "生成模擬 SQL";
-            this.btnGenerateMockSql.UseVisualStyleBackColor = true;
-            this.btnGenerateMockSql.Click += new System.EventHandler(this.btnGenerateMockSql_Click);
-            // 
             // txtOutput
             // 
             this.txtOutput.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -233,6 +221,5 @@ namespace AdvancedPlanningSystem
         private System.Windows.Forms.Button btnTestStepTime;
         private System.Windows.Forms.Button btnClear;
         private System.Windows.Forms.TextBox txtOutput;
-        private System.Windows.Forms.Button btnGenerateMockSql;
     }
 }

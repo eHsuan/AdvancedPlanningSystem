@@ -511,22 +511,53 @@ namespace APSSimulator
                 MessageBoxIcon.Question);
             if (result_First == DialogResult.Yes)
             {
-                string input = DatabaseHelper.ShowInputDialog("請輸入欲生成的工單筆數：", "10");
-                int count;
-                if (int.TryParse(input, out count) && count > 0)
-                {
-                    DatabaseHelper.GenerateRandomOrders(count);
-                    RefreshAutoSimGrid(); // 更新介面顯示
-                    AppendClientLog($"已重新生成 {count} 筆測試工單。");
-                    // 2. 執行同步至 ExternalDB
-                    DatabaseHelper.SyncExternalDbFromMesOrders();
-                    AppendClientLog("ExternalDB 測試資料同步完成。");
+                var result_SpecifyWorkNo = MessageBox.Show(
+                    "是否要指定工單號碼？",
+                    "指定工單號碼",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
 
-                    // 詢問是否生成 SQL 語法
-                    var dr = MessageBox.Show("是否要生成 SQL 語法？", "確認生成", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                    if (dr == DialogResult.Yes)
+                if (result_SpecifyWorkNo == DialogResult.Yes)
+                {
+                    string input = DatabaseHelper.ShowInputDialog("請輸入工單號碼 (以逗號分隔)：", "");
+                    if (!string.IsNullOrEmpty(input))
                     {
-                        GenerateAndShowSqlFromMesOrders();
+                        string[] workNos = input.Split(new char[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (workNos.Length > 0)
+                        {
+                            DatabaseHelper.GenerateOrdersByWorkNos(workNos);
+                            RefreshAutoSimGrid(); // 更新介面顯示
+                            AppendClientLog($"已重新生成 {workNos.Length} 筆指定工單的測試工單。");
+                            DatabaseHelper.SyncExternalDbFromMesOrders();
+                            AppendClientLog("ExternalDB 測試資料同步完成。");
+
+                            // 詢問是否生成 SQL 語法
+                            var dr = MessageBox.Show("是否要生成 SQL 語法？", "確認生成", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                            if (dr == DialogResult.Yes)
+                            {
+                                GenerateAndShowSqlFromMesOrders();
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    string input = DatabaseHelper.ShowInputDialog("請輸入欲生成的工單筆數：", "10");
+                    int count;
+                    if (int.TryParse(input, out count) && count > 0)
+                    {
+                        DatabaseHelper.GenerateRandomOrders(count);
+                        RefreshAutoSimGrid(); // 更新介面顯示
+                        AppendClientLog($"已重新生成 {count} 筆測試工單。");
+                        DatabaseHelper.SyncExternalDbFromMesOrders();
+                        AppendClientLog("ExternalDB 測試資料同步完成。");
+
+                        // 詢問是否生成 SQL 語法
+                        var dr = MessageBox.Show("是否要生成 SQL 語法？", "確認生成", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        if (dr == DialogResult.Yes)
+                        {
+                            GenerateAndShowSqlFromMesOrders();
+                        }
                     }
                 }
             }

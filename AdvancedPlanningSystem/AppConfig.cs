@@ -31,12 +31,12 @@ namespace AdvancedPlanningSystem
         public static bool MesMockEnabled = false; // 是否啟用 MES 模擬器
         public static string MesMockUrl = "http://localhost"; // MES 模擬器位址
         public static int MesMockPort = 9000; // 模擬 MES Port
-        public static string RealMesUrl = "http://twcynmeswebqa01/CyntecDataCenter/service/Eqp/Eqp_Portal.asmx"; // 真實 MES URL (備用)
+        public static string RealMesUrl = "http://twcynmes01.delta.corp/CyntecDataCenter/service/Eqp/Eqp_Portal.asmx"; // 真實 MES URL (備用)
 
         /// <summary>
         /// MES 預設查詢機台編號 (避免 WONO 查詢時 EqpNo 為空)
         /// </summary>
-        public static string MesDefaultEqpNo = "CL0006";
+        public static string MesDefaultEqpNo = "AC3811";
 
         public static bool ManualMode = false; // 是否啟用手動決策模式
 

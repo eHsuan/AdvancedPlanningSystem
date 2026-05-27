@@ -138,6 +138,75 @@ namespace APSSimulator.DB
             }
         }
 
+        public static void GenerateOrdersByWorkNos(string[] workNos)
+        {
+            var random = new Random();
+            var routeList = new System.Collections.Generic.List<dynamic>();
+
+            using (var conn = new SQLiteConnection(ConnectionString))
+            {
+                conn.Open();
+                
+                // 1. 取得 Route 資訊 (03SEC)
+                using (var cmd = new SQLiteCommand("SELECT seq_no, step_id FROM mock_mes_route_def WHERE route_id = '03SEC' ORDER BY seq_no", conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        routeList.Add(new { SeqNo = Convert.ToInt32(reader["seq_no"]), StepId = reader["step_id"].ToString() });
+                    }
+                }
+
+                if (routeList.Count < 2) return;
+
+                // 2. 清空舊工單
+                using (var cmd = new SQLiteCommand("DELETE FROM mock_mes_orders", conn)) { cmd.ExecuteNonQuery(); }
+
+                // 3. 生成並插入
+                using (var trans = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        string insSql = @"INSERT INTO mock_mes_orders 
+                            (work_no, carrier_id, step_id, next_step_id, prev_out_time, priority_type, due_date, route_id, current_seq_no) 
+                            VALUES (@wn, @cid, @sid, @nid, @prev, @pri, @due, '03SEC', @cseq)";
+
+                        foreach (var workNo in workNos)
+                        {
+                            string wn = workNo.Trim();
+                            if (string.IsNullOrEmpty(wn)) continue;
+                            
+                            string cid = RandomAlphanumeric(6, random);
+                            
+                            // 隨機選一個步驟，必須有下一個步驟
+                            int idx = random.Next(0, routeList.Count - 1);
+                            var current = routeList[idx];
+                            var next = routeList[idx + 1];
+
+                            string prevOut = DateTime.Now.AddMinutes(-random.Next(1, 101)).ToString("yyyyMMddHHmmss");
+                            string dueDate = DateTime.Now.AddDays(random.Next(1, 11)).ToString("yyyyMMddHHmmss");
+                            int priority = random.Next(0, 3);
+
+                            using (var cmd = new SQLiteCommand(insSql, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@wn", wn);
+                                cmd.Parameters.AddWithValue("@cid", cid);
+                                cmd.Parameters.AddWithValue("@sid", current.StepId);
+                                cmd.Parameters.AddWithValue("@nid", next.StepId);
+                                cmd.Parameters.AddWithValue("@prev", prevOut);
+                                cmd.Parameters.AddWithValue("@pri", priority);
+                                cmd.Parameters.AddWithValue("@due", dueDate);
+                                cmd.Parameters.AddWithValue("@cseq", current.SeqNo);
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                        trans.Commit();
+                    }
+                    catch { trans.Rollback(); throw; }
+                }
+            }
+        }
+
         private static string RandomAlphanumeric(int length, Random random)
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

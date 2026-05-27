@@ -1,18 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using System.Data.SqlClient;
 using System.IO;
 using System.Threading.Tasks;
 
 namespace AdvancedPlanningSystem.Services
 {
     /// <summary>
-    /// 負責與外部資料庫 (ExternalDB.db) 進行互動的服務。
-    /// 支援模擬模式與真實 SQLite 模式。
+    /// 負責與外部資料庫 (雲端 SQL Server) 進行互動的服務。
+    /// 支援模擬模式與真實 SQL Server 模式。
     /// </summary>
     public class ExternalDataService
     {
-        private string _dbPath;
         private string _connectionString;
         private Dictionary<string, string> _mockDbTable;
 
@@ -20,19 +19,6 @@ namespace AdvancedPlanningSystem.Services
         {
             // 讀取設定
             _connectionString = AppConfig.ExternalDbConnectionString;
-            
-            // 解析 DB 檔案路徑以檢查是否存在 (從 ConnectionString 簡單解析)
-            // 假設格式為 "Data Source=ExternalDB.db;Version=3;"
-            var parts = _connectionString.Split(';');
-            foreach (var part in parts)
-            {
-                if (part.Trim().StartsWith("Data Source", StringComparison.OrdinalIgnoreCase))
-                {
-                    var value = part.Split('=')[1].Trim();
-                    _dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, value);
-                    break;
-                }
-            }
 
             if (AppConfig.UseMockExternalDb)
             {
@@ -55,38 +41,12 @@ namespace AdvancedPlanningSystem.Services
         }
 
         /// <summary>
-        /// 若真實 DB 不存在，則自動建立並塞入測試資料
+        /// 初始化資料庫
         /// </summary>
         private void InitializeDatabase()
         {
-            if (string.IsNullOrEmpty(_dbPath)) return;
-
-            // 確保資料庫檔案存在
-            if (!File.Exists(_dbPath))
-            {
-                SQLiteConnection.CreateFile(_dbPath);
-            }
-
-            using (var conn = new SQLiteConnection(_connectionString))
-            {
-                conn.Open();
-                // 修正: 統一使用 CstID2WorkNo 作為表名，並使用 IF NOT EXISTS 避免錯誤
-                string sql = @"
-                    CREATE TABLE IF NOT EXISTS CstID2WorkNo (
-                        CstID TEXT PRIMARY KEY, 
-                        WorkNo TEXT
-                    );
-                    
-                    -- 檢查是否已有資料，若無則塞入預設測試資料
-                    INSERT OR IGNORE INTO CstID2WorkNo (CstID, WorkNo) VALUES ('BC-001', 'WO-REAL-DB-001');
-                    INSERT OR IGNORE INTO CstID2WorkNo (CstID, WorkNo) VALUES ('CASS-001', 'WO-REAL-A001');
-                    INSERT OR IGNORE INTO CstID2WorkNo (CstID, WorkNo) VALUES ('CASS-123', 'WO-REAL-SPEED');
-                ";
-                using (var cmd = new SQLiteCommand(sql, conn))
-                {
-                    cmd.ExecuteNonQuery();
-                }
-            }
+            // 雲端 SQL Server 資料庫由上層 EAP 系統維護，APS 僅進行連線，不在此執行 DDL 建表或寫入預設測試資料。
+            LogHelper.Logger.Info("External SQL Server database client initialized.");
         }
 
         /// <summary>
@@ -108,17 +68,17 @@ namespace AdvancedPlanningSystem.Services
             }
             else
             {
-                // 真實 SQLite 模式
+                // 真實 SQL Server 模式
                 return await Task.Run(() => 
                 {
                     string result = $"WO-DB-{barcode}"; // 預設值
                     try
                     {
-                        using (var conn = new SQLiteConnection(_connectionString))
+                        using (var conn = new SqlConnection(_connectionString))
                         {
                             conn.Open();
-                            string sql = "SELECT WorkNo FROM CstID2WorkNo WHERE CstID = @barcode";
-                            using (var cmd = new SQLiteCommand(sql, conn))
+                            string sql = "SELECT WorkOrder FROM EAP_CassetteBind WHERE CassetteID = @barcode";
+                            using (var cmd = new SqlCommand(sql, conn))
                             {
                                 cmd.Parameters.AddWithValue("@barcode", barcode);
                                 var val = cmd.ExecuteScalar();
@@ -132,6 +92,7 @@ namespace AdvancedPlanningSystem.Services
                     catch (Exception ex)
                     {
                         Console.WriteLine($"DB Error: {ex.Message}");
+                        LogHelper.Logger.Error($"External SQL Server DB query failed for barcode {barcode}: {ex.Message}", ex);
                         result = "DB_ERROR";
                     }
                     return result;

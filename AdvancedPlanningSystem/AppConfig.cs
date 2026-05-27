@@ -16,7 +16,7 @@ namespace AdvancedPlanningSystem
 
         // 資料庫設定
         public static bool UseMockExternalDb = false; // 預設為 true (模擬模式)
-        public static string ExternalDbConnectionString = $"Data Source=D:\\SourceCode\\CS\\AdvancedPlanningSystem\\ExternalDB.db;Version=3;";
+        public static string ExternalDbConnectionString = "Server=twtpesqlqa2;Database=DIAEAP;User ID=DIAEAP;Password=D@08!aEAp;";
 
         // Cloud DB 設定
         public static bool UseCloudDb = false; // 預設使用 Local APSCloudDB.db

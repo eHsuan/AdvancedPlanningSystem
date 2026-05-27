@@ -6,7 +6,7 @@ namespace AdvancedPlanningSystem
         /// <summary>
         /// 自動同步與派貨決策計時器間隔 (秒)
         /// </summary>
-        public static int SyncIntervalSec = 15;
+        public static int SyncIntervalSec = 30;
 
         // 貨架設定
         /// <summary>

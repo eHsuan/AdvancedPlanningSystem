@@ -1,0 +1,4 @@
+SELECT TOP (1000) [CassetteID]
+      ,[WorkOrder]
+      ,[BindTime]
+  FROM [DIAEAP].[dbo].[EAP_CassetteBind]

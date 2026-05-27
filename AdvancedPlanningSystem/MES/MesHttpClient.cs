@@ -264,6 +264,39 @@ namespace AdvancedPlanningSystem.MES
             return list;
         }
 
+        public async Task<EqpBatchInfoResponse> GetEqpBatchInfoAsync(List<string> eqpIds)
+        {
+            var eqpInfos = await GetApsEqpInfoListAsync(eqpIds);
+            var response = new EqpBatchInfoResponse();
+
+            foreach (var e in eqpInfos)
+            {
+                response.Wips.Add(new WipInfoResponse
+                {
+                    eq_id = e.MachNo,
+                    current_wip_qty = e.By_Eqp_Now_Used_Lot_Count,
+                    max_wip_qty = e.MaxLot
+                });
+
+                string curWorkNo = "";
+                if (!string.IsNullOrEmpty(e.WONo_List))
+                {
+                    var parts = e.WONo_List.Split(',');
+                    if (parts.Length > 0) curWorkNo = parts[0].Trim();
+                }
+
+                response.Statuses.Add(new EqStatusResponse
+                {
+                    eqp_id = e.MachNo,
+                    status = e.StatusCode ?? "IDLE",
+                    duration = e.StatusDurationSec.ToString(),
+                    current_WorkNo = curWorkNo
+                });
+            }
+
+            return response;
+        }
+
         public async Task<StandardResponse> ValidateMoveAsync(string cassetteId, string source, string destination)
         {
              return await PostAsync<StandardResponse>("/validate_move", new { });

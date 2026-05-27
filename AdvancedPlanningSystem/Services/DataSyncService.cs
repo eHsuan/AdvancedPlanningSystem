@@ -319,22 +319,21 @@ namespace AdvancedPlanningSystem.Services
 
                 if (eqpIds.Any())
                 {
-                    var wips = await _mesService.GetWipBatchAsync(eqpIds);
-                    var statuses = await _mesService.GetEquipmentStatusBatchAsync(eqpIds);
+                    var batchInfo = await _mesService.GetEqpBatchInfoAsync(eqpIds);
 
                     lock (_cacheLock)
                     {
-                        _cachedWip = wips.ToDictionary(w => w.eq_id, w => w);
-                        _cachedEqpStatus = statuses.ToDictionary(s => s.eqp_id, s => s);
+                        _cachedWip = batchInfo.Wips.ToDictionary(w => w.eq_id, w => w);
+                        _cachedEqpStatus = batchInfo.Statuses.ToDictionary(s => s.eqp_id, s => s);
                         _lastMesSyncTime = DateTime.Now;
                     }
                     
-                    foreach (var wip in wips)
+                    foreach (var wip in batchInfo.Wips)
                     {
                         _repo.UpdateEqpMaxWip(wip.eq_id, wip.max_wip_qty);
                     }
                     
-                    LogHelper.Logger.Info($"MES Cache Updated. Wips: {wips.Count}, Statuses: {statuses.Count}");
+                    LogHelper.Logger.Info($"MES Cache Updated. Wips: {batchInfo.Wips.Count}, Statuses: {batchInfo.Statuses.Count}");
                 }
             }
             catch (Exception ex)

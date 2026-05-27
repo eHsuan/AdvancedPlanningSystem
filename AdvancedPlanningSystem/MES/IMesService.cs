@@ -24,6 +24,9 @@ namespace AdvancedPlanningSystem.MES
         // 5. API e. 機台狀態批次查詢
         Task<List<EqStatusResponse>> GetEquipmentStatusBatchAsync(List<string> eqpIds);
 
+        // 6. API f. 機台批次資訊查詢 (整合 WIP 與狀態以優化重複發送 API)
+        Task<EqpBatchInfoResponse> GetEqpBatchInfoAsync(List<string> eqpIds);
+
         // --- Legacy / Others ---
         Task<StandardResponse> ValidateMoveAsync(string cassetteId, string source, string destination);
         Task<StandardResponse> ReportStatusAsync(string portId, string cassetteId, string status);

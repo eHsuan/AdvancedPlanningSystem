@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Moq;
 using AdvancedPlanningSystem.Services;
@@ -120,6 +121,40 @@ namespace AdvancedPlanningSystem.Tests.Services
             // Assert
             Assert.NotNull(capturedBinding);
             Assert.Equal(100000.0, capturedBinding.ScoreUrgent); 
+        }
+
+        [Fact]
+        public async Task UpdateMesCache_ShouldCallGetEqpBatchInfoAndPopulateCache()
+        {
+            // Arrange
+            var eqpIds = new List<string> { "EQP01" };
+            _mockRepo.Setup(r => r.GetStepEqpMappings()).Returns(new List<ConfigStepEqp> {
+                new ConfigStepEqp { StepId = "STEP1", EqpId = "EQP01" }
+            });
+
+            var batchInfo = new EqpBatchInfoResponse();
+            batchInfo.Wips.Add(new WipInfoResponse { eq_id = "EQP01", current_wip_qty = 2, max_wip_qty = 8 });
+            batchInfo.Statuses.Add(new EqStatusResponse { eqp_id = "EQP01", status = "RUN", duration = "120" });
+
+            _mockMes.Setup(m => m.GetEqpBatchInfoAsync(It.IsAny<List<string>>()))
+                    .ReturnsAsync(batchInfo);
+
+            // Act
+            await _service.ForceUpdateCacheAsync();
+
+            // Assert
+            _mockMes.Verify(m => m.GetEqpBatchInfoAsync(It.Is<List<string>>(list => list.Contains("EQP01"))), Times.Once);
+            
+            var cachedWip = _service.GetCachedWip();
+            var cachedStatus = _service.GetCachedEqStatus();
+
+            Assert.True(cachedWip.ContainsKey("EQP01"));
+            Assert.Equal(2, cachedWip["EQP01"].current_wip_qty);
+            Assert.Equal(8, cachedWip["EQP01"].max_wip_qty);
+
+            Assert.True(cachedStatus.ContainsKey("EQP01"));
+            Assert.Equal("RUN", cachedStatus["EQP01"].status);
+            Assert.Equal("120", cachedStatus["EQP01"].duration);
         }
     }
 }

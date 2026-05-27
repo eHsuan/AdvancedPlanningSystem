@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using AdvancedPlanningSystem.Models;
 
 namespace AdvancedPlanningSystem.MES
 {
@@ -58,5 +59,16 @@ namespace AdvancedPlanningSystem.MES
         public string Msg { get; set; } // Message or Msg? Standardizing on 'Msg' or 'Message' is tricky without doc.
         public string Message { get; set; } // Support both common naming conventions
         public T Data { get; set; }
+    }
+
+    public class EqpBatchInfoResponse
+    {
+        public List<WipInfoResponse> Wips { get; set; }
+        public List<EqStatusResponse> Statuses { get; set; }
+        public EqpBatchInfoResponse()
+        {
+            Wips = new List<WipInfoResponse>();
+            Statuses = new List<EqStatusResponse>();
+        }
     }
 }

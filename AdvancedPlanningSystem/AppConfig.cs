@@ -38,7 +38,7 @@ namespace AdvancedPlanningSystem
         /// </summary>
         public static string MesDefaultEqpNo = "CL0006";
 
-        public static bool ManualMode = true; // 是否啟用手動決策模式
+        public static bool ManualMode = false; // 是否啟用手動決策模式
 
         public static double DueBaseHours = 240.0; // 交期評分基準 (小時)
 

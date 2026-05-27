@@ -391,5 +391,105 @@ namespace AdvancedPlanningSystem
                 Log($"Request Error: {ex.Message}");
             }
         }
+
+        private string ShowInputPrompt(string text, string caption, string defaultValue = "")
+        {
+            Form prompt = new Form()
+            {
+                Width = 350,
+                Height = 150,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                Text = caption,
+                StartPosition = FormStartPosition.CenterScreen,
+                MaximizeBox = false,
+                MinimizeBox = false,
+                ShowIcon = false
+            };
+            Label textLabel = new Label() { Left = 20, Top = 20, Text = text, Width = 300 };
+            TextBox textBox = new TextBox() { Left = 20, Top = 50, Width = 290, Text = defaultValue };
+            Button confirmation = new Button() { Text = "確定", Left = 120, Width = 80, Top = 80, DialogResult = DialogResult.OK };
+            Button cancel = new Button() { Text = "取消", Left = 210, Width = 80, Top = 80, DialogResult = DialogResult.Cancel };
+            confirmation.Click += (sender, e) => { prompt.Close(); };
+            cancel.Click += (sender, e) => { prompt.Close(); };
+            prompt.Controls.Add(textBox);
+            prompt.Controls.Add(confirmation);
+            prompt.Controls.Add(cancel);
+            prompt.Controls.Add(textLabel);
+            prompt.AcceptButton = confirmation;
+            prompt.CancelButton = cancel;
+            return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
+        }
+
+        private void btnGenerateMockSql_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string input = ShowInputPrompt("請輸入欲生成的資料筆數（大於 0 代表生成）：", "詢問是否生成模擬資料", "5");
+                if (string.IsNullOrEmpty(input)) return;
+
+                int count;
+                if (int.TryParse(input, out count) && count > 0)
+                {
+                    var dr = MessageBox.Show($"已輸入 {count} 筆。是否要生成 SQL 語法？", "確認生成", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (dr == DialogResult.Yes)
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        sb.AppendLine("-- ========================================================");
+                        sb.AppendLine($"-- 模擬資料 INSERT 語法 (共 {count} 筆)");
+                        sb.AppendLine($"-- 產生時間: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                        sb.AppendLine("-- ========================================================");
+                        sb.AppendLine("INSERT INTO [DIAEAP].[dbo].[EAP_CassetteBind] ([CassetteID], [WorkOrder], [BindTime]) VALUES ");
+
+                        Random rand = new Random();
+                        string timeStr = DateTime.Now.ToString("yyyyMMddHHmmss");
+
+                        for (int i = 0; i < count; i++)
+                        {
+                            int randNum = rand.Next(1000, 9999);
+                            string cassetteId = $"CASS-{randNum}-{i + 1:D3}";
+                            string workOrder = $"WO-{DateTime.Now:yyyyMMdd}-{randNum}";
+
+                            sb.Append($"('{cassetteId}', '{workOrder}', '{timeStr}')");
+                            if (i < count - 1)
+                            {
+                                sb.AppendLine(",");
+                            }
+                            else
+                            {
+                                sb.AppendLine(";");
+                            }
+                        }
+
+                        Form sqlForm = new Form()
+                        {
+                            Width = 650,
+                            Height = 450,
+                            Text = "產生的 SQL 語法",
+                            StartPosition = FormStartPosition.CenterScreen,
+                            MaximizeBox = true,
+                            MinimizeBox = false,
+                            ShowIcon = false
+                        };
+
+                        TextBox txtSql = new TextBox()
+                        {
+                            Multiline = true,
+                            ScrollBars = ScrollBars.Both,
+                            Dock = DockStyle.Fill,
+                            ReadOnly = true,
+                            Text = sb.ToString(),
+                            Font = new Font("Consolas", 10)
+                        };
+
+                        sqlForm.Controls.Add(txtSql);
+                        sqlForm.ShowDialog();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"生成失敗: {ex.Message}", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
 }

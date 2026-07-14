@@ -51,7 +51,7 @@ namespace AdvancedPlanningSystem
             this.btnGlobalMonitor.Click += BtnGlobalMonitor_Click;
             this.btnTransitMonitor.Click += (s, e) => new TransitMonitorForm().Show();
             this.btnEqpMonitor.Click += (s, e) => new EqpMonitorForm().Show();
-            this.btnSystemTest.Click += (s, e) => new TestForm(_mesService).Show();
+            this.btnSystemTest.Click += (s, e) => new TestForm(_mesService, _plcService).Show();
 
             // Start UI Refresh Timer (1s interval)
             var uiTimer = new Timer();

@@ -16,6 +16,7 @@ namespace AdvancedPlanningSystem
     public partial class TestForm : Form
     {
         private IMesService _mesService;
+        private AdvancedPlanningSystem.Services.PlcService _plcService;
         private JavaScriptSerializer _jsonSerializer;
 
         private TabPage tabPageRawJson;
@@ -25,12 +26,39 @@ namespace AdvancedPlanningSystem
         private Button btnSendRaw;
         private Button btnFormatRaw;
 
-        public TestForm(IMesService mesService)
+        // PLC IO Tab elements
+        private Timer _plcIoTimer;
+        private List<PortControlMapping> _plcControlMappings = new List<PortControlMapping>();
+        private Label _lblPlcConnStatus;
+
+        private class PortControlMapping
+        {
+            public string PortId { get; set; }
+            public string X_Door_Address { get; set; }
+            public string X_Presence_Address { get; set; }
+            public string Y_Red_Address { get; set; }
+            public string Y_Lock_Address { get; set; }
+            public string Y_Green_Address { get; set; }
+
+            public Label LblDoorStatus { get; set; }
+            public Label LblPresenceStatus { get; set; }
+            public Label LblRedStatus { get; set; }
+            public Label LblLockStatus { get; set; }
+            public Label LblGreenStatus { get; set; }
+        }
+
+        public TestForm(IMesService mesService, AdvancedPlanningSystem.Services.PlcService plcService)
         {
             InitializeComponent();
             _mesService = mesService;
+            _plcService = plcService;
             _jsonSerializer = new JavaScriptSerializer();
             SetupRawJsonTab();
+
+            if (AppConfig.ManualMode)
+            {
+                SetupPlcIoTab();
+            }
         }
 
         private void Log(string msg)
@@ -389,6 +417,230 @@ namespace AdvancedPlanningSystem
             catch (Exception ex)
             {
                 Log($"Request Error: {ex.Message}");
+            }
+        }
+
+        private void SetupPlcIoTab()
+        {
+            TabPage tabPagePlcIo = new TabPage("PLC IO 手動控制");
+            tabPagePlcIo.Padding = new Padding(10);
+
+            // Connection Status Panel at the top
+            Panel pnlTop = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 40,
+                Padding = new Padding(5)
+            };
+
+            Label lblPlcConnTitle = new Label
+            {
+                Text = "PLC 連線狀態: ",
+                Location = new Point(15, 12),
+                AutoSize = true,
+                Font = new Font("Microsoft JhengHei", 9F, FontStyle.Bold)
+            };
+
+            _lblPlcConnStatus = new Label
+            {
+                Text = "Checking...",
+                Location = new Point(110, 10),
+                Size = new Size(150, 20),
+                TextAlign = ContentAlignment.MiddleCenter,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Microsoft JhengHei", 9F, FontStyle.Bold)
+            };
+
+            pnlTop.Controls.Add(lblPlcConnTitle);
+            pnlTop.Controls.Add(_lblPlcConnStatus);
+
+            // FlowLayoutPanel for Ports
+            FlowLayoutPanel flowPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                Padding = new Padding(10)
+            };
+
+            if (_plcService != null)
+            {
+                var states = _plcService.PortStates;
+                if (states != null)
+                {
+                    foreach (var state in states)
+                    {
+                        var cfg = state.Config;
+                        
+                        GroupBox grpPort = new GroupBox
+                        {
+                            Text = $"Port {cfg.PortId} 控制 (Index: {cfg.Index})",
+                            Width = 360,
+                            Height = 180,
+                            Font = new Font("Microsoft JhengHei", 9F)
+                        };
+
+                        TableLayoutPanel tbl = new TableLayoutPanel
+                        {
+                            Dock = DockStyle.Fill,
+                            ColumnCount = 4,
+                            RowCount = 5,
+                            Padding = new Padding(5)
+                        };
+                        tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F)); // Name/Addr
+                        tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F)); // Status
+                        tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22.5F)); // Action 1
+                        tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22.5F)); // Action 2
+
+                        // Row 0: X_Door
+                        tbl.Controls.Add(new Label { Text = $"X_Door ({cfg.X_Door})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 0);
+                        Label lblDoor = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
+                        tbl.Controls.Add(lblDoor, 1, 0);
+
+                        // Row 1: X_Presence
+                        tbl.Controls.Add(new Label { Text = $"X_Presence ({cfg.X_Presence})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 1);
+                        Label lblPresence = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
+                        tbl.Controls.Add(lblPresence, 1, 1);
+
+                        // Row 2: Y_Red
+                        tbl.Controls.Add(new Label { Text = $"Y_Red ({cfg.Y_Red})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 2);
+                        Label lblRed = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
+                        tbl.Controls.Add(lblRed, 1, 2);
+                        Button btnRedOn = new Button { Text = "ON", Dock = DockStyle.Fill, Margin = new Padding(1) };
+                        btnRedOn.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Red, true);
+                        Button btnRedOff = new Button { Text = "OFF", Dock = DockStyle.Fill, Margin = new Padding(1) };
+                        btnRedOff.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Red, false);
+                        tbl.Controls.Add(btnRedOn, 2, 2);
+                        tbl.Controls.Add(btnRedOff, 3, 2);
+
+                        // Row 3: Y_Lock
+                        tbl.Controls.Add(new Label { Text = $"Y_Lock ({cfg.Y_Lock})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 3);
+                        Label lblLock = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
+                        tbl.Controls.Add(lblLock, 1, 3);
+                        Button btnLockOn = new Button { Text = "Unlock", Dock = DockStyle.Fill, Margin = new Padding(1) };
+                        btnLockOn.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Lock, true);
+                        Button btnLockOff = new Button { Text = "Lock", Dock = DockStyle.Fill, Margin = new Padding(1) };
+                        btnLockOff.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Lock, false);
+                        tbl.Controls.Add(btnLockOn, 2, 3);
+                        tbl.Controls.Add(btnLockOff, 3, 3);
+
+                        // Row 4: Y_Green
+                        tbl.Controls.Add(new Label { Text = $"Y_Green ({cfg.Y_Green})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 4);
+                        Label lblGreen = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
+                        tbl.Controls.Add(lblGreen, 1, 4);
+                        Button btnGreenOn = new Button { Text = "ON", Dock = DockStyle.Fill, Margin = new Padding(1) };
+                        btnGreenOn.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Green, true);
+                        Button btnGreenOff = new Button { Text = "OFF", Dock = DockStyle.Fill, Margin = new Padding(1) };
+                        btnGreenOff.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Green, false);
+                        tbl.Controls.Add(btnGreenOn, 2, 4);
+                        tbl.Controls.Add(btnGreenOff, 3, 4);
+
+                        grpPort.Controls.Add(tbl);
+                        flowPanel.Controls.Add(grpPort);
+
+                        _plcControlMappings.Add(new PortControlMapping
+                        {
+                            PortId = cfg.PortId,
+                            X_Door_Address = cfg.X_Door,
+                            X_Presence_Address = cfg.X_Presence,
+                            Y_Red_Address = cfg.Y_Red,
+                            Y_Lock_Address = cfg.Y_Lock,
+                            Y_Green_Address = cfg.Y_Green,
+                            LblDoorStatus = lblDoor,
+                            LblPresenceStatus = lblPresence,
+                            LblRedStatus = lblRed,
+                            LblLockStatus = lblLock,
+                            LblGreenStatus = lblGreen
+                        });
+                    }
+                }
+            }
+
+            tabPagePlcIo.Controls.Add(flowPanel);
+            tabPagePlcIo.Controls.Add(pnlTop);
+
+            this.tabControl1.TabPages.Add(tabPagePlcIo);
+
+            // Initialize and start timer
+            _plcIoTimer = new Timer();
+            _plcIoTimer.Interval = 500;
+            _plcIoTimer.Tick += PlcIoTimer_Tick;
+            _plcIoTimer.Start();
+
+            this.FormClosing += (s, e) => {
+                _plcIoTimer?.Stop();
+                _plcIoTimer?.Dispose();
+            };
+        }
+
+        private async void PlcIoTimer_Tick(object sender, EventArgs e)
+        {
+            if (_plcService == null) return;
+
+            bool isConn = _plcService.IsConnected;
+            _lblPlcConnStatus.Text = isConn ? "PLC 已連線" : "PLC 未連線";
+            _lblPlcConnStatus.BackColor = isConn ? Color.LightGreen : Color.Tomato;
+
+            if (!isConn) return;
+
+            // Use internal cache from PlcService to read X inputs, and read Y outputs directly to show actual status
+            foreach (var mapping in _plcControlMappings)
+            {
+                try
+                {
+                    // Find matching port runtime state from PlcService cache
+                    var state = _plcService.PortStates?.FirstOrDefault(ps => ps.Config.PortId == mapping.PortId);
+                    if (state != null)
+                    {
+                        bool doorClosed = state.DebouncedDoor;
+                        bool presence = state.DebouncedPresence;
+
+                        mapping.LblDoorStatus.Text = doorClosed ? "Closed" : "Opened";
+                        mapping.LblDoorStatus.BackColor = doorClosed ? Color.LightGreen : Color.Tomato;
+
+                        mapping.LblPresenceStatus.Text = presence ? "Present" : "Empty";
+                        mapping.LblPresenceStatus.BackColor = presence ? Color.LightBlue : Color.LightGray;
+                    }
+
+                    // For outputs, read live status from PLC
+                    bool red = await _plcService.ReadBitAsync(mapping.Y_Red_Address);
+                    bool lockState = await _plcService.ReadBitAsync(mapping.Y_Lock_Address);
+                    bool green = await _plcService.ReadBitAsync(mapping.Y_Green_Address);
+
+                    mapping.LblRedStatus.Text = red ? "ON" : "OFF";
+                    mapping.LblRedStatus.BackColor = red ? Color.Tomato : Color.LightGray;
+
+                    mapping.LblLockStatus.Text = lockState ? "Unlock (ON)" : "Lock (OFF)";
+                    mapping.LblLockStatus.BackColor = lockState ? Color.LightGreen : Color.LightGray;
+
+                    mapping.LblGreenStatus.Text = green ? "ON" : "OFF";
+                    mapping.LblGreenStatus.BackColor = green ? Color.LightGreen : Color.LightGray;
+                }
+                catch
+                {
+                    // Ignore transient errors
+                }
+            }
+        }
+
+        private async Task WritePlcBitWithCheck(string address, bool value)
+        {
+            if (!AppConfig.ManualMode)
+            {
+                MessageBox.Show("目前非手動模式，無法控制 IO！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            if (_plcService == null || !_plcService.IsConnected)
+            {
+                MessageBox.Show("PLC 未連線，無法控制 IO！", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            try
+            {
+                await _plcService.WriteBitAsync(address, value);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"寫入 PLC 點位 {address} 失敗: {ex.Message}", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

@@ -389,6 +389,20 @@ namespace AdvancedPlanningSystem.Services
             }
         }
 
+        internal List<PortRuntimeState> PortStates => _portStates;
+
+        public async Task WriteBitAsync(string address, bool value)
+        {
+            if (_driver == null) return;
+            await _driver.WriteBitAsync(address, value);
+        }
+
+        public async Task<bool> ReadBitAsync(string address)
+        {
+            if (_driver == null) return false;
+            return await _driver.ReadBitAsync(address);
+        }
+
         public void Dispose()
         {
             Stop();

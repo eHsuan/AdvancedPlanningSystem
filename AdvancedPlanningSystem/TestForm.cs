@@ -462,101 +462,123 @@ namespace AdvancedPlanningSystem
                 Padding = new Padding(10)
             };
 
-            if (_plcService != null)
+            if (_plcService == null)
+            {
+                Label lblError = new Label
+                {
+                    Text = "PLC 服務未初始化 (可能還在進行 MES 連線中...)",
+                    ForeColor = Color.Red,
+                    AutoSize = true,
+                    Location = new Point(20, 60),
+                    Font = new Font("Microsoft JhengHei", 12F, FontStyle.Bold)
+                };
+                tabPagePlcIo.Controls.Add(lblError);
+            }
+            else if (_plcService.PortStates == null || _plcService.PortStates.Count == 0)
+            {
+                Label lblError = new Label
+                {
+                    Text = "載入 PLC 點位設定失敗或設定為空 (請確認 PLC_Adress.xml 是否正確)",
+                    ForeColor = Color.Red,
+                    AutoSize = true,
+                    Location = new Point(20, 60),
+                    Font = new Font("Microsoft JhengHei", 12F, FontStyle.Bold)
+                };
+                tabPagePlcIo.Controls.Add(lblError);
+            }
+            else
             {
                 var states = _plcService.PortStates;
-                if (states != null)
+                foreach (var state in states)
                 {
-                    foreach (var state in states)
+                    var cfg = state.Config;
+                    
+                    GroupBox grpPort = new GroupBox
                     {
-                        var cfg = state.Config;
-                        
-                        GroupBox grpPort = new GroupBox
-                        {
-                            Text = $"Port {cfg.PortId} 控制 (Index: {cfg.Index})",
-                            Width = 360,
-                            Height = 180,
-                            Font = new Font("Microsoft JhengHei", 9F)
-                        };
+                        Text = $"Port {cfg.PortId} 控制 (Index: {cfg.Index})",
+                        Width = 360,
+                        Height = 180,
+                        Font = new Font("Microsoft JhengHei", 9F)
+                    };
 
-                        TableLayoutPanel tbl = new TableLayoutPanel
-                        {
-                            Dock = DockStyle.Fill,
-                            ColumnCount = 4,
-                            RowCount = 5,
-                            Padding = new Padding(5)
-                        };
-                        tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F)); // Name/Addr
-                        tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F)); // Status
-                        tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22.5F)); // Action 1
-                        tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22.5F)); // Action 2
+                    TableLayoutPanel tbl = new TableLayoutPanel
+                    {
+                        Dock = DockStyle.Fill,
+                        ColumnCount = 4,
+                        RowCount = 5,
+                        Padding = new Padding(5)
+                    };
+                    tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F)); // Name/Addr
+                    tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F)); // Status
+                    tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22.5F)); // Action 1
+                    tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22.5F)); // Action 2
 
-                        // Row 0: X_Door
-                        tbl.Controls.Add(new Label { Text = $"X_Door ({cfg.X_Door})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 0);
-                        Label lblDoor = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
-                        tbl.Controls.Add(lblDoor, 1, 0);
+                    // Row 0: X_Door
+                    tbl.Controls.Add(new Label { Text = $"X_Door ({cfg.X_Door})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 0);
+                    Label lblDoor = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
+                    tbl.Controls.Add(lblDoor, 1, 0);
 
-                        // Row 1: X_Presence
-                        tbl.Controls.Add(new Label { Text = $"X_Presence ({cfg.X_Presence})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 1);
-                        Label lblPresence = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
-                        tbl.Controls.Add(lblPresence, 1, 1);
+                    // Row 1: X_Presence
+                    tbl.Controls.Add(new Label { Text = $"X_Presence ({cfg.X_Presence})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 1);
+                    Label lblPresence = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
+                    tbl.Controls.Add(lblPresence, 1, 1);
 
-                        // Row 2: Y_Red
-                        tbl.Controls.Add(new Label { Text = $"Y_Red ({cfg.Y_Red})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 2);
-                        Label lblRed = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
-                        tbl.Controls.Add(lblRed, 1, 2);
-                        Button btnRedOn = new Button { Text = "ON", Dock = DockStyle.Fill, Margin = new Padding(1) };
-                        btnRedOn.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Red, true);
-                        Button btnRedOff = new Button { Text = "OFF", Dock = DockStyle.Fill, Margin = new Padding(1) };
-                        btnRedOff.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Red, false);
-                        tbl.Controls.Add(btnRedOn, 2, 2);
-                        tbl.Controls.Add(btnRedOff, 3, 2);
+                    // Row 2: Y_Red
+                    tbl.Controls.Add(new Label { Text = $"Y_Red ({cfg.Y_Red})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 2);
+                    Label lblRed = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
+                    tbl.Controls.Add(lblRed, 1, 2);
+                    Button btnRedOn = new Button { Text = "ON", Dock = DockStyle.Fill, Margin = new Padding(1) };
+                    btnRedOn.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Red, true);
+                    Button btnRedOff = new Button { Text = "OFF", Dock = DockStyle.Fill, Margin = new Padding(1) };
+                    btnRedOff.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Red, false);
+                    tbl.Controls.Add(btnRedOn, 2, 2);
+                    tbl.Controls.Add(btnRedOff, 3, 2);
 
-                        // Row 3: Y_Lock
-                        tbl.Controls.Add(new Label { Text = $"Y_Lock ({cfg.Y_Lock})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 3);
-                        Label lblLock = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
-                        tbl.Controls.Add(lblLock, 1, 3);
-                        Button btnLockOn = new Button { Text = "Unlock", Dock = DockStyle.Fill, Margin = new Padding(1) };
-                        btnLockOn.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Lock, true);
-                        Button btnLockOff = new Button { Text = "Lock", Dock = DockStyle.Fill, Margin = new Padding(1) };
-                        btnLockOff.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Lock, false);
-                        tbl.Controls.Add(btnLockOn, 2, 3);
-                        tbl.Controls.Add(btnLockOff, 3, 3);
+                    // Row 3: Y_Lock
+                    tbl.Controls.Add(new Label { Text = $"Y_Lock ({cfg.Y_Lock})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 3);
+                    Label lblLock = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
+                    tbl.Controls.Add(lblLock, 1, 3);
+                    Button btnLockOn = new Button { Text = "Unlock", Dock = DockStyle.Fill, Margin = new Padding(1) };
+                    btnLockOn.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Lock, true);
+                    Button btnLockOff = new Button { Text = "Lock", Dock = DockStyle.Fill, Margin = new Padding(1) };
+                    btnLockOff.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Lock, false);
+                    tbl.Controls.Add(btnLockOn, 2, 3);
+                    tbl.Controls.Add(btnLockOff, 3, 3);
 
-                        // Row 4: Y_Green
-                        tbl.Controls.Add(new Label { Text = $"Y_Green ({cfg.Y_Green})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 4);
-                        Label lblGreen = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
-                        tbl.Controls.Add(lblGreen, 1, 4);
-                        Button btnGreenOn = new Button { Text = "ON", Dock = DockStyle.Fill, Margin = new Padding(1) };
-                        btnGreenOn.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Green, true);
-                        Button btnGreenOff = new Button { Text = "OFF", Dock = DockStyle.Fill, Margin = new Padding(1) };
-                        btnGreenOff.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Green, false);
-                        tbl.Controls.Add(btnGreenOn, 2, 4);
-                        tbl.Controls.Add(btnGreenOff, 3, 4);
+                    // Row 4: Y_Green
+                    tbl.Controls.Add(new Label { Text = $"Y_Green ({cfg.Y_Green})", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 4);
+                    Label lblGreen = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2) };
+                    tbl.Controls.Add(lblGreen, 1, 4);
+                    Button btnGreenOn = new Button { Text = "ON", Dock = DockStyle.Fill, Margin = new Padding(1) };
+                    btnGreenOn.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Green, true);
+                    Button btnGreenOff = new Button { Text = "OFF", Dock = DockStyle.Fill, Margin = new Padding(1) };
+                    btnGreenOff.Click += async (s, e) => await WritePlcBitWithCheck(cfg.Y_Green, false);
+                    tbl.Controls.Add(btnGreenOn, 2, 4);
+                    tbl.Controls.Add(btnGreenOff, 3, 4);
 
-                        grpPort.Controls.Add(tbl);
-                        flowPanel.Controls.Add(grpPort);
+                    grpPort.Controls.Add(tbl);
+                    flowPanel.Controls.Add(grpPort);
 
-                        _plcControlMappings.Add(new PortControlMapping
-                        {
-                            PortId = cfg.PortId,
-                            X_Door_Address = cfg.X_Door,
-                            X_Presence_Address = cfg.X_Presence,
-                            Y_Red_Address = cfg.Y_Red,
-                            Y_Lock_Address = cfg.Y_Lock,
-                            Y_Green_Address = cfg.Y_Green,
-                            LblDoorStatus = lblDoor,
-                            LblPresenceStatus = lblPresence,
-                            LblRedStatus = lblRed,
-                            LblLockStatus = lblLock,
-                            LblGreenStatus = lblGreen
-                        });
-                    }
+                    _plcControlMappings.Add(new PortControlMapping
+                    {
+                        PortId = cfg.PortId,
+                        X_Door_Address = cfg.X_Door,
+                        X_Presence_Address = cfg.X_Presence,
+                        Y_Red_Address = cfg.Y_Red,
+                        Y_Lock_Address = cfg.Y_Lock,
+                        Y_Green_Address = cfg.Y_Green,
+                        LblDoorStatus = lblDoor,
+                        LblPresenceStatus = lblPresence,
+                        LblRedStatus = lblRed,
+                        LblLockStatus = lblLock,
+                        LblGreenStatus = lblGreen
+                    });
                 }
             }
 
-            tabPagePlcIo.Controls.Add(flowPanel);
+            // Correct Z-order: Top first, then Fill
             tabPagePlcIo.Controls.Add(pnlTop);
+            tabPagePlcIo.Controls.Add(flowPanel);
 
             this.tabControl1.TabPages.Add(tabPagePlcIo);
 

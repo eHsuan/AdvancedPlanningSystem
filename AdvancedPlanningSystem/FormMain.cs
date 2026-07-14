@@ -255,16 +255,6 @@ namespace AdvancedPlanningSystem
             _mesService = new MesHttpClient(mesBaseUrl);
             AddLog($"MES Client Initialized: {mesBaseUrl}");
 
-            try 
-            {
-                var qtimes = await _mesService.GetAllQTimeLimitsAsync();
-                AddLog($"[MES] QTime settings loaded: {qtimes?.Count ?? 0} items");
-            }
-            catch (Exception ex)
-            {
-                AddLog($"[MES] QTime loading failed: {ex.Message}");
-            }
-
             _externalDb = new AdvancedPlanningSystem.Services.ExternalDataService();
             _tcpServer = new TcpServerModule();
             
@@ -333,6 +323,17 @@ namespace AdvancedPlanningSystem
             _dispatchService = new AdvancedPlanningSystem.Services.DispatchService(_repo, _cloudRepo, _tcpServer, _plcService);
             _syncService = new AdvancedPlanningSystem.Services.DataSyncService(_mesService, _repo, _cloudRepo, _dispatchService, lstLog);
             _dispatchService.SetDataSyncService(_syncService);
+
+            // 背景非同步載入 MES 點位設定限制，避免阻塞其它本機服務初始化
+            try 
+            {
+                var qtimes = await _mesService.GetAllQTimeLimitsAsync();
+                AddLog($"[MES] QTime settings loaded: {qtimes?.Count ?? 0} items");
+            }
+            catch (Exception ex)
+            {
+                AddLog($"[MES] QTime loading failed: {ex.Message}");
+            }
 
             _syncService.Start(); 
         }

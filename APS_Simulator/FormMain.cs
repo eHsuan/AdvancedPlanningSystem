@@ -1168,12 +1168,11 @@ namespace APSSimulator
                 sb.AppendLine($"-- 模擬資料 INSERT 語法 (共 {list.Count} 筆)");
                 sb.AppendLine($"-- 產生時間: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
                 sb.AppendLine("-- ========================================================");
-                sb.AppendLine("INSERT INTO [DIAEAP].[dbo].[EAP_CassetteBind] ([CassetteID], [WorkOrder], [BindTime]) VALUES ");
+                sb.AppendLine("INSERT INTO [DIAEAP].[dbo].[EAP_CassetteBind] ([CassetteID], [WorkOrder]) VALUES ");
 
-                string timeStr = DateTime.Now.ToString("yyyyMMddHHmmss");
                 for (int i = 0; i < list.Count; i++)
                 {
-                    sb.Append($"('{list[i].Item1}', '{list[i].Item2}', '{timeStr}')");
+                    sb.Append($"('{list[i].Item1}', '{list[i].Item2}')");
                     if (i < list.Count - 1)
                         sb.AppendLine(",");
                     else

@@ -78,7 +78,7 @@ namespace AdvancedPlanningSystem
             // 
             this.btnSystemTest.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSystemTest.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.btnSystemTest.Location = new System.Drawing.Point(588, 10);
+            this.btnSystemTest.Location = new System.Drawing.Point(1056, 13);
             this.btnSystemTest.Name = "btnSystemTest";
             this.btnSystemTest.Size = new System.Drawing.Size(113, 36);
             this.btnSystemTest.TabIndex = 8;
@@ -90,9 +90,9 @@ namespace AdvancedPlanningSystem
             this.btnManualSync.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnManualSync.BackColor = System.Drawing.Color.Orange;
             this.btnManualSync.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.btnManualSync.Location = new System.Drawing.Point(1554, 10);
+            this.btnManualSync.Location = new System.Drawing.Point(543, 5);
             this.btnManualSync.Name = "btnManualSync";
-            this.btnManualSync.Size = new System.Drawing.Size(160, 36);
+            this.btnManualSync.Size = new System.Drawing.Size(90, 48);
             this.btnManualSync.TabIndex = 9;
             this.btnManualSync.Text = "Manual Decision";
             this.btnManualSync.UseVisualStyleBackColor = false;
@@ -279,7 +279,7 @@ namespace AdvancedPlanningSystem
             // 
             this.pnlSimStatus.BackColor = System.Drawing.Color.Red;
             this.pnlSimStatus.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlSimStatus.Location = new System.Drawing.Point(420, 18);
+            this.pnlSimStatus.Location = new System.Drawing.Point(389, 18);
             this.pnlSimStatus.Name = "pnlSimStatus";
             this.pnlSimStatus.Size = new System.Drawing.Size(20, 20);
             this.pnlSimStatus.TabIndex = 5;
@@ -289,7 +289,7 @@ namespace AdvancedPlanningSystem
             this.lblSimStatus.AutoSize = true;
             this.lblSimStatus.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
             this.lblSimStatus.ForeColor = System.Drawing.Color.White;
-            this.lblSimStatus.Location = new System.Drawing.Point(443, 20);
+            this.lblSimStatus.Location = new System.Drawing.Point(409, 20);
             this.lblSimStatus.Name = "lblSimStatus";
             this.lblSimStatus.Size = new System.Drawing.Size(129, 17);
             this.lblSimStatus.TabIndex = 6;

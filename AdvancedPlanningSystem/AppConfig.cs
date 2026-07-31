@@ -12,7 +12,7 @@ namespace AdvancedPlanningSystem
         /// <summary>
         /// 物料入 PORT 識別模式
         /// </summary>
-        public static CarrierInputMode InputMode = CarrierInputMode.BarcodeBinding;
+        public static CarrierInputMode InputMode = CarrierInputMode.WorkOrderOnly;
 
         // 核心計時器設定
         /// <summary>

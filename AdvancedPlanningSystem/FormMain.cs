@@ -47,69 +47,34 @@ namespace AdvancedPlanningSystem
             _repo = new AdvancedPlanningSystem.Repositories.ApsLocalDbRepository();
             _cloudRepo = new AdvancedPlanningSystem.Repositories.ApsCloudDbRepository();
 
-            // Create barcode scan UI elements programmatically
-            Label lblMode = new Label
+            // Create Mode Display Label & Stock In Button programmatically
+            string modeName = "條碼綁定 (DB)";
+            if (AppConfig.InputMode == CarrierInputMode.WorkOrderOnly) modeName = "僅工單 (WO Only)";
+            else if (AppConfig.InputMode == CarrierInputMode.Hybrid) modeName = "混合模式 (Hybrid)";
+
+            Label lblModeDisplay = new Label
             {
-                Text = "識別模式:",
-                ForeColor = Color.White,
-                Font = new Font("Microsoft JhengHei", 9F, FontStyle.Bold),
+                Text = $"[模式: {modeName}]",
+                ForeColor = Color.Yellow,
+                Font = new Font("Microsoft JhengHei", 10F, FontStyle.Bold),
                 Location = new Point(720, 18),
                 AutoSize = true
             };
 
-            ComboBox cbMode = new ComboBox
+            Button btnStockIn = new Button
             {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Font = new Font("Microsoft JhengHei", 9F),
-                Location = new Point(785, 15),
-                Width = 140
-            };
-            cbMode.Items.Add("條碼綁定 (DB)");
-            cbMode.Items.Add("僅工單 (WO Only)");
-            cbMode.Items.Add("混合模式 (Hybrid)");
-            cbMode.SelectedIndex = (int)AppConfig.InputMode;
-
-            Label lblScanTitle = new Label
-            {
-                Name = "lblScanTitle",
-                Text = AppConfig.InputMode == CarrierInputMode.WorkOrderOnly ? "工單掃描:" : (AppConfig.InputMode == CarrierInputMode.Hybrid ? "WO,CST 掃描:" : "CST 條碼掃描:"),
+                Text = "📥 物料入庫 (Stock In)",
+                Font = new Font("Microsoft JhengHei", 10F, FontStyle.Bold),
+                BackColor = Color.ForestGreen,
                 ForeColor = Color.White,
-                Font = new Font("Microsoft JhengHei", 9F, FontStyle.Bold),
-                Location = new Point(935, 18),
-                AutoSize = true
+                FlatStyle = FlatStyle.Flat,
+                Location = new Point(910, 12),
+                Size = new Size(180, 36)
             };
+            btnStockIn.Click += async (s, e) => await OpenStockInDialogAsync();
 
-            TextBox txtScanInput = new TextBox
-            {
-                Name = "txtManualScan",
-                Font = new Font("Consolas", 10F),
-                Location = new Point(1030, 15),
-                Width = 180,
-            };
-            txtScanInput.KeyDown += TxtScanInput_KeyDown;
-
-            cbMode.SelectedIndexChanged += (s, e) => {
-                AppConfig.InputMode = (CarrierInputMode)cbMode.SelectedIndex;
-                switch (AppConfig.InputMode)
-                {
-                    case CarrierInputMode.WorkOrderOnly:
-                        lblScanTitle.Text = "工單掃描:";
-                        break;
-                    case CarrierInputMode.Hybrid:
-                        lblScanTitle.Text = "WO,CST 掃描:";
-                        break;
-                    case CarrierInputMode.BarcodeBinding:
-                    default:
-                        lblScanTitle.Text = "CST 條碼掃描:";
-                        break;
-                }
-                AddLog($"[Mode Changed] 入庫識別模式切換為: {cbMode.SelectedItem}");
-            };
-
-            this.pnlHeader.Controls.Add(lblMode);
-            this.pnlHeader.Controls.Add(cbMode);
-            this.pnlHeader.Controls.Add(lblScanTitle);
-            this.pnlHeader.Controls.Add(txtScanInput);
+            this.pnlHeader.Controls.Add(lblModeDisplay);
+            this.pnlHeader.Controls.Add(btnStockIn);
 
             // Start Pre-Assign Timeout Checker Timer (1s interval)
             var preAssignTimer = new Timer();
@@ -350,8 +315,14 @@ namespace AdvancedPlanningSystem
             };
             
             _tcpServer.OnScan += async (s, e) => {
-                // 將模擬器的 SCAN 訊息重導向至人員手動掃碼邏輯
-                await ProcessManualScanInputAsync(e.Barcode, e.PortID);
+                // 將模擬器的 SCAN 訊息重導向至入庫處理
+                string barcode = e.Barcode;
+                string workNo = barcode;
+                if (AppConfig.InputMode == CarrierInputMode.BarcodeBinding)
+                {
+                    workNo = await _externalDb.GetWorkNoByBarcodeAsync(barcode);
+                }
+                await ProcessDirectStockInAsync(barcode, workNo, e.PortID);
             };
 
             _tcpServer.OnPlace += async (s, e) => {
@@ -580,76 +551,28 @@ namespace AdvancedPlanningSystem
             await Task.CompletedTask;
         }
 
-        private async void TxtScanInput_KeyDown(object sender, KeyEventArgs e)
+        private async Task OpenStockInDialogAsync()
         {
-            if (e.KeyCode == Keys.Enter)
+            // 防呆：單件交易鎖定
+            bool hasReserved = _repo.GetActiveAndReservedPorts().Any(p => p.Status == "PRE_ASSIGN");
+            if (hasReserved)
             {
-                TextBox txt = sender as TextBox;
-                if (txt == null) return;
-                
-                string barcode = txt.Text.Trim();
-                txt.Clear();
-                
-                if (string.IsNullOrEmpty(barcode)) return;
-
-                // 防呆：單件交易鎖定
-                bool hasReserved = _repo.GetActiveAndReservedPorts().Any(p => p.Status == "PRE_ASSIGN");
-                if (hasReserved)
-                {
-                    AddLog($"[ALARM] 拒絕掃碼 {barcode}：目前已有儲位正在引導置入中！");
-                    NotificationForm.ShowAsync("交易鎖定", "目前已有儲位正在引導置入中，請先完成前一卡匣的置放與關門！", NotificationLevel.Warning, 5);
-                    return;
-                }
-
-                await ProcessManualScanInputAsync(barcode);
+                AddLog("[ALARM] 拒絕入庫：目前已有儲位正在引導置入中！");
+                NotificationForm.ShowAsync("交易鎖定", "目前已有儲位正在引導置入中，請先完成前一卡匣的置放與關門！", NotificationLevel.Warning, 5);
+                return;
             }
-        }
 
-        private async Task ProcessManualScanInputAsync(string inputData, string preferredPortId = null)
-        {
-            try
+            using (var dialog = new StockInForm())
             {
-                if (string.IsNullOrWhiteSpace(inputData)) return;
-
-                string barcode = "";
-                string workNo = "";
-
-                switch (AppConfig.InputMode)
+                if (dialog.ShowDialog(this) == DialogResult.OK)
                 {
-                    case CarrierInputMode.WorkOrderOnly:
-                        // 1. 僅工單模式：人員輸入即為工單號碼，CassetteID 預設同 WorkNo
-                        workNo = inputData.Trim();
-                        barcode = workNo;
-                        AddLog($"[Scan-WorkOrderOnly] 收到工單號碼: {workNo}");
-                        break;
+                    string barcode = dialog.CassetteId;
+                    string workNo = dialog.WorkNo;
 
-                    case CarrierInputMode.Hybrid:
-                        // 2. 混合模式：支援 "WorkNo,CassetteID" 或 "CassetteID,WorkNo" 拆解
-                        AddLog($"[Scan-Hybrid] 收到混合輸入: {inputData}");
-                        var parts = inputData.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        if (parts.Length >= 2)
-                        {
-                            workNo = parts[0].Trim();
-                            barcode = parts[1].Trim();
-                        }
-                        else if (parts.Length == 1)
-                        {
-                            workNo = parts[0].Trim();
-                            barcode = parts[0].Trim();
-                        }
-                        else
-                        {
-                            AddLog($"[ALARM] 混合模式格式錯誤！請提供 '工單號碼,CassetteID'");
-                            NotificationForm.ShowAsync("輸入錯誤", "混合模式格式錯誤，格式應為 '工單號碼,CassetteID'", NotificationLevel.Warning, 5);
-                            return;
-                        }
-                        break;
-
-                    case CarrierInputMode.BarcodeBinding:
-                    default:
-                        // 3. CassetteID 綁定模式：刷 CassetteID 查 WorkNo
-                        barcode = inputData.Trim();
-                        AddLog($"[Scan-Binding] 收到卡匣條碼: {barcode}");
+                    if (AppConfig.InputMode == CarrierInputMode.BarcodeBinding && string.IsNullOrEmpty(workNo))
+                    {
+                        // 條碼綁定模式下，查 DB 拿 WorkNo
+                        AddLog($"[Scan-Binding] 收到卡匣條碼: {barcode}，查詢工單中...");
                         workNo = await _externalDb.GetWorkNoByBarcodeAsync(barcode);
                         if (string.IsNullOrEmpty(workNo))
                         {
@@ -657,9 +580,17 @@ namespace AdvancedPlanningSystem
                             NotificationForm.ShowAsync("條碼錯誤", $"無效的卡匣條碼: {barcode}", NotificationLevel.Warning, 5);
                             return;
                         }
-                        break;
-                }
+                    }
 
+                    await ProcessDirectStockInAsync(barcode, workNo);
+                }
+            }
+        }
+
+        private async Task ProcessDirectStockInAsync(string barcode, string workNo, string preferredPortId = null)
+        {
+            try
+            {
                 if (string.IsNullOrEmpty(workNo) || string.IsNullOrEmpty(barcode))
                 {
                     AddLog("[ALARM] 工單號碼或卡匣ID不可為空！");
@@ -730,7 +661,7 @@ namespace AdvancedPlanningSystem
             }
             catch (Exception ex)
             {
-                AddLog($"[Scan Error] 處理輸入 {inputData} 時發生錯誤: {ex.Message}");
+                AddLog($"[StockIn Error] 處理卡匣 {barcode} 時發生錯誤: {ex.Message}");
             }
         }
 

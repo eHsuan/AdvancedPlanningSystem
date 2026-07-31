@@ -1,7 +1,19 @@
 namespace AdvancedPlanningSystem
 {
+    public enum CarrierInputMode
+    {
+        BarcodeBinding = 0, // CassetteID 綁定模式 (刷 CassetteID -> 向外部 DB 查 WorkNo)
+        WorkOrderOnly = 1,  // 僅工單模式 (刷 WorkNo -> CassetteID 同 WorkNo)
+        Hybrid = 2          // 工單 + CassetteID 混合模式 (輸入 WorkNo 與 CassetteID)
+    }
+
     public static class AppConfig
     {
+        /// <summary>
+        /// 物料入 PORT 識別模式
+        /// </summary>
+        public static CarrierInputMode InputMode = CarrierInputMode.BarcodeBinding;
+
         // 核心計時器設定
         /// <summary>
         /// 自動同步與派貨決策計時器間隔 (秒)

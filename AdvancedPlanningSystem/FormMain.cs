@@ -48,24 +48,66 @@ namespace AdvancedPlanningSystem
             _cloudRepo = new AdvancedPlanningSystem.Repositories.ApsCloudDbRepository();
 
             // Create barcode scan UI elements programmatically
+            Label lblMode = new Label
+            {
+                Text = "識別模式:",
+                ForeColor = Color.White,
+                Font = new Font("Microsoft JhengHei", 9F, FontStyle.Bold),
+                Location = new Point(720, 18),
+                AutoSize = true
+            };
+
+            ComboBox cbMode = new ComboBox
+            {
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Microsoft JhengHei", 9F),
+                Location = new Point(785, 15),
+                Width = 140
+            };
+            cbMode.Items.Add("條碼綁定 (DB)");
+            cbMode.Items.Add("僅工單 (WO Only)");
+            cbMode.Items.Add("混合模式 (Hybrid)");
+            cbMode.SelectedIndex = (int)AppConfig.InputMode;
+
             Label lblScanTitle = new Label
             {
-                Text = "CST 條碼掃描:",
+                Name = "lblScanTitle",
+                Text = AppConfig.InputMode == CarrierInputMode.WorkOrderOnly ? "工單掃描:" : (AppConfig.InputMode == CarrierInputMode.Hybrid ? "WO,CST 掃描:" : "CST 條碼掃描:"),
                 ForeColor = Color.White,
-                Font = new Font("Microsoft JhengHei", 10F, FontStyle.Bold),
-                Location = new Point(910, 18),
+                Font = new Font("Microsoft JhengHei", 9F, FontStyle.Bold),
+                Location = new Point(935, 18),
                 AutoSize = true
             };
 
             TextBox txtScanInput = new TextBox
             {
                 Name = "txtManualScan",
-                Font = new Font("Consolas", 11F),
-                Location = new Point(1010, 15),
-                Width = 200,
+                Font = new Font("Consolas", 10F),
+                Location = new Point(1030, 15),
+                Width = 180,
             };
             txtScanInput.KeyDown += TxtScanInput_KeyDown;
 
+            cbMode.SelectedIndexChanged += (s, e) => {
+                AppConfig.InputMode = (CarrierInputMode)cbMode.SelectedIndex;
+                switch (AppConfig.InputMode)
+                {
+                    case CarrierInputMode.WorkOrderOnly:
+                        lblScanTitle.Text = "工單掃描:";
+                        break;
+                    case CarrierInputMode.Hybrid:
+                        lblScanTitle.Text = "WO,CST 掃描:";
+                        break;
+                    case CarrierInputMode.BarcodeBinding:
+                    default:
+                        lblScanTitle.Text = "CST 條碼掃描:";
+                        break;
+                }
+                AddLog($"[Mode Changed] 入庫識別模式切換為: {cbMode.SelectedItem}");
+            };
+
+            this.pnlHeader.Controls.Add(lblMode);
+            this.pnlHeader.Controls.Add(cbMode);
             this.pnlHeader.Controls.Add(lblScanTitle);
             this.pnlHeader.Controls.Add(txtScanInput);
 
@@ -563,18 +605,64 @@ namespace AdvancedPlanningSystem
             }
         }
 
-        private async Task ProcessManualScanInputAsync(string barcode, string preferredPortId = null)
+        private async Task ProcessManualScanInputAsync(string inputData, string preferredPortId = null)
         {
             try
             {
-                AddLog($"[Scan] 收到卡匣條碼: {barcode}");
+                if (string.IsNullOrWhiteSpace(inputData)) return;
 
-                // 1. 查詢工單 (Barcode -> WorkNo)
-                string workNo = await _externalDb.GetWorkNoByBarcodeAsync(barcode);
-                if (string.IsNullOrEmpty(workNo))
+                string barcode = "";
+                string workNo = "";
+
+                switch (AppConfig.InputMode)
                 {
-                    AddLog($"[ALARM] 外部資料庫找不到條碼 {barcode} 對應的工單！");
-                    NotificationForm.ShowAsync("條碼錯誤", $"無效的卡匣條碼: {barcode}", NotificationLevel.Warning, 5);
+                    case CarrierInputMode.WorkOrderOnly:
+                        // 1. 僅工單模式：人員輸入即為工單號碼，CassetteID 預設同 WorkNo
+                        workNo = inputData.Trim();
+                        barcode = workNo;
+                        AddLog($"[Scan-WorkOrderOnly] 收到工單號碼: {workNo}");
+                        break;
+
+                    case CarrierInputMode.Hybrid:
+                        // 2. 混合模式：支援 "WorkNo,CassetteID" 或 "CassetteID,WorkNo" 拆解
+                        AddLog($"[Scan-Hybrid] 收到混合輸入: {inputData}");
+                        var parts = inputData.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length >= 2)
+                        {
+                            workNo = parts[0].Trim();
+                            barcode = parts[1].Trim();
+                        }
+                        else if (parts.Length == 1)
+                        {
+                            workNo = parts[0].Trim();
+                            barcode = parts[0].Trim();
+                        }
+                        else
+                        {
+                            AddLog($"[ALARM] 混合模式格式錯誤！請提供 '工單號碼,CassetteID'");
+                            NotificationForm.ShowAsync("輸入錯誤", "混合模式格式錯誤，格式應為 '工單號碼,CassetteID'", NotificationLevel.Warning, 5);
+                            return;
+                        }
+                        break;
+
+                    case CarrierInputMode.BarcodeBinding:
+                    default:
+                        // 3. CassetteID 綁定模式：刷 CassetteID 查 WorkNo
+                        barcode = inputData.Trim();
+                        AddLog($"[Scan-Binding] 收到卡匣條碼: {barcode}");
+                        workNo = await _externalDb.GetWorkNoByBarcodeAsync(barcode);
+                        if (string.IsNullOrEmpty(workNo))
+                        {
+                            AddLog($"[ALARM] 外部資料庫找不到條碼 {barcode} 對應的工單！");
+                            NotificationForm.ShowAsync("條碼錯誤", $"無效的卡匣條碼: {barcode}", NotificationLevel.Warning, 5);
+                            return;
+                        }
+                        break;
+                }
+
+                if (string.IsNullOrEmpty(workNo) || string.IsNullOrEmpty(barcode))
+                {
+                    AddLog("[ALARM] 工單號碼或卡匣ID不可為空！");
                     return;
                 }
 
@@ -642,7 +730,7 @@ namespace AdvancedPlanningSystem
             }
             catch (Exception ex)
             {
-                AddLog($"[Scan Error] 處理條碼 {barcode} 時發生錯誤: {ex.Message}");
+                AddLog($"[Scan Error] 處理輸入 {inputData} 時發生錯誤: {ex.Message}");
             }
         }
 

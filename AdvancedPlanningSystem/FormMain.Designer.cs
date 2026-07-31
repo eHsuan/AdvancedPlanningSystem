@@ -90,7 +90,7 @@ namespace AdvancedPlanningSystem
             this.btnManualSync.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnManualSync.BackColor = System.Drawing.Color.Orange;
             this.btnManualSync.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.btnManualSync.Location = new System.Drawing.Point(734, 10);
+            this.btnManualSync.Location = new System.Drawing.Point(1554, 10);
             this.btnManualSync.Name = "btnManualSync";
             this.btnManualSync.Size = new System.Drawing.Size(160, 36);
             this.btnManualSync.TabIndex = 9;
@@ -115,7 +115,7 @@ namespace AdvancedPlanningSystem
             this.flpLegend.Controls.Add(this.lblLegendEmpty);
             this.flpLegend.Controls.Add(this.pnlColorEmpty);
             this.flpLegend.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.flpLegend.Location = new System.Drawing.Point(900, 15);
+            this.flpLegend.Location = new System.Drawing.Point(1101, 15);
             this.flpLegend.Name = "flpLegend";
             this.flpLegend.Size = new System.Drawing.Size(450, 33);
             this.flpLegend.TabIndex = 2;
@@ -235,9 +235,9 @@ namespace AdvancedPlanningSystem
             // 
             this.btnGlobalMonitor.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnGlobalMonitor.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.btnGlobalMonitor.Location = new System.Drawing.Point(1730, 12);
+            this.btnGlobalMonitor.Location = new System.Drawing.Point(1791, 12);
             this.btnGlobalMonitor.Name = "btnGlobalMonitor";
-            this.btnGlobalMonitor.Size = new System.Drawing.Size(160, 36);
+            this.btnGlobalMonitor.Size = new System.Drawing.Size(120, 36);
             this.btnGlobalMonitor.TabIndex = 1;
             this.btnGlobalMonitor.Text = "Global Rank";
             this.btnGlobalMonitor.UseVisualStyleBackColor = true;
@@ -246,9 +246,9 @@ namespace AdvancedPlanningSystem
             // 
             this.btnTransitMonitor.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnTransitMonitor.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.btnTransitMonitor.Location = new System.Drawing.Point(1560, 12);
+            this.btnTransitMonitor.Location = new System.Drawing.Point(1669, 12);
             this.btnTransitMonitor.Name = "btnTransitMonitor";
-            this.btnTransitMonitor.Size = new System.Drawing.Size(160, 36);
+            this.btnTransitMonitor.Size = new System.Drawing.Size(117, 36);
             this.btnTransitMonitor.TabIndex = 3;
             this.btnTransitMonitor.Text = "Trans Monitor";
             this.btnTransitMonitor.UseVisualStyleBackColor = true;
@@ -257,9 +257,9 @@ namespace AdvancedPlanningSystem
             // 
             this.btnEqpMonitor.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnEqpMonitor.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.btnEqpMonitor.Location = new System.Drawing.Point(1390, 12);
+            this.btnEqpMonitor.Location = new System.Drawing.Point(1558, 12);
             this.btnEqpMonitor.Name = "btnEqpMonitor";
-            this.btnEqpMonitor.Size = new System.Drawing.Size(160, 36);
+            this.btnEqpMonitor.Size = new System.Drawing.Size(105, 36);
             this.btnEqpMonitor.TabIndex = 4;
             this.btnEqpMonitor.Text = "EQ Monitor ";
             this.btnEqpMonitor.UseVisualStyleBackColor = true;
@@ -301,7 +301,7 @@ namespace AdvancedPlanningSystem
             this.pnlGrid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlGrid.Location = new System.Drawing.Point(0, 60);
             this.pnlGrid.Name = "pnlGrid";
-            this.pnlGrid.Size = new System.Drawing.Size(1920, 821);
+            this.pnlGrid.Size = new System.Drawing.Size(1920, 802);
             this.pnlGrid.TabIndex = 1;
             // 
             // tlpShelf
@@ -331,7 +331,7 @@ namespace AdvancedPlanningSystem
             this.tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
             this.tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
             this.tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
-            this.tlpShelf.Size = new System.Drawing.Size(1920, 821);
+            this.tlpShelf.Size = new System.Drawing.Size(1920, 802);
             this.tlpShelf.TabIndex = 0;
             // 
             // lstLog
@@ -340,7 +340,7 @@ namespace AdvancedPlanningSystem
             this.lstLog.Font = new System.Drawing.Font("Consolas", 10F);
             this.lstLog.FormattingEnabled = true;
             this.lstLog.ItemHeight = 15;
-            this.lstLog.Location = new System.Drawing.Point(0, 881);
+            this.lstLog.Location = new System.Drawing.Point(0, 862);
             this.lstLog.Name = "lstLog";
             this.lstLog.Size = new System.Drawing.Size(1920, 199);
             this.lstLog.TabIndex = 2;
@@ -349,7 +349,7 @@ namespace AdvancedPlanningSystem
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1920, 1080);
+            this.ClientSize = new System.Drawing.Size(1920, 1061);
             this.Controls.Add(this.pnlGrid);
             this.Controls.Add(this.lstLog);
             this.Controls.Add(this.pnlHeader);

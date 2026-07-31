@@ -384,9 +384,31 @@ namespace APSSimulator
             return true;
         }
 
-        private async void HandleAutoSimOpen(string portId, string targetEqp)
+        private async void HandleAutoSimOpen(string portId, string targetEqp, string optCstId = "")
         {
             if (!tmrAutoSimulation.Enabled || _isAutoSimPaused) return;
+
+            if (targetEqp == "STOCK")
+            {
+                string stockCstId = optCstId;
+                if (string.IsNullOrEmpty(stockCstId))
+                {
+                    stockCstId = _carrierStatuses.FirstOrDefault(x => x.Value == "等待派送" || x.Value == "製程完成").Key;
+                }
+
+                if (string.IsNullOrEmpty(stockCstId)) stockCstId = "CST-UNKNOWN";
+
+                AppendAutoSimLog("[STOCK] Open port " + portId + " for cassette " + stockCstId);
+                _carrierPorts[stockCstId] = portId;
+                _carrierStatuses[stockCstId] = "在庫中";
+
+                this.Invoke(new Action(() => RefreshAutoSimGrid()));
+
+                await Task.Delay(1000);
+                AppendAutoSimLog("[Sim] PLACE " + portId + " (" + stockCstId + ")");
+                await _apsClient.SendCommandAsync("PLACE," + portId + ";");
+                return;
+            }
             
             // --- [精確匹配] 根據 APS 指定的 portId 找出模擬器中對應的卡匣 ID ---
             string cstId = _carrierPorts.FirstOrDefault(x => x.Value == portId).Key;
@@ -623,10 +645,9 @@ namespace APSSimulator
                         {
                             string portId = parts[1].Trim();
                             string targetEqp = parts.Length >= 3 ? parts[2].Trim() : "";
+                            string optCstId = parts.Length >= 4 ? parts[3].Trim() : "";
                             UpdateGridStatusWithTarget(portId, targetEqp, "Ready to Pick (Open)", Color.LightGreen);
-
-                            // Auto Sim logic
-                            HandleAutoSimOpen(portId, targetEqp);
+                            HandleAutoSimOpen(portId, targetEqp, optCstId);
                         }
                     }
                 }));

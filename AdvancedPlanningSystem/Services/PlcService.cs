@@ -9,6 +9,17 @@ using Protocol.Drivers.Mitsubishi;
 
 namespace AdvancedPlanningSystem.Services
 {
+    public class PlcConfirmArrivalEventArgs : EventArgs
+    {
+        public string PortID { get; set; }
+        public string CarrierID { get; set; }
+    }
+
+    public class PlcInvalidPresenceEventArgs : EventArgs
+    {
+        public string PortID { get; set; }
+    }
+
     /// <summary>
     /// PLC 門禁與指示燈控制服務
     /// 負責與真實 PLC 進行 MC Protocol 通訊，處理 I/O 點位輪詢、去顫、自動上鎖及三色燈狀態更新。
@@ -26,6 +37,8 @@ namespace AdvancedPlanningSystem.Services
 
         public event EventHandler<PlcScanEventArgs> OnScan;
         public event EventHandler<PlcPickEventArgs> OnPick;
+        public event EventHandler<PlcConfirmArrivalEventArgs> OnConfirmArrival; // 新增：確認入庫置入事件
+        public event EventHandler<PlcInvalidPresenceEventArgs> OnInvalidPresence; // 新增：無效/放錯儲位警報事件
 
         public PlcService(IApsLocalDbRepository repo, string xmlPath = null)
         {
@@ -175,9 +188,6 @@ namespace AdvancedPlanningSystem.Services
             }
         }
 
-        /// <summary>
-        /// 輪詢各 Port 的 I/O 點位，執行去顫與狀態邊緣檢查
-        /// </summary>
         private async Task PollStatesAsync()
         {
             foreach (var state in _portStates)
@@ -192,6 +202,14 @@ namespace AdvancedPlanningSystem.Services
                         state.DebouncedDoor = rawDoor;
                         state.DoorConfirmCount = 0;
                         LogHelper.Dispatch.Debug($"[PLC] Port {state.Config.PortId} Door debounced to: {(rawDoor ? "Closed" : "Opened")}");
+                        
+                        // 門開啟邊緣觸發：記錄開門起算時間，重設警報
+                        if (!rawDoor)
+                        {
+                            state.DoorOpenStartTime = DateTime.Now;
+                            state.IsDoorOpenAlarmActive = false;
+                            state.DoorOpenedDuringUnlock = true;
+                        }
                     }
                 }
                 else
@@ -216,38 +234,59 @@ namespace AdvancedPlanningSystem.Services
                     state.PresenceConfirmCount = 0;
                 }
 
-                // 3. 事件觸發與自動上鎖
-                // 在席 0 -> 1 (入庫偵測)
-                if (state.DebouncedPresence && !state.PrevPresence)
+                // 3. 複合感測互鎖狀態機判定 (Door + Presence)
+                bool isInterlocked = state.DebouncedDoor && state.DebouncedPresence; // 門已關且在席有貨
+                bool wasInterlocked = state.PrevDoor && state.PrevPresence;
+
+                if (isInterlocked && !wasInterlocked)
                 {
-                    _ = Task.Run(() => HandleScanArrivalAsync(state));
+                    // 複合互鎖成立 -> 執行防呆置入與上鎖判定
+                    _ = Task.Run(() => ConfirmPlacementAndLockAsync(state));
                 }
-                // 在席 1 -> 0 (出庫偵測)
-                else if (!state.DebouncedPresence && state.PrevPresence)
+                else if (state.DebouncedDoor && !state.PrevDoor && !state.DebouncedPresence)
+                {
+                    // 門關上但在席無貨 -> 執行空門關閉與預配取消判定
+                    _ = Task.Run(() => HandleEmptyDoorCloseAsync(state));
+                }
+
+                // 在席 1 -> 0 (出庫取走偵測)
+                if (!state.DebouncedPresence && state.PrevPresence)
                 {
                     OnPick?.Invoke(this, new PlcPickEventArgs { PortID = state.Config.PortId });
                 }
 
-                // 4. 自動上鎖控制
-                if (state.IsUnlocked)
+                // 4. 解鎖自動逾時上鎖 (門未開逾時 15 秒重新鎖上)
+                if (state.IsUnlocked && !state.DoorOpenedDuringUnlock)
                 {
-                    // 偵測門打開 (DebouncedDoor == false 代表開門)
-                    if (!state.DebouncedDoor)
+                    if ((DateTime.Now - state.UnlockTime).TotalSeconds > 15.0)
                     {
-                        state.DoorOpenedDuringUnlock = true;
+                        LogHelper.Dispatch.Warn($"[PLC] Port {state.Config.PortId} unlock timeout (15s, door never opened). Relocking.");
+                        await LockDoorInternalAsync(state);
                     }
+                }
 
-                    // 門曾打開且現在重新關上 -> 執行自動上鎖
-                    if (state.DoorOpenedDuringUnlock && state.DebouncedDoor)
+                // 5. 門未關逾時警報監測 (門開著超過 15 秒)
+                if (!state.DebouncedDoor) // 門目前是開著的
+                {
+                    if ((DateTime.Now - state.DoorOpenStartTime).TotalSeconds > 15.0 && !state.IsDoorOpenAlarmActive)
                     {
-                        LogHelper.Dispatch.Info($"[PLC] Port {state.Config.PortId} door closed. Activating auto-lock.");
-                        await LockDoorInternalAsync(state);
-                    }
-                    // 防呆：解鎖逾時重新鎖上 (15秒未開門)
-                    else if ((DateTime.Now - state.UnlockTime).TotalSeconds > 15.0)
-                    {
-                        LogHelper.Dispatch.Warn($"[PLC] Port {state.Config.PortId} unlock timeout (15s). Relocking.");
-                        await LockDoorInternalAsync(state);
+                        state.IsDoorOpenAlarmActive = true;
+                        LogHelper.Dispatch.Warn($"[PLC ALARM] Port {state.Config.PortId} 門開啟逾時(15秒)！啟動警報提示！");
+                        
+                        // 啟動間歇蜂鳴器與紅燈閃爍
+                        _ = Task.Run(async () =>
+                        {
+                            while (!state.DebouncedDoor && state.IsDoorOpenAlarmActive && _isRunning)
+                            {
+                                await _driver.WriteBitAsync("Y003", true); // 鳴叫
+                                await _driver.WriteBitAsync(state.Config.Y_Red, true);
+                                await Task.Delay(500);
+                                await _driver.WriteBitAsync("Y003", false); // 熄滅
+                                await _driver.WriteBitAsync(state.Config.Y_Red, false);
+                                await Task.Delay(500);
+                            }
+                            await _driver.WriteBitAsync("Y003", false); // 確保復原
+                        });
                     }
                 }
 
@@ -256,40 +295,91 @@ namespace AdvancedPlanningSystem.Services
             }
         }
 
-        /// <summary>
-        /// 異步讀取 PLC 條碼暫存器並觸發 OnScan
-        /// </summary>
-        private async Task HandleScanArrivalAsync(PortRuntimeState state)
+        private async Task ConfirmPlacementAndLockAsync(PortRuntimeState state)
         {
-            string barcode = "";
             try
             {
-                string address = AppConfig.PlcBarcodeBaseAddress;
-                if (!string.IsNullOrEmpty(address))
+                state.IsDoorOpenAlarmActive = false;
+
+                // 1. 查詢該 Port 是否有預配的卡匣
+                var binding = _repo.GetBindingByPort(state.Config.PortId);
+                if (binding != null)
                 {
-                    if (address.StartsWith("D") && int.TryParse(address.Substring(1), out int baseAddr))
-                    {
-                        string portAddr = "D" + (baseAddr + state.Config.Index * 20);
-                        barcode = await _driver.ReadAsciiAsync(portAddr, 20);
-                    }
+                    // [正確入庫]
+                    LogHelper.Dispatch.Info($"[PLC] Port {state.Config.PortId} interlock confirmed. Carrier: {binding.CarrierId}");
+                    
+                    // A. 更新狀態為 OCCUPIED
+                    _repo.ConfirmPortArrival(state.Config.PortId);
+                    
+                    // B. 電磁閥上鎖 (Lock ON: Y_Lock = false)
+                    await LockDoorInternalAsync(state);
+                    
+                    // C. 綠燈滅，紅燈亮
+                    await _driver.WriteBitAsync(state.Config.Y_Green, false);
+                    await _driver.WriteBitAsync(state.Config.Y_Red, true);
+
+                    // D. 觸發事件更新主 UI
+                    OnConfirmArrival?.Invoke(this, new PlcConfirmArrivalEventArgs { PortID = state.Config.PortId, CarrierID = binding.CarrierId });
+                }
+                else
+                {
+                    // [位置錯置警報] 放錯儲位或強行開門置入
+                    LogHelper.Dispatch.Warn($"[PLC ALARM] Port {state.Config.PortId} 偵測到置入且關門，但資料庫中無預配記錄！");
+                    
+                    // A. 電磁閥上鎖防盜 (Lock ON: Y_Lock = false)
+                    await LockDoorInternalAsync(state);
+
+                    // B. 啟動警報提示與紅燈閃爍
+                    OnInvalidPresence?.Invoke(this, new PlcInvalidPresenceEventArgs { PortID = state.Config.PortId });
+
+                    // C. 鳴叫蜂鳴器 (3秒)
+                    await _driver.WriteBitAsync("Y003", true);
+                    await Task.Delay(3000);
+                    await _driver.WriteBitAsync("Y003", false);
                 }
             }
             catch (Exception ex)
             {
-                LogHelper.Dispatch.Error($"[PLC] Read Barcode Error for {state.Config.PortId}", ex);
+                LogHelper.Dispatch.Error($"[PLC] ConfirmPlacementAndLockAsync Error for {state.Config.PortId}", ex);
             }
+        }
 
-            if (string.IsNullOrEmpty(barcode))
+        private async Task HandleEmptyDoorCloseAsync(PortRuntimeState state)
+        {
+            try
             {
-                barcode = $"CST-{state.Config.PortId}-{DateTime.Now:yyyyMMddHHmmss}";
-                LogHelper.Dispatch.Info($"[PLC] Read Barcode empty/failed. Auto-generated mock: {barcode}");
-            }
-            else
-            {
-                LogHelper.Dispatch.Info($"[PLC] Read Barcode success for {state.Config.PortId}: {barcode}");
-            }
+                state.IsDoorOpenAlarmActive = false;
 
-            OnScan?.Invoke(this, new PlcScanEventArgs { PortID = state.Config.PortId, Barcode = barcode });
+                // 檢查該 Port 是否處於預配狀態
+                var binding = _repo.GetBindingByPort(state.Config.PortId);
+                if (binding != null)
+                {
+                    // 人員開了門但沒放貨就關門了 -> 逾時或放棄
+                    LogHelper.Dispatch.Info($"[PLC] Port {state.Config.PortId} door closed with empty presence. Cancelling pre-assignment.");
+                    
+                    // A. 取消預配關係，重置為 EMPTY
+                    _repo.CancelPreAssignPort(state.Config.PortId);
+
+                    // B. 上鎖門
+                    await LockDoorInternalAsync(state);
+
+                    // C. 綠燈滅，紅燈亮
+                    await _driver.WriteBitAsync(state.Config.Y_Green, false);
+                    await _driver.WriteBitAsync(state.Config.Y_Red, true);
+
+                    // D. 觸發事件刷新 UI
+                    OnConfirmArrival?.Invoke(this, new PlcConfirmArrivalEventArgs { PortID = state.Config.PortId, CarrierID = "" });
+                }
+                else
+                {
+                    // 一般情況下的關門，直接上鎖確保安全
+                    await LockDoorInternalAsync(state);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.Dispatch.Error($"[PLC] HandleEmptyDoorCloseAsync Error for {state.Config.PortId}", ex);
+            }
         }
 
         /// <summary>
@@ -436,6 +526,10 @@ namespace AdvancedPlanningSystem.Services
         public DateTime UnlockTime { get; set; }
         public bool PrevDoor { get; set; }
         public bool PrevPresence { get; set; }
+        
+        // 新增門禁逾時與防呆時間欄位
+        public DateTime DoorOpenStartTime { get; set; }
+        public bool IsDoorOpenAlarmActive { get; set; }
     }
 
     public class PlcScanEventArgs : EventArgs

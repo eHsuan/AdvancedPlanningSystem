@@ -47,6 +47,34 @@ namespace AdvancedPlanningSystem
             _repo = new AdvancedPlanningSystem.Repositories.ApsLocalDbRepository();
             _cloudRepo = new AdvancedPlanningSystem.Repositories.ApsCloudDbRepository();
 
+            // Create barcode scan UI elements programmatically
+            Label lblScanTitle = new Label
+            {
+                Text = "CST 條碼掃描:",
+                ForeColor = Color.White,
+                Font = new Font("Microsoft JhengHei", 10F, FontStyle.Bold),
+                Location = new Point(910, 18),
+                AutoSize = true
+            };
+
+            TextBox txtScanInput = new TextBox
+            {
+                Name = "txtManualScan",
+                Font = new Font("Consolas", 11F),
+                Location = new Point(1010, 15),
+                Width = 200,
+            };
+            txtScanInput.KeyDown += TxtScanInput_KeyDown;
+
+            this.pnlHeader.Controls.Add(lblScanTitle);
+            this.pnlHeader.Controls.Add(txtScanInput);
+
+            // Start Pre-Assign Timeout Checker Timer (1s interval)
+            var preAssignTimer = new Timer();
+            preAssignTimer.Interval = 1000;
+            preAssignTimer.Tick += (s, e) => CheckPreAssignTimeouts();
+            preAssignTimer.Start();
+
             // Bind button events
             this.btnGlobalMonitor.Click += BtnGlobalMonitor_Click;
             this.btnTransitMonitor.Click += (s, e) => new TransitMonitorForm().Show();
@@ -70,8 +98,8 @@ namespace AdvancedPlanningSystem
             {
                 tlpShelf.SuspendLayout();
 
-                // 1. 從資料庫讀取 active ports 資料
-                var activePorts = _repo.GetActivePorts(); 
+                // 1. 從資料庫讀取 active ports 資料 (包含已佔用及預配中)
+                var activePorts = _repo.GetActiveAndReservedPorts(); 
                 var portDataDict = activePorts.ToDictionary(p => p.PortId, p => p);
 
                 // 2. 直接遍歷索引中的控制項 (不再遍歷 tlpShelf.Controls)
@@ -89,7 +117,12 @@ namespace AdvancedPlanningSystem
                         portCtrl.WaitReason = data.WaitReason ?? "";
                         portCtrl.NextStepId = data.NextStepId ?? "";
                         
-                        if (!string.IsNullOrEmpty(data.DispatchTime))
+                        if (data.Status == "PRE_ASSIGN")
+                        {
+                            portCtrl.Status = PortStatus.PreAssign;
+                            portCtrl.IsFlashing = true; // 預配中閃爍引導
+                        }
+                        else if (!string.IsNullOrEmpty(data.DispatchTime))
                         {
                             portCtrl.Status = PortStatus.Dispatching;
                             portCtrl.IsFlashing = (data.DispatchScore >= 9000000);
@@ -274,9 +307,13 @@ namespace AdvancedPlanningSystem
                 }));
             };
             
-            _tcpServer.OnScan += (s, e) => {
-                // [佇列化] 收到訊號後僅放入佇列，不直接處理，確保序列化分配儲位
-                _stockInQueue.Enqueue(e);
+            _tcpServer.OnScan += async (s, e) => {
+                // 將模擬器的 SCAN 訊息重導向至人員手動掃碼邏輯
+                await ProcessManualScanInputAsync(e.Barcode, e.PortID);
+            };
+
+            _tcpServer.OnPlace += async (s, e) => {
+                await HandlePresenceSensorTriggerAsync(e.PortID);
             };
 
             _tcpServer.OnPick += async (s, e) => {
@@ -303,9 +340,21 @@ namespace AdvancedPlanningSystem
 
             // 初始化與啟動 PLC 控制服務
             _plcService = new AdvancedPlanningSystem.Services.PlcService(_repo);
-            _plcService.OnScan += (s, e) => {
-                _stockInQueue.Enqueue(new ScanEventArgs(e.PortID, e.Barcode));
+
+            _plcService.OnConfirmArrival += (s, e) => {
+                this.Invoke(new Action(() => {
+                    AddLog($"[IN] Port: {e.PortID}, Barcode: {e.CarrierID} 自動確認入庫");
+                    RefreshShelfGrid();
+                }));
             };
+
+            _plcService.OnInvalidPresence += (s, e) => {
+                this.Invoke(new Action(() => {
+                    AddLog($"[ALARM] Port: {e.PortID} 偵測到非預期置入或放錯儲位！已啟動警報！");
+                    NotificationForm.ShowAsync("位置錯置警報", $"儲位 {e.PortID} 偵測到非預期的卡匣置入！請即刻確認！", NotificationLevel.Critical, 10);
+                }));
+            };
+
             _plcService.OnPick += async (s, e) => {
                 await HandleCarrierPickupAsync(e.PortID);
             };
@@ -486,6 +535,189 @@ namespace AdvancedPlanningSystem
             }
             UpdatePortStatus(portId, "", "", PortStatus.Empty);
             _repo.UpdatePortStateOnly(portId, "EMPTY");
+            await Task.CompletedTask;
+        }
+
+        private async void TxtScanInput_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                TextBox txt = sender as TextBox;
+                if (txt == null) return;
+                
+                string barcode = txt.Text.Trim();
+                txt.Clear();
+                
+                if (string.IsNullOrEmpty(barcode)) return;
+
+                // 防呆：單件交易鎖定
+                bool hasReserved = _repo.GetActiveAndReservedPorts().Any(p => p.Status == "PRE_ASSIGN");
+                if (hasReserved)
+                {
+                    AddLog($"[ALARM] 拒絕掃碼 {barcode}：目前已有儲位正在引導置入中！");
+                    NotificationForm.ShowAsync("交易鎖定", "目前已有儲位正在引導置入中，請先完成前一卡匣的置放與關門！", NotificationLevel.Warning, 5);
+                    return;
+                }
+
+                await ProcessManualScanInputAsync(barcode);
+            }
+        }
+
+        private async Task ProcessManualScanInputAsync(string barcode, string preferredPortId = null)
+        {
+            try
+            {
+                AddLog($"[Scan] 收到卡匣條碼: {barcode}");
+
+                // 1. 查詢工單 (Barcode -> WorkNo)
+                string workNo = await _externalDb.GetWorkNoByBarcodeAsync(barcode);
+                if (string.IsNullOrEmpty(workNo))
+                {
+                    AddLog($"[ALARM] 外部資料庫找不到條碼 {barcode} 對應的工單！");
+                    NotificationForm.ShowAsync("條碼錯誤", $"無效的卡匣條碼: {barcode}", NotificationLevel.Warning, 5);
+                    return;
+                }
+
+                // 2. 分配空 Port (排除 OCCUPIED 與 PRE_ASSIGN)
+                var activeAndReserved = _repo.GetActiveAndReservedPorts().Select(p => p.PortId).ToList();
+                string portId = preferredPortId;
+
+                if (string.IsNullOrEmpty(portId))
+                {
+                    for (int i = 1; i <= AppConfig.TotalPortCount; i++)
+                    {
+                        string candidate = "P" + i.ToString("D2");
+                        if (!activeAndReserved.Contains(candidate))
+                        {
+                            portId = candidate;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    // 手動指定檢查
+                    int pNum;
+                    if (int.TryParse(portId, out pNum)) portId = "P" + pNum.ToString("D2");
+                    if (activeAndReserved.Contains(portId))
+                    {
+                        AddLog($"[ALARM] 指定的 Port {portId} 已被佔用或預配中，無法分配給 {barcode}");
+                        NotificationForm.ShowAsync("分配失敗", $"Port {portId} 已被佔用或預配中", NotificationLevel.Warning, 5);
+                        return;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(portId))
+                {
+                    AddLog($"[ALARM] 貨架已滿，無法為 {barcode} 分配儲位");
+                    NotificationForm.ShowAsync("貨架滿載", $"貨架已滿，無法預配儲位", NotificationLevel.Warning, 5);
+                    return;
+                }
+
+                // 3. 資料庫標記預配
+                _repo.PreAssignPort(portId, barcode, workNo);
+                AddLog($"[Pre-Assign] 卡匣 {barcode} (工單: {workNo}) 預配至 {portId}，引導開門...");
+
+                // 4. 引導開門與閃綠燈
+                if (AppConfig.PlcEnabled && _plcService != null)
+                {
+                    var state = _plcService.PortStates.FirstOrDefault(s => s.Config.PortId == portId);
+                    if (state != null)
+                    {
+                        // 門解鎖
+                        await _plcService.UnlockDoorAsync(portId);
+                        // 綠燈亮起引導置入
+                        await _plcService.WriteBitAsync(state.Config.Y_Green, true);
+                        // 紅燈熄滅
+                        await _plcService.WriteBitAsync(state.Config.Y_Red, false);
+                    }
+                }
+                else
+                {
+                    // TCP 模擬器模式：發送 OPEN 開門指令 (附帶卡匣 ID 供模擬器對照)
+                    await _tcpServer.SendCommand($"OPEN,{portId},STOCK,{barcode}");
+                }
+
+                RefreshShelfGrid();
+            }
+            catch (Exception ex)
+            {
+                AddLog($"[Scan Error] 處理條碼 {barcode} 時發生錯誤: {ex.Message}");
+            }
+        }
+
+        private void CheckPreAssignTimeouts()
+        {
+            try
+            {
+                var reservedPorts = _repo.GetActiveAndReservedPorts().Where(p => p.Status == "PRE_ASSIGN").ToList();
+                foreach (var port in reservedPorts)
+                {
+                    // 檢查 last_update，若超過 15 秒且門已關閉或根本沒開，則執行逾時還原
+                    if (DateTime.TryParseExact(port.LastUpdate, "yyyyMMddHHmmss", null, System.Globalization.DateTimeStyles.None, out DateTime lastUpdate))
+                    {
+                        if ((DateTime.Now - lastUpdate).TotalSeconds > 15.0)
+                        {
+                            // 檢查門狀態：若 PLC 啟動，需確認沒有人把門開著才上鎖
+                            bool isDoorOpen = false;
+                            if (AppConfig.PlcEnabled && _plcService != null)
+                            {
+                                var state = _plcService.PortStates.FirstOrDefault(s => s.Config.PortId == port.PortId);
+                                if (state != null)
+                                {
+                                    isDoorOpen = !state.DebouncedDoor; // DebouncedDoor = false 代表開門
+                                }
+                            }
+
+                            if (!isDoorOpen)
+                            {
+                                AddLog($"[Timeout] Port {port.PortId} 預配逾時 (15秒)，還原儲位並上鎖...");
+                                _repo.CancelPreAssignPort(port.PortId);
+
+                                if (AppConfig.PlcEnabled && _plcService != null)
+                                {
+                                    var state = _plcService.PortStates.FirstOrDefault(s => s.Config.PortId == port.PortId);
+                                    if (state != null)
+                                    {
+                                        // 關閉綠燈，上鎖門，點亮紅燈
+                                        _ = Task.Run(async () => {
+                                            await _plcService.WriteBitAsync(state.Config.Y_Green, false);
+                                            await _plcService.WriteBitAsync(state.Config.Y_Lock, false); // Lock OFF
+                                            await _plcService.WriteBitAsync(state.Config.Y_Red, true);
+                                        });
+                                    }
+                                }
+                                RefreshShelfGrid();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.Logger.Error("CheckPreAssignTimeouts Error", ex);
+            }
+        }
+
+        private async Task HandlePresenceSensorTriggerAsync(string portId)
+        {
+            // 模擬器 PLACE 事件處理 (相當於 PLC 中 X_Presence=1 且 X_Door=true 的結果)
+            int pNum;
+            if (int.TryParse(portId, out pNum)) portId = "P" + pNum.ToString("D2");
+
+            var binding = _repo.GetBindingByPort(portId);
+            if (binding != null)
+            {
+                AddLog($"[Simulator PLACE] Port {portId} 確認卡匣 {binding.CarrierId} 置入，入庫上鎖");
+                _repo.ConfirmPortArrival(portId);
+                RefreshShelfGrid();
+            }
+            else
+            {
+                string msg = $"Port {portId} 偵測到模擬置入，但該儲位並非預配狀態！已自動報警！";
+                AddLog($"[ALARM] {msg}");
+                NotificationForm.ShowAsync("位置錯置警報", msg, NotificationLevel.Critical, 5);
+            }
             await Task.CompletedTask;
         }
     }

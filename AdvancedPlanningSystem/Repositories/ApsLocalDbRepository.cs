@@ -803,6 +803,231 @@ namespace AdvancedPlanningSystem.Repositories
             };
         }
 
+        public List<StatePort> GetActiveAndReservedPorts()
+        {
+            int retryCount = 3;
+            int delayMs = 200;
+            for (int i = 0; i < retryCount; i++)
+            {
+                try
+                {
+                    lock (_dbLock)
+                    {
+                        var list = new List<StatePort>();
+                        using (var conn = GetOpenConnection())
+                        {
+                            string sql = @"
+                                SELECT p.*, b.carrier_id, b.lot_id, b.dispatch_time, b.next_step_id, b.target_eqp_id, b.is_hold, b.wait_reason, b.dispatch_score, b.treal 
+                                FROM local_state_port p 
+                                LEFT JOIN local_state_binding b ON p.port_id = b.port_id 
+                                WHERE p.status = 'OCCUPIED' OR p.status = 'PRE_ASSIGN'";
+                            using (var cmd = new SQLiteCommand(sql, conn))
+                            using (var reader = cmd.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    list.Add(new StatePort { 
+                                        PortId = reader["port_id"].ToString(), 
+                                        Status = reader["status"].ToString(), 
+                                        DoorState = reader["door_state"].ToString(), 
+                                        LastUpdate = reader["last_update"].ToString(), 
+                                        CarrierId = reader["carrier_id"] == DBNull.Value ? null : reader["carrier_id"].ToString(), 
+                                        LotId = reader["lot_id"] == DBNull.Value ? null : reader["lot_id"].ToString(), 
+                                        DispatchTime = reader["dispatch_time"] == DBNull.Value ? null : reader["dispatch_time"].ToString(), 
+                                        NextStepId = reader["next_step_id"] == DBNull.Value ? null : reader["next_step_id"].ToString(), 
+                                        TargetEqpId = reader["target_eqp_id"] == DBNull.Value ? null : reader["target_eqp_id"].ToString(),
+                                        IsHold = reader["is_hold"] == DBNull.Value ? 0 : Convert.ToInt32(reader["is_hold"]),
+                                        WaitReason = reader["wait_reason"] == DBNull.Value ? "" : reader["wait_reason"].ToString(),
+                                        DispatchScore = reader["dispatch_score"] == DBNull.Value ? 0 : Convert.ToDouble(reader["dispatch_score"]),
+                                        TReal = reader["treal"] == DBNull.Value ? 0 : Convert.ToDouble(reader["treal"])
+                                    });
+                                }
+                            }
+                        }
+                        return list;
+                    }
+                }
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(delayMs);
+                }
+            }
+            return new List<StatePort>();
+        }
+
+        public void PreAssignPort(string portId, string carrierId, string lotId)
+        {
+            int retryCount = 3;
+            int delayMs = 200;
+            for (int i = 0; i < retryCount; i++)
+            {
+                try
+                {
+                    lock (_dbLock)
+                    {
+                        using (var conn = GetOpenConnection())
+                        using (var trans = conn.BeginTransaction())
+                        {
+                            try
+                            {
+                                // 1. 清除此 Port 舊的 Binding 關係
+                                using (var cmd = new SQLiteCommand("DELETE FROM local_state_binding WHERE port_id = @p", conn))
+                                {
+                                    cmd.Parameters.AddWithValue("@p", portId);
+                                    cmd.ExecuteNonQuery();
+                                }
+
+                                // 2. 更新 Port 狀態為 PRE_ASSIGN
+                                string sqlPort = "INSERT OR REPLACE INTO local_state_port (port_id, status, last_update) VALUES (@p, 'PRE_ASSIGN', @t)";
+                                using (var cmd = new SQLiteCommand(sqlPort, conn))
+                                {
+                                    cmd.Parameters.AddWithValue("@p", portId);
+                                    cmd.Parameters.AddWithValue("@t", DateTime.Now.ToString("yyyyMMddHHmmss"));
+                                    cmd.ExecuteNonQuery();
+                                }
+
+                                // 3. 寫入預配卡匣與工單資訊至 local_state_binding
+                                string sqlBind = "INSERT OR REPLACE INTO local_state_binding (carrier_id, port_id, lot_id, bind_time) VALUES (@cid, @pid, @lid, @btime)";
+                                using (var cmd = new SQLiteCommand(sqlBind, conn))
+                                {
+                                    cmd.Parameters.AddWithValue("@cid", carrierId);
+                                    cmd.Parameters.AddWithValue("@pid", portId);
+                                    cmd.Parameters.AddWithValue("@lid", lotId);
+                                    cmd.Parameters.AddWithValue("@btime", DateTime.Now.ToString("yyyyMMddHHmmss"));
+                                    cmd.ExecuteNonQuery();
+                                }
+
+                                trans.Commit();
+                                return;
+                            }
+                            catch
+                            {
+                                trans.Rollback();
+                                throw;
+                            }
+                        }
+                    }
+                }
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(delayMs);
+                }
+            }
+        }
+
+        public void ConfirmPortArrival(string portId)
+        {
+            int retryCount = 3;
+            int delayMs = 200;
+            for (int i = 0; i < retryCount; i++)
+            {
+                try
+                {
+                    lock (_dbLock)
+                    {
+                        using (var conn = GetOpenConnection())
+                        {
+                            string sql = "UPDATE local_state_port SET status = 'OCCUPIED', last_update = @t WHERE port_id = @pid";
+                            using (var cmd = new SQLiteCommand(sql, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@pid", portId);
+                                cmd.Parameters.AddWithValue("@t", DateTime.Now.ToString("yyyyMMddHHmmss"));
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                        return;
+                    }
+                }
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(delayMs);
+                }
+            }
+        }
+
+        public StateBinding GetBindingByPort(string portId)
+        {
+            int retryCount = 3;
+            int delayMs = 200;
+            for (int i = 0; i < retryCount; i++)
+            {
+                try
+                {
+                    lock (_dbLock)
+                    {
+                        using (var conn = GetOpenConnection())
+                        {
+                            string sql = "SELECT * FROM local_state_binding WHERE port_id = @pid";
+                            using (var cmd = new SQLiteCommand(sql, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@pid", portId);
+                                using (var reader = cmd.ExecuteReader()) { if (reader.Read()) return MapBinding(reader); }
+                            }
+                        }
+                        return null;
+                    }
+                }
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(delayMs);
+                }
+            }
+            return null;
+        }
+
+        public void CancelPreAssignPort(string portId)
+        {
+            int retryCount = 3;
+            int delayMs = 200;
+            for (int i = 0; i < retryCount; i++)
+            {
+                try
+                {
+                    lock (_dbLock)
+                    {
+                        using (var conn = GetOpenConnection())
+                        using (var trans = conn.BeginTransaction())
+                        {
+                            try
+                            {
+                                // 1. 刪除預配綁定
+                                using (var cmd = new SQLiteCommand("DELETE FROM local_state_binding WHERE port_id = @pid", conn))
+                                {
+                                    cmd.Parameters.AddWithValue("@pid", portId);
+                                    cmd.ExecuteNonQuery();
+                                }
+
+                                // 2. 重置 Port 狀態為 EMPTY
+                                using (var cmd = new SQLiteCommand("UPDATE local_state_port SET status = 'EMPTY', last_update = @t WHERE port_id = @pid", conn))
+                                {
+                                    cmd.Parameters.AddWithValue("@pid", portId);
+                                    cmd.Parameters.AddWithValue("@t", DateTime.Now.ToString("yyyyMMddHHmmss"));
+                                    cmd.ExecuteNonQuery();
+                                }
+
+                                trans.Commit();
+                                return;
+                            }
+                            catch
+                            {
+                                trans.Rollback();
+                                throw;
+                            }
+                        }
+                    }
+                }
+                catch (SQLiteException ex) when (ex.ResultCode == SQLiteErrorCode.Busy || ex.ResultCode == SQLiteErrorCode.Locked)
+                {
+                    if (i == retryCount - 1) throw;
+                    System.Threading.Thread.Sleep(delayMs);
+                }
+            }
+        }
+
         private StateTransit MapTransit(SQLiteDataReader reader)
         {
             return new StateTransit { CarrierId = reader["carrier_id"].ToString(), LotId = reader["lot_id"].ToString(), TargetEqpId = reader["target_eqp_id"].ToString(), NextStepId = reader["next_step_id"].ToString(), DispatchTime = reader["dispatch_time"].ToString(), PickupTime = reader["pickup_time"].ToString(), ExpectedArrivalTime = reader["expected_arrival_time"].ToString(), IsOverdue = Convert.ToInt32(reader["is_overdue"]) };

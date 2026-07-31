@@ -6,6 +6,7 @@ namespace AdvancedPlanningSystem
         Occupied,       // 有貨 (UI: WAIT)
         Dispatching,    // 派貨中 (UI: MOVE)
         Finish,         // 完工 (UI: DONE)
-        Error           // 異常
+        Error,          // 異常
+        PreAssign       // 預配中 (UI: OPEN / 引導放置)
     }
 }

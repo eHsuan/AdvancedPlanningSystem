@@ -223,6 +223,10 @@ namespace AdvancedPlanningSystem
                     this.BackColor = Color.Red;
                     lblCstStatus.Text = "HOLD";
                     break;
+                case PortStatus.PreAssign:
+                    this.BackColor = Color.Orange;
+                    lblCstStatus.Text = "OPEN";
+                    break;
                 default:
                     this.BackColor = SystemColors.Control;
                     break;

@@ -1,0 +1,7 @@
+{
+	"TransactionName": "WOQRY",
+	"EqpNo": "AC3811",
+	"WONO": " 2HU3A13T02",
+	"UserID": "744593",
+	"GetAPSInfo_ByLot": "2P26702UPTZ1,071226000292"
+}

@@ -41,6 +41,16 @@ namespace AdvancedPlanningSystem
         }
     }
 
+    public class PlaceEventArgs : EventArgs
+    {
+        public string PortID { get; private set; }
+
+        public PlaceEventArgs(string portID)
+        {
+            PortID = portID;
+        }
+    }
+
     /// <summary>
     /// 負責與硬體模擬器通訊的 TCP Server 模組。
     /// 支援單一客戶端連線，自動處理斷線重連與訊息解析。
@@ -57,6 +67,7 @@ namespace AdvancedPlanningSystem
         // 事件定義
         public event EventHandler<ScanEventArgs> OnScan;
         public event EventHandler<PickEventArgs> OnPick;
+        public event EventHandler<PlaceEventArgs> OnPlace; // 新增：模擬在席放上事件
         public event EventHandler<EnterEqpEventArgs> OnEnterEqp; // 新增：進入機台事件
         public event EventHandler OnQueryEmptyPorts; // 新增：查詢空 Port 事件
         public event EventHandler OnConnected;
@@ -264,6 +275,15 @@ namespace AdvancedPlanningSystem
                     {
                         string portId = parts[1];
                         RaiseEvent(OnPick, new PickEventArgs(portId));
+                    }
+                    break;
+
+                case "PLACE":
+                    // PLACE,PortID
+                    if (parts.Length >= 2)
+                    {
+                        string portId = parts[1];
+                        RaiseEvent(OnPlace, new PlaceEventArgs(portId));
                     }
                     break;
 

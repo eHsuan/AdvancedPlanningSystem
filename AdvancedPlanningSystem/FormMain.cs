@@ -47,34 +47,11 @@ namespace AdvancedPlanningSystem
             _repo = new AdvancedPlanningSystem.Repositories.ApsLocalDbRepository();
             _cloudRepo = new AdvancedPlanningSystem.Repositories.ApsCloudDbRepository();
 
-            // Create Mode Display Label & Stock In Button programmatically
+            // Update Mode Display Label Text from AppConfig
             string modeName = "條碼綁定 (DB)";
             if (AppConfig.InputMode == CarrierInputMode.WorkOrderOnly) modeName = "僅工單 (WO Only)";
             else if (AppConfig.InputMode == CarrierInputMode.Hybrid) modeName = "混合模式 (Hybrid)";
-
-            Label lblModeDisplay = new Label
-            {
-                Text = $"[模式: {modeName}]",
-                ForeColor = Color.Yellow,
-                Font = new Font("Microsoft JhengHei", 10F, FontStyle.Bold),
-                Location = new Point(720, 18),
-                AutoSize = true
-            };
-
-            Button btnStockIn = new Button
-            {
-                Text = "📥 物料入庫 (Stock In)",
-                Font = new Font("Microsoft JhengHei", 10F, FontStyle.Bold),
-                BackColor = Color.ForestGreen,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Location = new Point(910, 12),
-                Size = new Size(180, 36)
-            };
-            btnStockIn.Click += async (s, e) => await OpenStockInDialogAsync();
-
-            this.pnlHeader.Controls.Add(lblModeDisplay);
-            this.pnlHeader.Controls.Add(btnStockIn);
+            this.lblModeDisplay.Text = $"[模式: {modeName}]";
 
             // Start Pre-Assign Timeout Checker Timer (1s interval)
             var preAssignTimer = new Timer();
@@ -549,6 +526,11 @@ namespace AdvancedPlanningSystem
             UpdatePortStatus(portId, "", "", PortStatus.Empty);
             _repo.UpdatePortStateOnly(portId, "EMPTY");
             await Task.CompletedTask;
+        }
+
+        private async void btnStockIn_Click(object sender, EventArgs e)
+        {
+            await OpenStockInDialogAsync();
         }
 
         private async Task OpenStockInDialogAsync()

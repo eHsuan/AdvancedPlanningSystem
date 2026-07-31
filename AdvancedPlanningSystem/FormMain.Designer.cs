@@ -51,6 +51,8 @@ namespace AdvancedPlanningSystem
             this.pnlGrid = new System.Windows.Forms.Panel();
             this.tlpShelf = new System.Windows.Forms.TableLayoutPanel();
             this.lstLog = new System.Windows.Forms.ListBox();
+            this.lblModeDisplay = new System.Windows.Forms.Label();
+            this.btnStockIn = new System.Windows.Forms.Button();
             this.pnlHeader.SuspendLayout();
             this.flpLegend.SuspendLayout();
             this.pnlGrid.SuspendLayout();
@@ -59,6 +61,8 @@ namespace AdvancedPlanningSystem
             // pnlHeader
             // 
             this.pnlHeader.BackColor = System.Drawing.Color.DarkGray;
+            this.pnlHeader.Controls.Add(this.btnStockIn);
+            this.pnlHeader.Controls.Add(this.lblModeDisplay);
             this.pnlHeader.Controls.Add(this.btnSystemTest);
             this.pnlHeader.Controls.Add(this.btnManualSync);
             this.pnlHeader.Controls.Add(this.flpLegend);
@@ -73,6 +77,33 @@ namespace AdvancedPlanningSystem
             this.pnlHeader.Name = "pnlHeader";
             this.pnlHeader.Size = new System.Drawing.Size(1920, 60);
             this.pnlHeader.TabIndex = 0;
+            // 
+            // lblModeDisplay
+            // 
+            this.lblModeDisplay.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblModeDisplay.AutoSize = true;
+            this.lblModeDisplay.Font = new System.Drawing.Font("Microsoft JhengHei", 10F, System.Drawing.FontStyle.Bold);
+            this.lblModeDisplay.ForeColor = System.Drawing.Color.Yellow;
+            this.lblModeDisplay.Location = new System.Drawing.Point(680, 20);
+            this.lblModeDisplay.Name = "lblModeDisplay";
+            this.lblModeDisplay.Size = new System.Drawing.Size(120, 18);
+            this.lblModeDisplay.TabIndex = 10;
+            this.lblModeDisplay.Text = "[模式: 條碼綁定]";
+            // 
+            // btnStockIn
+            // 
+            this.btnStockIn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnStockIn.BackColor = System.Drawing.Color.ForestGreen;
+            this.btnStockIn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnStockIn.Font = new System.Drawing.Font("Microsoft JhengHei", 10F, System.Drawing.FontStyle.Bold);
+            this.btnStockIn.ForeColor = System.Drawing.Color.White;
+            this.btnStockIn.Location = new System.Drawing.Point(860, 12);
+            this.btnStockIn.Name = "btnStockIn";
+            this.btnStockIn.Size = new System.Drawing.Size(180, 36);
+            this.btnStockIn.TabIndex = 11;
+            this.btnStockIn.Text = "📥 物料入庫 (Stock In)";
+            this.btnStockIn.UseVisualStyleBackColor = false;
+            this.btnStockIn.Click += new System.EventHandler(this.btnStockIn_Click);
             // 
             // btnSystemTest
             // 
@@ -392,5 +423,7 @@ namespace AdvancedPlanningSystem
         private System.Windows.Forms.Button btnManualSync;
         private System.Windows.Forms.Label lblLegendFinish;
         private System.Windows.Forms.Panel pnlColorFinish;
+        private System.Windows.Forms.Label lblModeDisplay;
+        private System.Windows.Forms.Button btnStockIn;
     }
 }

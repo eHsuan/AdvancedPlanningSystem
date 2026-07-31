@@ -488,6 +488,89 @@ namespace AdvancedPlanningSystem
             }
             else
             {
+                // --- 全域三色燈與蜂鳴器面板 (Y0~Y3) ---
+                var gCfg = _plcService.GlobalTowerConfig ?? new AdvancedPlanningSystem.Services.GlobalTowerLightConfig();
+                GroupBox grpGlobal = new GroupBox
+                {
+                    Text = "全域三色燈與蜂鳴器 (Y0~Y3)",
+                    Width = 360,
+                    Height = 180,
+                    Font = new Font("Microsoft JhengHei", 9F, FontStyle.Bold),
+                    ForeColor = Color.DarkBlue
+                };
+
+                TableLayoutPanel tblGlobal = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    ColumnCount = 4,
+                    RowCount = 4,
+                    Padding = new Padding(5)
+                };
+                tblGlobal.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+                tblGlobal.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+                tblGlobal.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22.5F));
+                tblGlobal.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22.5F));
+
+                // Y0 Red
+                tblGlobal.Controls.Add(new Label { Text = $"Y_Red ({gCfg.Y_Red})", AutoSize = true, Anchor = AnchorStyles.Left, ForeColor = Color.Black }, 0, 0);
+                Label lblGlobalRed = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2), ForeColor = Color.Black };
+                tblGlobal.Controls.Add(lblGlobalRed, 1, 0);
+                Button btnGRedOn = new Button { Text = "ON", Dock = DockStyle.Fill, Margin = new Padding(1), ForeColor = Color.Black };
+                btnGRedOn.Click += async (s, e) => await WritePlcBitWithCheck(gCfg.Y_Red, true);
+                Button btnGRedOff = new Button { Text = "OFF", Dock = DockStyle.Fill, Margin = new Padding(1), ForeColor = Color.Black };
+                btnGRedOff.Click += async (s, e) => await WritePlcBitWithCheck(gCfg.Y_Red, false);
+                tblGlobal.Controls.Add(btnGRedOn, 2, 0);
+                tblGlobal.Controls.Add(btnGRedOff, 3, 0);
+
+                // Y1 Yellow
+                tblGlobal.Controls.Add(new Label { Text = $"Y_Yellow ({gCfg.Y_Yellow})", AutoSize = true, Anchor = AnchorStyles.Left, ForeColor = Color.Black }, 0, 1);
+                Label lblGlobalYellow = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2), ForeColor = Color.Black };
+                tblGlobal.Controls.Add(lblGlobalYellow, 1, 1);
+                Button btnGYellowOn = new Button { Text = "ON", Dock = DockStyle.Fill, Margin = new Padding(1), ForeColor = Color.Black };
+                btnGYellowOn.Click += async (s, e) => await WritePlcBitWithCheck(gCfg.Y_Yellow, true);
+                Button btnGYellowOff = new Button { Text = "OFF", Dock = DockStyle.Fill, Margin = new Padding(1), ForeColor = Color.Black };
+                btnGYellowOff.Click += async (s, e) => await WritePlcBitWithCheck(gCfg.Y_Yellow, false);
+                tblGlobal.Controls.Add(btnGYellowOn, 2, 1);
+                tblGlobal.Controls.Add(btnGYellowOff, 3, 1);
+
+                // Y2 Green
+                tblGlobal.Controls.Add(new Label { Text = $"Y_Green ({gCfg.Y_Green})", AutoSize = true, Anchor = AnchorStyles.Left, ForeColor = Color.Black }, 0, 2);
+                Label lblGlobalGreen = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2), ForeColor = Color.Black };
+                tblGlobal.Controls.Add(lblGlobalGreen, 1, 2);
+                Button btnGGreenOn = new Button { Text = "ON", Dock = DockStyle.Fill, Margin = new Padding(1), ForeColor = Color.Black };
+                btnGGreenOn.Click += async (s, e) => await WritePlcBitWithCheck(gCfg.Y_Green, true);
+                Button btnGGreenOff = new Button { Text = "OFF", Dock = DockStyle.Fill, Margin = new Padding(1), ForeColor = Color.Black };
+                btnGGreenOff.Click += async (s, e) => await WritePlcBitWithCheck(gCfg.Y_Green, false);
+                tblGlobal.Controls.Add(btnGGreenOn, 2, 2);
+                tblGlobal.Controls.Add(btnGGreenOff, 3, 2);
+
+                // Y3 Buzzer
+                tblGlobal.Controls.Add(new Label { Text = $"Y_Buzzer ({gCfg.Y_Buzzer})", AutoSize = true, Anchor = AnchorStyles.Left, ForeColor = Color.Black }, 0, 3);
+                Label lblGlobalBuzzer = new Label { Text = "Loading...", BorderStyle = BorderStyle.FixedSingle, TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill, Margin = new Padding(2), ForeColor = Color.Black };
+                tblGlobal.Controls.Add(lblGlobalBuzzer, 1, 3);
+                Button btnGBuzzerOn = new Button { Text = "ON", Dock = DockStyle.Fill, Margin = new Padding(1), ForeColor = Color.Black };
+                btnGBuzzerOn.Click += async (s, e) => await WritePlcBitWithCheck(gCfg.Y_Buzzer, true);
+                Button btnGBuzzerOff = new Button { Text = "OFF", Dock = DockStyle.Fill, Margin = new Padding(1), ForeColor = Color.Black };
+                btnGBuzzerOff.Click += async (s, e) => await WritePlcBitWithCheck(gCfg.Y_Buzzer, false);
+                tblGlobal.Controls.Add(btnGBuzzerOn, 2, 3);
+                tblGlobal.Controls.Add(btnGBuzzerOff, 3, 3);
+
+                grpGlobal.Controls.Add(tblGlobal);
+                flowPanel.Controls.Add(grpGlobal);
+
+                _plcControlMappings.Add(new PortControlMapping
+                {
+                    PortId = "GLOBAL",
+                    Y_Red_Address = gCfg.Y_Red,
+                    Y_Lock_Address = gCfg.Y_Yellow,
+                    Y_Green_Address = gCfg.Y_Green,
+                    X_Door_Address = gCfg.Y_Buzzer,
+                    LblRedStatus = lblGlobalRed,
+                    LblLockStatus = lblGlobalYellow,
+                    LblGreenStatus = lblGlobalGreen,
+                    LblDoorStatus = lblGlobalBuzzer
+                });
+
                 var states = _plcService.PortStates;
                 foreach (var state in states)
                 {

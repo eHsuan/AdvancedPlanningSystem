@@ -40,6 +40,8 @@ namespace AdvancedPlanningSystem.Services
         public event EventHandler<PlcConfirmArrivalEventArgs> OnConfirmArrival; // 新增：確認入庫置入事件
         public event EventHandler<PlcInvalidPresenceEventArgs> OnInvalidPresence; // 新增：無效/放錯儲位警報事件
 
+        public GlobalTowerLightConfig GlobalTowerConfig { get; private set; } = new GlobalTowerLightConfig();
+
         public PlcService(IApsLocalDbRepository repo, string xmlPath = null)
         {
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
@@ -70,6 +72,19 @@ namespace AdvancedPlanningSystem.Services
             try
             {
                 var doc = XDocument.Load(path);
+
+                var globalNode = doc.Descendants("GlobalTowerLight").FirstOrDefault();
+                if (globalNode != null)
+                {
+                    GlobalTowerConfig = new GlobalTowerLightConfig
+                    {
+                        Y_Red = globalNode.Element("Y_Red")?.Value ?? "Y000",
+                        Y_Yellow = globalNode.Element("Y_Yellow")?.Value ?? "Y001",
+                        Y_Green = globalNode.Element("Y_Green")?.Value ?? "Y002",
+                        Y_Buzzer = globalNode.Element("Y_Buzzer")?.Value ?? "Y003"
+                    };
+                }
+
                 var configs = doc.Descendants("Port").Select(p => new PortIoConfig
                 {
                     PortId = p.Attribute("PortId")?.Value,
@@ -541,6 +556,14 @@ namespace AdvancedPlanningSystem.Services
     public class PlcPickEventArgs : EventArgs
     {
         public string PortID { get; set; }
+    }
+
+    public class GlobalTowerLightConfig
+    {
+        public string Y_Red { get; set; } = "Y000";
+        public string Y_Yellow { get; set; } = "Y001";
+        public string Y_Green { get; set; } = "Y002";
+        public string Y_Buzzer { get; set; } = "Y003";
     }
 
     #endregion

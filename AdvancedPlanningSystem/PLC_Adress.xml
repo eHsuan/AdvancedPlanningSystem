@@ -72,4 +72,10 @@
       <Y_Green>Y045</Y_Green>
     </Port>
   </Ports>
+  <GlobalTowerLight>
+    <Y_Red>Y000</Y_Red>
+    <Y_Yellow>Y001</Y_Yellow>
+    <Y_Green>Y002</Y_Green>
+    <Y_Buzzer>Y003</Y_Buzzer>
+  </GlobalTowerLight>
 </PlcAddressConfig>

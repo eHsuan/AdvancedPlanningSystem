@@ -314,8 +314,21 @@ namespace AdvancedPlanningSystem.Services
         {
             try
             {
-                var mapping = _repo.GetStepEqpMappings();
-                var eqpIds = mapping.Select(m => m.EqpId).Distinct().ToList();
+                var eqpConfigs = _repo.GetAllEqpConfigs();
+                var eqpIds = eqpConfigs.Where(e => e.IsActive == 1).Select(e => e.EqpId).ToList();
+
+                var bindings = _repo.GetAllBindings();
+                foreach (var b in bindings)
+                {
+                    if (!string.IsNullOrEmpty(b.MachNosNext1))
+                    {
+                        var nextEqps = b.MachNosNext1.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim());
+                        foreach (var eq in nextEqps)
+                        {
+                            if (!eqpIds.Contains(eq)) eqpIds.Add(eq);
+                        }
+                    }
+                }
 
                 if (eqpIds.Any())
                 {
@@ -475,6 +488,7 @@ namespace AdvancedPlanningSystem.Services
                 PriorityType = orderInfo.priority_type,
                 IsHold = isHold,
                 WaitReason = existing?.WaitReason ?? "",
+                MachNosNext1 = orderInfo.MachNosNext1,
                 BindTime = existing?.BindTime ?? DateTime.Now.ToString("yyyyMMddHHmmss"),
                 DispatchTime = existing?.DispatchTime 
             };

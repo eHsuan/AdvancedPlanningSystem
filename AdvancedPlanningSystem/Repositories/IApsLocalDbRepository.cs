@@ -11,6 +11,7 @@ namespace AdvancedPlanningSystem.Repositories
         List<StateTransit> GetAllTransits();
         List<ConfigQTime> GetQTimeConfigs();
         ConfigEqp GetEqpConfig(string eqpId);
+        List<ConfigEqp> GetAllEqpConfigs();
         void InsertBinding(StateBinding binding);
         StateBinding GetBinding(string carrierId);
         List<StatePort> GetActivePorts();

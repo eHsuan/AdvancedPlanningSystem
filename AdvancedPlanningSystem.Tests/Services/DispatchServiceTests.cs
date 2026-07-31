@@ -47,15 +47,11 @@ namespace AdvancedPlanningSystem.Tests.Services
             string eqpId = "EQP_TEST";
             int batchSize = 4;
 
-            _mockRepo.Setup(r => r.GetStepEqpMappings()).Returns(new List<ConfigStepEqp> {
-                new ConfigStepEqp { StepId = stepId, EqpId = eqpId }
-            });
-
             var candidates = new List<StateBinding>();
             for (int i = 1; i <= batchSize; i++) {
                 candidates.Add(new StateBinding { 
                     CarrierId = $"CST{i:D2}", LotId = $"LOT{i:D2}", 
-                    NextStepId = stepId, PortId = $"P{i:D2}", IsHold = 0 
+                    NextStepId = stepId, MachNosNext1 = eqpId, PortId = $"P{i:D2}", IsHold = 0 
                 });
             }
             _mockRepo.Setup(r => r.GetSortedWaitBindings()).Returns(candidates);
@@ -89,14 +85,10 @@ namespace AdvancedPlanningSystem.Tests.Services
             string eqpId = "EQP_TEST";
             int batchSize = 4;
 
-            _mockRepo.Setup(r => r.GetStepEqpMappings()).Returns(new List<ConfigStepEqp> {
-                new ConfigStepEqp { StepId = stepId, EqpId = eqpId }
-            });
-
             var candidates = new List<StateBinding>();
             for (int i = 1; i <= 3; i++) {
                 candidates.Add(new StateBinding { 
-                    CarrierId = $"CST{i:D2}", NextStepId = stepId, PortId = $"P{i:D2}", IsHold = 0 
+                    CarrierId = $"CST{i:D2}", NextStepId = stepId, MachNosNext1 = eqpId, PortId = $"P{i:D2}", IsHold = 0 
                 });
             }
             _mockRepo.Setup(r => r.GetSortedWaitBindings()).Returns(candidates);

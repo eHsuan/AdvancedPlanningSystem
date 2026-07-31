@@ -117,7 +117,8 @@ namespace AdvancedPlanningSystem.MES
                                 WCNext1 = "STEP_B",
                                 PreStepOutTime = DateTime.Now.AddHours(-1).ToString("yyyy-MM-ddTHH:mm:ss"),
                                 Urgent = "N",
-                                EstimateProcessEndDate = DateTime.Now.AddDays(2).ToString("yyyy-MM-ddTHH:mm:ss")
+                                EstimateProcessEndDate = DateTime.Now.AddDays(2).ToString("yyyy-MM-ddTHH:mm:ss"),
+                                MachNosNext1 = "EQP_01,EQP_02"
                             });
                         }
                         responseObj = new ApsLotReply

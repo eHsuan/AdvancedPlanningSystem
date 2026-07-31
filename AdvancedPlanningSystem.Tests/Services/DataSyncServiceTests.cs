@@ -128,9 +128,10 @@ namespace AdvancedPlanningSystem.Tests.Services
         {
             // Arrange
             var eqpIds = new List<string> { "EQP01" };
-            _mockRepo.Setup(r => r.GetStepEqpMappings()).Returns(new List<ConfigStepEqp> {
-                new ConfigStepEqp { StepId = "STEP1", EqpId = "EQP01" }
+            _mockRepo.Setup(r => r.GetAllEqpConfigs()).Returns(new List<ConfigEqp> {
+                new ConfigEqp { EqpId = "EQP01", IsActive = 1 }
             });
+            _mockRepo.Setup(r => r.GetAllBindings()).Returns(new List<StateBinding>());
 
             var batchInfo = new EqpBatchInfoResponse();
             batchInfo.Wips.Add(new WipInfoResponse { eq_id = "EQP01", current_wip_qty = 2, max_wip_qty = 8 });

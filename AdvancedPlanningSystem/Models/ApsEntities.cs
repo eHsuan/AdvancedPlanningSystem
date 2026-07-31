@@ -89,6 +89,7 @@ namespace AdvancedPlanningSystem.Models
         public DateTime? PrevOutTime { get; set; }
         public DateTime? DueDate { get; set; }
         public double T_safe { get; set; }
+        public string MachNosNext1 { get; set; }   // MES 下一站設備清單 (字串)
     }
 
     // local_state_transit
@@ -118,6 +119,7 @@ namespace AdvancedPlanningSystem.Models
         public string estimate_end_date { get; set; }
         public string customer_delivery_time { get; set; }
         public string route_no { get; set; }
+        public string MachNosNext1 { get; set; }
     }
 
     public class StepTimeResponse
@@ -227,6 +229,11 @@ namespace AdvancedPlanningSystem.Models
         public string CustomerDeliveryTime { get; set; }
         public string RouteNo { get; set; }
         public string PreStepOutTime { get; set; }
+        public string MachNosNext1 { get; set; }
+        public string MachNosNext2 { get; set; }
+        public string MachNosNext3 { get; set; }
+        public string MachNosNext4 { get; set; }
+        public string MachNosNext5 { get; set; }
     }
 
     public class ApsQTimeAsk

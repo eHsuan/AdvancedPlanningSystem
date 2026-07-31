@@ -19,7 +19,6 @@ namespace AdvancedPlanningSystem.Services
         private IApsCloudDbRepository _cloudRepo;
         private ITcpServerModule _tcpServer;
         private PlcService _plcService;
-        private List<ConfigStepEqp> _stepEqpMapping;
 
         public DispatchService(IApsLocalDbRepository repo, IApsCloudDbRepository cloudRepo, ITcpServerModule tcpServer, PlcService plcService)
         {
@@ -42,7 +41,6 @@ namespace AdvancedPlanningSystem.Services
             try
             {
                 // 0. 準備資料
-                _stepEqpMapping = _repo.GetStepEqpMappings();
                 var allCandidates = _repo.GetSortedWaitBindings(); 
                 
                 // 嚴格攔截：過濾掉被標記為 HOLD (如 QTime 逾期) 的卡匣
@@ -103,8 +101,15 @@ namespace AdvancedPlanningSystem.Services
                         continue;
                     }
 
-                    var availableEqps = _stepEqpMapping.Where(m => m.StepId == nextStep).Select(m => m.EqpId).ToList();
-                    LogHelper.Dispatch.Debug($"    - Defined Route Eqps: {string.Join(", ", availableEqps)}");
+                    // 完全以 MES 提供的 MachNosNext1 欄位為主
+                    var availableEqps = cassetteList
+                        .Where(c => !string.IsNullOrEmpty(c.MachNosNext1))
+                        .SelectMany(c => c.MachNosNext1.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                        .Select(e => e.Trim())
+                        .Distinct()
+                        .ToList();
+
+                    LogHelper.Dispatch.Debug($"    - MES Next Step Eqps: {string.Join(", ", availableEqps)}");
 
                     // --- [關鍵修正：站點未定義處理] ---
                     if (availableEqps.Count == 0)
@@ -221,12 +226,12 @@ namespace AdvancedPlanningSystem.Services
                 if (cassette.IsHold == 0)
                 {
                     cassette.IsHold = 1;
-                    cassette.WaitReason = "Next Step的EQ未設定";
+                    cassette.WaitReason = "MES未提供下一站EQ";
                     _repo.InsertBinding(cassette);
 
                     // 彈出報警
-                    NotificationForm.ShowAsync("派貨異常", $"卡匣 {cassette.CarrierId} 下一站 {stepId} 未設定任何機台，已自動掛單 (HOLD)", NotificationLevel.Critical, 10);
-                    LogHelper.Dispatch.Warn($"[Dispatch ALARM] {cassette.CarrierId} HOLD due to missing EQ mapping for {stepId}");
+                    NotificationForm.ShowAsync("派貨異常", $"卡匣 {cassette.CarrierId} 下一站 {stepId} MES未提供可用機台，已自動掛單 (HOLD)", NotificationLevel.Critical, 10);
+                    LogHelper.Dispatch.Warn($"[Dispatch ALARM] {cassette.CarrierId} HOLD due to missing EQ list from MES for {stepId}");
                 }
             }
         }

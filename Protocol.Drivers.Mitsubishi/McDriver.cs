@@ -17,6 +17,24 @@ namespace Protocol.Drivers.Mitsubishi
             if (string.IsNullOrEmpty(address)) return address;
             string addr = address.ToUpper();
             if (addr.StartsWith("DM")) return "D" + addr.Substring(2);
+
+            // Mitsubishi X and Y addresses in PLC_Adress.xml are in Octal (Base 8).
+            // IoTClient's Qna_3E driver expects X/Y address string numbers in Hex (Base 16).
+            if (addr.StartsWith("X") || addr.StartsWith("Y"))
+            {
+                string prefix = addr.Substring(0, 1);
+                string numStr = addr.Substring(1);
+                try
+                {
+                    int decValue = Convert.ToInt32(numStr, 8);
+                    return prefix + decValue.ToString("X");
+                }
+                catch
+                {
+                    return addr;
+                }
+            }
+
             return addr;
         }
 

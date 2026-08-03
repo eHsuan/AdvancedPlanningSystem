@@ -741,7 +741,7 @@ namespace AdvancedPlanningSystem
             }
             try
             {
-                await _plcService.WriteBitAsync(address, value);
+                await _plcService.WriteBitAsync(address, value, isManualTest: true);
             }
             catch (Exception ex)
             {

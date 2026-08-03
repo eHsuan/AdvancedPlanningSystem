@@ -185,17 +185,18 @@ namespace AdvancedPlanningSystem.Services
             {
                 foreach (var state in _portStates)
                 {
-                    await _driver.WriteBitAsync(state.Config.Y_Red, true);
-                    await _driver.WriteBitAsync(state.Config.Y_Lock, false);
-                    await _driver.WriteBitAsync(state.Config.Y_Green, false);
+                    await WriteBitAsync(state.Config.Y_Red, true);
+                    await WriteBitAsync(state.Config.Y_Lock, false);
+                    await WriteBitAsync(state.Config.Y_Green, false);
                     state.IsUnlocked = false;
                     state.DoorOpenedDuringUnlock = false;
                 }
                 // 初始化全域三色燈
-                await _driver.WriteBitAsync("Y000", false); // 紅滅
-                await _driver.WriteBitAsync("Y001", false); // 黃滅
-                await _driver.WriteBitAsync("Y002", true);  // 綠亮
-                await _driver.WriteBitAsync("Y003", false); // 蜂鳴器滅
+                var gCfg = GlobalTowerConfig ?? new GlobalTowerLightConfig();
+                await WriteBitAsync(gCfg.Y_Red, false);    // 紅滅
+                await WriteBitAsync(gCfg.Y_Yellow, false); // 黃滅
+                await WriteBitAsync(gCfg.Y_Green, true);   // 綠亮
+                await WriteBitAsync(gCfg.Y_Buzzer, false);  // 蜂鳴器滅
             }
             catch (Exception ex)
             {
@@ -291,16 +292,17 @@ namespace AdvancedPlanningSystem.Services
                         // 啟動間歇蜂鳴器與紅燈閃爍
                         _ = Task.Run(async () =>
                         {
+                            var gBuzzer = GlobalTowerConfig?.Y_Buzzer ?? "Y003";
                             while (!state.DebouncedDoor && state.IsDoorOpenAlarmActive && _isRunning)
                             {
-                                await _driver.WriteBitAsync("Y003", true); // 鳴叫
-                                await _driver.WriteBitAsync(state.Config.Y_Red, true);
+                                await WriteBitAsync(gBuzzer, true); // 鳴叫
+                                await WriteBitAsync(state.Config.Y_Red, true);
                                 await Task.Delay(500);
-                                await _driver.WriteBitAsync("Y003", false); // 熄滅
-                                await _driver.WriteBitAsync(state.Config.Y_Red, false);
+                                await WriteBitAsync(gBuzzer, false); // 熄滅
+                                await WriteBitAsync(state.Config.Y_Red, false);
                                 await Task.Delay(500);
                             }
-                            await _driver.WriteBitAsync("Y003", false); // 確保復原
+                            await WriteBitAsync(gBuzzer, false); // 確保復原
                         });
                     }
                 }
@@ -330,8 +332,8 @@ namespace AdvancedPlanningSystem.Services
                     await LockDoorInternalAsync(state);
                     
                     // C. 綠燈滅，紅燈亮
-                    await _driver.WriteBitAsync(state.Config.Y_Green, false);
-                    await _driver.WriteBitAsync(state.Config.Y_Red, true);
+                    await WriteBitAsync(state.Config.Y_Green, false);
+                    await WriteBitAsync(state.Config.Y_Red, true);
 
                     // D. 觸發事件更新主 UI
                     OnConfirmArrival?.Invoke(this, new PlcConfirmArrivalEventArgs { PortID = state.Config.PortId, CarrierID = binding.CarrierId });
@@ -348,9 +350,10 @@ namespace AdvancedPlanningSystem.Services
                     OnInvalidPresence?.Invoke(this, new PlcInvalidPresenceEventArgs { PortID = state.Config.PortId });
 
                     // C. 鳴叫蜂鳴器 (3秒)
-                    await _driver.WriteBitAsync("Y003", true);
+                    var gBuzzer = GlobalTowerConfig?.Y_Buzzer ?? "Y003";
+                    await WriteBitAsync(gBuzzer, true);
                     await Task.Delay(3000);
-                    await _driver.WriteBitAsync("Y003", false);
+                    await WriteBitAsync(gBuzzer, false);
                 }
             }
             catch (Exception ex)
@@ -379,8 +382,8 @@ namespace AdvancedPlanningSystem.Services
                     await LockDoorInternalAsync(state);
 
                     // C. 綠燈滅，紅燈亮
-                    await _driver.WriteBitAsync(state.Config.Y_Green, false);
-                    await _driver.WriteBitAsync(state.Config.Y_Red, true);
+                    await WriteBitAsync(state.Config.Y_Green, false);
+                    await WriteBitAsync(state.Config.Y_Red, true);
 
                     // D. 觸發事件刷新 UI
                     OnConfirmArrival?.Invoke(this, new PlcConfirmArrivalEventArgs { PortID = state.Config.PortId, CarrierID = "" });
@@ -418,9 +421,9 @@ namespace AdvancedPlanningSystem.Services
                 state.DoorOpenedDuringUnlock = false;
                 state.IsUnlocked = true;
 
-                await _driver.WriteBitAsync(state.Config.Y_Lock, true);   // 門鎖 ON (解鎖)
-                await _driver.WriteBitAsync(state.Config.Y_Red, false);   // 紅燈滅
-                await _driver.WriteBitAsync(state.Config.Y_Green, true);  // 綠燈亮
+                await WriteBitAsync(state.Config.Y_Lock, true);   // 門鎖 ON (解鎖)
+                await WriteBitAsync(state.Config.Y_Red, false);   // 紅燈滅
+                await WriteBitAsync(state.Config.Y_Green, true);  // 綠燈亮
             }
             catch (Exception ex)
             {
@@ -435,9 +438,9 @@ namespace AdvancedPlanningSystem.Services
         {
             try
             {
-                await _driver.WriteBitAsync(state.Config.Y_Lock, false); // 門鎖 OFF (上鎖)
-                await _driver.WriteBitAsync(state.Config.Y_Red, true);   // 紅燈 ON (上鎖狀態)
-                await _driver.WriteBitAsync(state.Config.Y_Green, false); // 綠燈 OFF
+                await WriteBitAsync(state.Config.Y_Lock, false); // 門鎖 OFF (上鎖)
+                await WriteBitAsync(state.Config.Y_Red, true);   // 紅燈 ON (上鎖狀態)
+                await WriteBitAsync(state.Config.Y_Green, false); // 綠燈 OFF
                 state.IsUnlocked = false;
                 state.DoorOpenedDuringUnlock = false;
                 LogHelper.Dispatch.Info($"[PLC] Port {state.Config.PortId} auto-locked.");
@@ -457,14 +460,15 @@ namespace AdvancedPlanningSystem.Services
             {
                 _toggle = !_toggle;
                 bool hasHold = _repo.GetActivePorts().Any(p => p.IsHold == 1);
+                var gCfg = GlobalTowerConfig ?? new GlobalTowerLightConfig();
 
                 if (hasHold)
                 {
                     // 警報狀態：紅燈閃爍，黃綠滅，蜂鳴器響
-                    await _driver.WriteBitAsync("Y000", _toggle); // 紅燈
-                    await _driver.WriteBitAsync("Y001", false);   // 黃燈
-                    await _driver.WriteBitAsync("Y002", false);   // 綠燈
-                    await _driver.WriteBitAsync("Y003", _toggle); // 蜂鳴器
+                    await WriteBitAsync(gCfg.Y_Red, _toggle); // 紅燈
+                    await WriteBitAsync(gCfg.Y_Yellow, false); // 黃燈
+                    await WriteBitAsync(gCfg.Y_Green, false);  // 綠燈
+                    await WriteBitAsync(gCfg.Y_Buzzer, _toggle); // 蜂鳴器
                 }
                 else
                 {
@@ -473,18 +477,18 @@ namespace AdvancedPlanningSystem.Services
                     if (hasDispatching)
                     {
                         // 派送中：綠燈閃爍，紅黃滅，蜂鳴器滅
-                        await _driver.WriteBitAsync("Y000", false);
-                        await _driver.WriteBitAsync("Y001", false);
-                        await _driver.WriteBitAsync("Y002", _toggle); // 綠燈閃爍
-                        await _driver.WriteBitAsync("Y003", false);
+                        await WriteBitAsync(gCfg.Y_Red, false);
+                        await WriteBitAsync(gCfg.Y_Yellow, false);
+                        await WriteBitAsync(gCfg.Y_Green, _toggle); // 綠燈閃爍
+                        await WriteBitAsync(gCfg.Y_Buzzer, false);
                     }
                     else
                     {
                         // 正常運作：綠燈常亮，紅黃滅，蜂鳴器滅
-                        await _driver.WriteBitAsync("Y000", false);
-                        await _driver.WriteBitAsync("Y001", false);
-                        await _driver.WriteBitAsync("Y002", true);    // 綠燈常亮
-                        await _driver.WriteBitAsync("Y003", false);
+                        await WriteBitAsync(gCfg.Y_Red, false);
+                        await WriteBitAsync(gCfg.Y_Yellow, false);
+                        await WriteBitAsync(gCfg.Y_Green, true);    // 綠燈常亮
+                        await WriteBitAsync(gCfg.Y_Buzzer, false);
                     }
                 }
             }
@@ -496,9 +500,15 @@ namespace AdvancedPlanningSystem.Services
 
         internal List<PortRuntimeState> PortStates => _portStates;
 
-        public async Task WriteBitAsync(string address, bool value)
+        public async Task WriteBitAsync(string address, bool value, bool isManualTest = false)
         {
-            if (_driver == null) return;
+            if (AppConfig.ManualMode && !isManualTest)
+            {
+                LogHelper.Dispatch.Debug($"[PLC Protection] ManualMode is ACTIVE. Blocked automatic WriteBitAsync to {address} ({value})");
+                return;
+            }
+
+            if (_driver == null || !IsConnected) return;
             await _driver.WriteBitAsync(address, value);
         }
 

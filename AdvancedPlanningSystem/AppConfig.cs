@@ -65,5 +65,15 @@ namespace AdvancedPlanningSystem
         public static int PlcPort = 6000;
         public static string PlcBarcodeBaseAddress = "D1000";
         public static int PlcPollIntervalMs = 100;
+
+        /// <summary>
+        /// Port 門解鎖未開啟之自動重新上鎖逾時時間 (秒)
+        /// </summary>
+        public static double PlcUnlockTimeoutSec = 60.0;
+
+        /// <summary>
+        /// Port 門開啟逾時警報時間 (秒)
+        /// </summary>
+        public static double PlcDoorOpenAlarmTimeoutSec = 60.0;
     }
 }

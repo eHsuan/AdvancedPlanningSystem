@@ -271,23 +271,23 @@ namespace AdvancedPlanningSystem.Services
                     OnPick?.Invoke(this, new PlcPickEventArgs { PortID = state.Config.PortId });
                 }
 
-                // 4. 解鎖自動逾時上鎖 (門未開逾時 15 秒重新鎖上)
+                // 4. 解鎖自動逾時上鎖 (門未開逾時重新鎖上)
                 if (state.IsUnlocked && !state.DoorOpenedDuringUnlock)
                 {
-                    if ((DateTime.Now - state.UnlockTime).TotalSeconds > 15.0)
+                    if ((DateTime.Now - state.UnlockTime).TotalSeconds > AppConfig.PlcUnlockTimeoutSec)
                     {
-                        LogHelper.Dispatch.Warn($"[PLC] Port {state.Config.PortId} unlock timeout (15s, door never opened). Relocking.");
+                        LogHelper.Dispatch.Warn($"[PLC] Port {state.Config.PortId} unlock timeout ({AppConfig.PlcUnlockTimeoutSec}s, door never opened). Relocking.");
                         await LockDoorInternalAsync(state);
                     }
                 }
 
-                // 5. 門未關逾時警報監測 (門開著超過 15 秒)
+                // 5. 門未關逾時警報監測 (門開著超過逾時設定)
                 if (!state.DebouncedDoor) // 門目前是開著的
                 {
-                    if ((DateTime.Now - state.DoorOpenStartTime).TotalSeconds > 15.0 && !state.IsDoorOpenAlarmActive)
+                    if ((DateTime.Now - state.DoorOpenStartTime).TotalSeconds > AppConfig.PlcDoorOpenAlarmTimeoutSec && !state.IsDoorOpenAlarmActive)
                     {
                         state.IsDoorOpenAlarmActive = true;
-                        LogHelper.Dispatch.Warn($"[PLC ALARM] Port {state.Config.PortId} 門開啟逾時(15秒)！啟動警報提示！");
+                        LogHelper.Dispatch.Warn($"[PLC ALARM] Port {state.Config.PortId} 門開啟逾時({AppConfig.PlcDoorOpenAlarmTimeoutSec}秒)！啟動警報提示！");
                         
                         // 啟動間歇蜂鳴器與紅燈閃爍
                         _ = Task.Run(async () =>

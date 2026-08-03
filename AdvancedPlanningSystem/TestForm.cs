@@ -37,14 +37,18 @@ namespace AdvancedPlanningSystem
             public string X_Door_Address { get; set; }
             public string X_Presence_Address { get; set; }
             public string Y_Red_Address { get; set; }
+            public string Y_Yellow_Address { get; set; }
             public string Y_Lock_Address { get; set; }
             public string Y_Green_Address { get; set; }
+            public string Y_Buzzer_Address { get; set; }
 
             public Label LblDoorStatus { get; set; }
             public Label LblPresenceStatus { get; set; }
             public Label LblRedStatus { get; set; }
+            public Label LblYellowStatus { get; set; }
             public Label LblLockStatus { get; set; }
             public Label LblGreenStatus { get; set; }
+            public Label LblBuzzerStatus { get; set; }
         }
 
         public TestForm(IMesService mesService, AdvancedPlanningSystem.Services.PlcService plcService)
@@ -562,13 +566,13 @@ namespace AdvancedPlanningSystem
                 {
                     PortId = "GLOBAL",
                     Y_Red_Address = gCfg.Y_Red,
-                    Y_Lock_Address = gCfg.Y_Yellow,
+                    Y_Yellow_Address = gCfg.Y_Yellow,
                     Y_Green_Address = gCfg.Y_Green,
-                    X_Door_Address = gCfg.Y_Buzzer,
+                    Y_Buzzer_Address = gCfg.Y_Buzzer,
                     LblRedStatus = lblGlobalRed,
-                    LblLockStatus = lblGlobalYellow,
+                    LblYellowStatus = lblGlobalYellow,
                     LblGreenStatus = lblGlobalGreen,
-                    LblDoorStatus = lblGlobalBuzzer
+                    LblBuzzerStatus = lblGlobalBuzzer
                 });
 
                 var states = _plcService.PortStates;
@@ -692,6 +696,38 @@ namespace AdvancedPlanningSystem
             {
                 try
                 {
+                    if (mapping.PortId == "GLOBAL")
+                    {
+                        if (!string.IsNullOrEmpty(mapping.Y_Red_Address) && mapping.LblRedStatus != null)
+                        {
+                            bool red = await _plcService.ReadBitAsync(mapping.Y_Red_Address);
+                            mapping.LblRedStatus.Text = red ? "ON" : "OFF";
+                            mapping.LblRedStatus.BackColor = red ? Color.Tomato : Color.LightGray;
+                        }
+
+                        if (!string.IsNullOrEmpty(mapping.Y_Yellow_Address) && mapping.LblYellowStatus != null)
+                        {
+                            bool yellow = await _plcService.ReadBitAsync(mapping.Y_Yellow_Address);
+                            mapping.LblYellowStatus.Text = yellow ? "ON" : "OFF";
+                            mapping.LblYellowStatus.BackColor = yellow ? Color.Khaki : Color.LightGray;
+                        }
+
+                        if (!string.IsNullOrEmpty(mapping.Y_Green_Address) && mapping.LblGreenStatus != null)
+                        {
+                            bool green = await _plcService.ReadBitAsync(mapping.Y_Green_Address);
+                            mapping.LblGreenStatus.Text = green ? "ON" : "OFF";
+                            mapping.LblGreenStatus.BackColor = green ? Color.LightGreen : Color.LightGray;
+                        }
+
+                        if (!string.IsNullOrEmpty(mapping.Y_Buzzer_Address) && mapping.LblBuzzerStatus != null)
+                        {
+                            bool buzzer = await _plcService.ReadBitAsync(mapping.Y_Buzzer_Address);
+                            mapping.LblBuzzerStatus.Text = buzzer ? "ON" : "OFF";
+                            mapping.LblBuzzerStatus.BackColor = buzzer ? Color.Orange : Color.LightGray;
+                        }
+                        continue;
+                    }
+
                     // Find matching port runtime state from PlcService cache
                     var state = _plcService.PortStates?.FirstOrDefault(ps => ps.Config.PortId == mapping.PortId);
                     if (state != null)
@@ -699,26 +735,40 @@ namespace AdvancedPlanningSystem
                         bool doorClosed = state.DebouncedDoor;
                         bool presence = state.DebouncedPresence;
 
-                        mapping.LblDoorStatus.Text = doorClosed ? "Closed" : "Opened";
-                        mapping.LblDoorStatus.BackColor = doorClosed ? Color.LightGreen : Color.Tomato;
+                        if (mapping.LblDoorStatus != null)
+                        {
+                            mapping.LblDoorStatus.Text = doorClosed ? "Closed" : "Opened";
+                            mapping.LblDoorStatus.BackColor = doorClosed ? Color.LightGreen : Color.Tomato;
+                        }
 
-                        mapping.LblPresenceStatus.Text = presence ? "Present" : "Empty";
-                        mapping.LblPresenceStatus.BackColor = presence ? Color.LightBlue : Color.LightGray;
+                        if (mapping.LblPresenceStatus != null)
+                        {
+                            mapping.LblPresenceStatus.Text = presence ? "Present" : "Empty";
+                            mapping.LblPresenceStatus.BackColor = presence ? Color.LightBlue : Color.LightGray;
+                        }
                     }
 
                     // For outputs, read live status from PLC
-                    bool red = await _plcService.ReadBitAsync(mapping.Y_Red_Address);
-                    bool lockState = await _plcService.ReadBitAsync(mapping.Y_Lock_Address);
-                    bool green = await _plcService.ReadBitAsync(mapping.Y_Green_Address);
+                    if (!string.IsNullOrEmpty(mapping.Y_Red_Address) && mapping.LblRedStatus != null)
+                    {
+                        bool red = await _plcService.ReadBitAsync(mapping.Y_Red_Address);
+                        mapping.LblRedStatus.Text = red ? "ON" : "OFF";
+                        mapping.LblRedStatus.BackColor = red ? Color.Tomato : Color.LightGray;
+                    }
 
-                    mapping.LblRedStatus.Text = red ? "ON" : "OFF";
-                    mapping.LblRedStatus.BackColor = red ? Color.Tomato : Color.LightGray;
+                    if (!string.IsNullOrEmpty(mapping.Y_Lock_Address) && mapping.LblLockStatus != null)
+                    {
+                        bool lockState = await _plcService.ReadBitAsync(mapping.Y_Lock_Address);
+                        mapping.LblLockStatus.Text = lockState ? "Unlock (ON)" : "Lock (OFF)";
+                        mapping.LblLockStatus.BackColor = lockState ? Color.LightGreen : Color.LightGray;
+                    }
 
-                    mapping.LblLockStatus.Text = lockState ? "Unlock (ON)" : "Lock (OFF)";
-                    mapping.LblLockStatus.BackColor = lockState ? Color.LightGreen : Color.LightGray;
-
-                    mapping.LblGreenStatus.Text = green ? "ON" : "OFF";
-                    mapping.LblGreenStatus.BackColor = green ? Color.LightGreen : Color.LightGray;
+                    if (!string.IsNullOrEmpty(mapping.Y_Green_Address) && mapping.LblGreenStatus != null)
+                    {
+                        bool green = await _plcService.ReadBitAsync(mapping.Y_Green_Address);
+                        mapping.LblGreenStatus.Text = green ? "ON" : "OFF";
+                        mapping.LblGreenStatus.BackColor = green ? Color.LightGreen : Color.LightGray;
+                    }
                 }
                 catch
                 {

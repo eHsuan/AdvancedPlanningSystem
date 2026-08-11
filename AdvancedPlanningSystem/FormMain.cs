@@ -654,10 +654,10 @@ namespace AdvancedPlanningSystem
                 var reservedPorts = _repo.GetActiveAndReservedPorts().Where(p => p.Status == "PRE_ASSIGN").ToList();
                 foreach (var port in reservedPorts)
                 {
-                    // 檢查 last_update，若超過 15 秒且門已關閉或根本沒開，則執行逾時還原
+                    // 檢查 last_update，若超過預配逾時設定秒數且門已關閉或根本沒開，則執行逾時還原
                     if (DateTime.TryParseExact(port.LastUpdate, "yyyyMMddHHmmss", null, System.Globalization.DateTimeStyles.None, out DateTime lastUpdate))
                     {
-                        if ((DateTime.Now - lastUpdate).TotalSeconds > 15.0)
+                        if ((DateTime.Now - lastUpdate).TotalSeconds > AppConfig.PlcUnlockTimeoutSec)
                         {
                             // 檢查門狀態：若 PLC 啟動，需確認沒有人把門開著才上鎖
                             bool isDoorOpen = false;
@@ -672,7 +672,7 @@ namespace AdvancedPlanningSystem
 
                             if (!isDoorOpen)
                             {
-                                AddLog($"[Timeout] Port {port.PortId} 預配逾時 (15秒)，還原儲位並上鎖...");
+                                AddLog($"[Timeout] Port {port.PortId} 預配逾時 ({AppConfig.PlcUnlockTimeoutSec}秒)，還原儲位並上鎖...");
                                 _repo.CancelPreAssignPort(port.PortId);
 
                                 if (AppConfig.PlcEnabled && _plcService != null)

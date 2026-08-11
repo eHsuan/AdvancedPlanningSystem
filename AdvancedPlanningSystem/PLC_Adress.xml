@@ -12,7 +12,7 @@
       <X_Door>X013</X_Door>
       <X_Presence>X014</X_Presence>
       <Y_Red>Y013</Y_Red>
-      <Y_Lock>Y014</Y_Lock>
+      <Y_Lock>Y046</Y_Lock>
       <Y_Green>Y015</Y_Green>
     </Port>
     <Port PortId="P03" Index="2">
@@ -26,7 +26,7 @@
       <X_Door>X021</X_Door>
       <X_Presence>X022</X_Presence>
       <Y_Red>Y021</Y_Red>
-      <Y_Lock>Y022</Y_Lock>
+      <Y_Lock>Y047</Y_Lock>
       <Y_Green>Y023</Y_Green>
     </Port>
     <Port PortId="P05" Index="4">

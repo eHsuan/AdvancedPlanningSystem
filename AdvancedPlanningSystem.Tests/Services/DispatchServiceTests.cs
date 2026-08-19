@@ -110,5 +110,49 @@ namespace AdvancedPlanningSystem.Tests.Services
             // --- Assert ---
             _mockTcp.Verify(t => t.SendCommand(It.IsAny<string>()), Times.Never());
         }
+
+        [Fact]
+        public async Task ExecuteDispatch_BypassedPort_ShouldNotDispatch()
+        {
+            // --- Arrange ---
+            AppConfig.BypassedPorts = "4,6";
+            Assert.True(AppConfig.IsPortBypassed("P04"));
+            Assert.True(AppConfig.IsPortBypassed("4"));
+            Assert.False(AppConfig.IsPortBypassed("P01"));
+
+            string stepId = "STEP_TEST";
+            string eqpId = "EQP_TEST";
+            int batchSize = 4;
+
+            var candidates = new List<StateBinding>();
+            for (int i = 1; i <= batchSize; i++) {
+                candidates.Add(new StateBinding { 
+                    CarrierId = $"CST{i:D2}", LotId = $"LOT{i:D2}", 
+                    NextStepId = stepId, MachNosNext1 = eqpId, PortId = $"P{i:D2}", IsHold = 0 
+                });
+            }
+            _mockRepo.Setup(r => r.GetSortedWaitBindings()).Returns(candidates);
+
+            _mockRepo.Setup(r => r.GetEqpConfig(eqpId)).Returns(new ConfigEqp { 
+                EqpId = eqpId, BatchSize = batchSize, MaxWipQty = 10 
+            });
+
+            _dataSyncService._cachedWip = new Dictionary<string, WipInfoResponse> {
+                { eqpId, new WipInfoResponse { eq_id = eqpId, current_wip_qty = 0, max_wip_qty = 10 } }
+            };
+            _dataSyncService._cachedEqpStatus = new Dictionary<string, EqStatusResponse> {
+                { eqpId, new EqStatusResponse { eqp_id = eqpId, status = "IDLE", duration = "100" } }
+            };
+            _dataSyncService._lastMesSyncTime = DateTime.Now;
+
+            // --- Act ---
+            await _dispatchService.ExecuteDispatchAsync();
+
+            // --- Assert --- P04 被 Bypass 攔截，因此只有 3 個成功下達 OPEN 指令
+            _mockTcp.Verify(t => t.SendCommand(It.Is<string>(s => s.StartsWith("OPEN,"))), Times.Exactly(3));
+
+            // 清除靜態狀態避免影響其他測試
+            AppConfig.BypassedPorts = "";
+        }
     }
 }

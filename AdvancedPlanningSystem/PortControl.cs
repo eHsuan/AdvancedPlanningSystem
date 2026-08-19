@@ -178,6 +178,11 @@ namespace AdvancedPlanningSystem
 
         private void UpdateToolTip()
         {
+            if (_status == PortStatus.Bypassed)
+            {
+                toolTipInfo.SetToolTip(this, $"Port: {PortID} [BYPASS 停用]");
+                return;
+            }
             if (_status == PortStatus.Empty)
             {
                 toolTipInfo.SetToolTip(this, $"Port: {PortID}");
@@ -192,8 +197,8 @@ namespace AdvancedPlanningSystem
 
         private void UpdateBackColor()
         {
-            bool hasContent = (_status != PortStatus.Empty);
-            lblCstStatus.Visible = hasContent;
+            bool hasContent = (_status != PortStatus.Empty && _status != PortStatus.Bypassed);
+            lblCstStatus.Visible = (_status == PortStatus.Bypassed) || hasContent;
             lblCstInfo.Visible = hasContent;
             lblTargetInfo.Visible = hasContent && !string.IsNullOrEmpty(_targetEqpId);
             
@@ -226,6 +231,10 @@ namespace AdvancedPlanningSystem
                 case PortStatus.PreAssign:
                     this.BackColor = Color.Orange;
                     lblCstStatus.Text = "OPEN";
+                    break;
+                case PortStatus.Bypassed:
+                    this.BackColor = Color.Gray;
+                    lblCstStatus.Text = "BYPASS";
                     break;
                 default:
                     this.BackColor = SystemColors.Control;

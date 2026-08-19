@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+
 namespace AdvancedPlanningSystem
 {
     public enum CarrierInputMode
@@ -25,6 +28,39 @@ namespace AdvancedPlanningSystem
         /// Port 總數量
         /// </summary>
         public static int TotalPortCount = 10;
+
+        /// <summary>
+        /// 設定 Bypass 停用的 Port 清單 (逗號分隔，例如 "4,6" 或 "P04,P06")
+        /// </summary>
+        public static string BypassedPorts = "4,6";
+
+        /// <summary>
+        /// 判斷指定的 PortId 或 Port 序號是否被 Bypass 停用
+        /// </summary>
+        public static bool IsPortBypassed(string portId)
+        {
+            if (string.IsNullOrWhiteSpace(BypassedPorts) || string.IsNullOrWhiteSpace(portId))
+                return false;
+
+            var tokens = BypassedPorts.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            string cleanPortId = portId.Trim().ToUpper();
+            string digitsOnly = new string(cleanPortId.Where(char.IsDigit).ToArray()).TrimStart('0');
+            if (string.IsNullOrEmpty(digitsOnly)) digitsOnly = "0";
+
+            foreach (var token in tokens)
+            {
+                string cleanToken = token.Trim().ToUpper();
+                string tokenDigits = new string(cleanToken.Where(char.IsDigit).ToArray()).TrimStart('0');
+                if (string.IsNullOrEmpty(tokenDigits)) tokenDigits = "0";
+
+                if (cleanPortId == cleanToken || digitsOnly == tokenDigits)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         // 資料庫設定
         public static bool UseMockExternalDb = false; // 預設為 true (模擬模式)

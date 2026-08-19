@@ -43,8 +43,23 @@ namespace AdvancedPlanningSystem.Services
                 // 0. 準備資料
                 var allCandidates = _repo.GetSortedWaitBindings(); 
                 
-                // 嚴格攔截：過濾掉被標記為 HOLD (如 QTime 逾期) 的卡匣
-                var candidates = allCandidates.Where(c => c.IsHold == 0).ToList();
+                // 攔截過濾 Bypass Port 的項目
+                var bypassedItems = allCandidates.Where(c => AppConfig.IsPortBypassed(c.PortId)).ToList();
+                if (bypassedItems.Any())
+                {
+                    LogHelper.Dispatch.Info($"[Bypass Alert] {bypassedItems.Count} carriers are on bypassed ports.");
+                    foreach (var b in bypassedItems)
+                    {
+                        if (b.WaitReason != "Port Bypassed")
+                        {
+                            b.WaitReason = "Port Bypassed";
+                            _repo.InsertBinding(b);
+                        }
+                    }
+                }
+
+                // 嚴格攔截：過濾掉被標記為 HOLD (如 QTime 逾期) 或 Bypass Port 的卡匣
+                var candidates = allCandidates.Where(c => c.IsHold == 0 && !AppConfig.IsPortBypassed(c.PortId)).ToList();
                 var holdItems = allCandidates.Where(c => c.IsHold == 1).ToList();
                 
                 if (holdItems.Any())

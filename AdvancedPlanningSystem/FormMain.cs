@@ -101,7 +101,12 @@ namespace AdvancedPlanningSystem
                         portCtrl.WaitReason = data.WaitReason ?? "";
                         portCtrl.NextStepId = data.NextStepId ?? "";
                         
-                        if (data.Status == "PRE_ASSIGN")
+                        if (AppConfig.IsPortBypassed(portId))
+                        {
+                            portCtrl.Status = PortStatus.Bypassed;
+                            portCtrl.IsFlashing = false;
+                        }
+                        else if (data.Status == "PRE_ASSIGN")
                         {
                             portCtrl.Status = PortStatus.PreAssign;
                             portCtrl.IsFlashing = true; // 預配中閃爍引導
@@ -124,10 +129,17 @@ namespace AdvancedPlanningSystem
                     }
                     else
                     {
-                        // 若資料庫中沒有該 Port 的 Occupied 資料，重設為空
+                        // 若資料庫中沒有該 Port 的 Occupied 資料，重設為空或 Bypass 狀態
                         portCtrl.CassetteID = "";
                         portCtrl.WorkNo = "";
-                        portCtrl.Status = PortStatus.Empty;
+                        if (AppConfig.IsPortBypassed(portId))
+                        {
+                            portCtrl.Status = PortStatus.Bypassed;
+                        }
+                        else
+                        {
+                            portCtrl.Status = PortStatus.Empty;
+                        }
                     }
                 }
             }
@@ -396,7 +408,7 @@ namespace AdvancedPlanningSystem
                             for (int i = 1; i <= AppConfig.TotalPortCount; i++)
                             {
                                 string candidate = "P" + i.ToString("D2");
-                                if (!activePorts.Contains(candidate))
+                                if (!activePorts.Contains(candidate) && !AppConfig.IsPortBypassed(candidate))
                                 {
                                     portId = candidate;
                                     break;
@@ -405,8 +417,8 @@ namespace AdvancedPlanningSystem
 
                             if (string.IsNullOrEmpty(portId))
                             {
-                                AddLog($"[ALARM] 貨架已滿，無法為 {cstId} 分配儲位");
-                                NotificationForm.ShowAsync("貨架滿載", $"貨架已滿，無法入庫 {cstId}", NotificationLevel.Warning, 5);
+                                AddLog($"[ALARM] 貨架已滿或無可用儲位，無法為 {cstId} 分配儲位");
+                                NotificationForm.ShowAsync("貨架無可用儲位", $"貨架已滿或無可用儲位，無法入庫 {cstId}", NotificationLevel.Warning, 5);
                                 continue;
                             }
 
@@ -418,6 +430,14 @@ namespace AdvancedPlanningSystem
                             // 手動指定檢查
                             int pNum;
                             if (int.TryParse(portId, out pNum)) portId = "P" + pNum.ToString("D2");
+
+                            if (AppConfig.IsPortBypassed(portId))
+                            {
+                                string msg = $"Port {portId} 已被設定 Bypass 停用，拒絕入庫 {cstId}";
+                                AddLog($"[ALARM] {msg}");
+                                NotificationForm.ShowAsync("Bypass 停用警報", msg, NotificationLevel.Warning, 5);
+                                continue;
+                            }
 
                             var existing = _repo.GetActivePorts().FirstOrDefault(p => p.PortId == portId);
                             if (existing != null)

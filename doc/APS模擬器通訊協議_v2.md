@@ -9,12 +9,22 @@
 ## 2. 模擬器 -> APS (指令)
 
 ### 入庫請求 (自動分配)
-*   **格式**：`IN,{CarrierID};`
+*   **格式**：
+    *   `IN,{CarrierID};`（條碼綁定模式 / 僅工單模式）
+    *   `IN,{CarrierID},{WorkNo};`（混合模式）
 *   **說明**：模擬器刷 Barcode 後請求入庫。APS 會自動尋找空位並回傳 `ASSIGNED_PORT`。
 
 ### 入庫請求 (指定位置)
-*   **格式**：`IN,{PortID},{CarrierID};`
-*   **說明**：手動模式使用，將卡匣放入指定 Port。
+*   **格式**：
+    *   `IN,{PortID},{CarrierID};`
+    *   `IN,{PortID},{CarrierID},{WorkNo};`（混合模式）
+*   **說明**：手動指定儲位入庫，將卡匣放入指定 Port。
+
+### 條碼掃描 (Scan)
+*   **格式**：
+    *   `SCAN,{PortID},{CarrierID};`
+    *   `SCAN,{PortID},{CarrierID},{WorkNo};`（混合模式）
+*   **說明**：手動測試清單掃描入庫觸發。
 
 ### 卡匣取出 (Pick)
 *   **格式**：`PICK,{PortID};`
@@ -28,8 +38,15 @@
 
 ## 3. APS -> 模擬器 (指令)
 
+### 同步物料模式 (Set Input Mode)
+*   **格式**：`SET_INPUT_MODE,{ModeValue};`
+*   **說明**：APS 連線建立時主動下發當前物料識別模式至模擬器。
+    *   `0`: 條碼綁定模式 (BarcodeBinding)
+    *   `1`: 僅工單模式 (WorkOrderOnly)
+    *   `2`: 混合模式 (Hybrid)
+
 ### 開啟門鎖 (Open / Dispatch)
-*   **格式**：`OPEN,{PortID},{TargetEqpID};`
+*   **格式**：`OPEN,{PortID},{TargetEqpID};` 或 `OPEN,{PortID},{TargetEqpID},{CarrierID};`
 *   **說明**：APS 決策引擎下達指令，要求人員取走卡匣送往目標機台。
 *   **特殊目標**：`Pass99` 代表該站點未定義機台，要求模擬器自動跳過。
 

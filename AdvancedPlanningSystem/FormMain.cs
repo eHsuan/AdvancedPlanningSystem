@@ -287,12 +287,14 @@ namespace AdvancedPlanningSystem
             _externalDb = new AdvancedPlanningSystem.Services.ExternalDataService();
             _tcpServer = new TcpServerModule();
             
-            _tcpServer.OnConnected += (s, e) => {
+            _tcpServer.OnConnected += async (s, e) => {
                 AddLog("Hardware Simulator Connected");
                 this.Invoke(new Action(() => {
                     pnlSimStatus.BackColor = Color.LimeGreen;
                     lblSimStatus.Text = "Simulator Online";
                 }));
+                // 連線成功時，自動下發當前物料識別模式至模擬器
+                await _tcpServer.SendCommand($"SET_INPUT_MODE,{(int)AppConfig.InputMode}");
             };
             
             _tcpServer.OnDisconnected += (s, e) => {
@@ -304,12 +306,20 @@ namespace AdvancedPlanningSystem
             };
             
             _tcpServer.OnScan += async (s, e) => {
-                // 將模擬器的 SCAN 訊息重導向至入庫處理
+                // 將模擬器的 SCAN / IN 訊息重導向至入庫處理
                 string barcode = e.Barcode;
-                string workNo = barcode;
-                if (AppConfig.InputMode == CarrierInputMode.BarcodeBinding)
+                string workNo = e.WorkNo;
+
+                if (string.IsNullOrEmpty(workNo))
                 {
-                    workNo = await _externalDb.GetWorkNoByBarcodeAsync(barcode);
+                    if (AppConfig.InputMode == CarrierInputMode.BarcodeBinding)
+                    {
+                        workNo = await _externalDb.GetWorkNoByBarcodeAsync(barcode);
+                    }
+                    else if (AppConfig.InputMode == CarrierInputMode.WorkOrderOnly)
+                    {
+                        workNo = barcode;
+                    }
                 }
                 await ProcessDirectStockInAsync(barcode, workNo, e.PortID);
             };

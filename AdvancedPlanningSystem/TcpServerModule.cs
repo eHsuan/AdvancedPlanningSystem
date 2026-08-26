@@ -13,11 +13,13 @@ namespace AdvancedPlanningSystem
     {
         public string PortID { get; private set; }
         public string Barcode { get; private set; }
+        public string WorkNo { get; private set; }
 
-        public ScanEventArgs(string portID, string barcode)
+        public ScanEventArgs(string portID, string barcode, string workNo = null)
         {
             PortID = portID;
             Barcode = barcode;
+            WorkNo = workNo;
         }
     }
 
@@ -253,18 +255,48 @@ namespace AdvancedPlanningSystem
             {
                 case "IN":
                 case "SCAN":
-                    // 支援兩種格式：
-                    // 1. IN,PortID,Barcode (手動指定)
-                    // 2. IN,Barcode (自動分配)
-                    if (parts.Length >= 3)
+                    // 支援格式：
+                    // 1. IN/SCAN,PortID,Barcode,WorkNo (4 參數：指定儲位 + 條碼 + 工單)
+                    // 2. IN,Barcode,WorkNo (3 參數：自動分配 + 條碼 + 工單)
+                    // 3. IN/SCAN,PortID,Barcode (3 參數：指定儲位 + 條碼)
+                    // 4. IN,Barcode (2 參數：自動分配 + 條碼)
+                    if (parts.Length >= 4)
                     {
-                        string portId = parts[1];
-                        string barcode = parts[2];
-                        RaiseEvent(OnScan, new ScanEventArgs(portId, barcode));
+                        string portId = parts[1].Trim();
+                        string barcode = parts[2].Trim();
+                        string workNo = parts[3].Trim();
+                        RaiseEvent(OnScan, new ScanEventArgs(portId, barcode, workNo));
+                    }
+                    else if (parts.Length == 3)
+                    {
+                        string p1 = parts[1].Trim();
+                        string p2 = parts[2].Trim();
+
+                        if (cmd == "SCAN")
+                        {
+                            // SCAN 預設為 PortID, Barcode
+                            RaiseEvent(OnScan, new ScanEventArgs(p1, p2));
+                        }
+                        else
+                        {
+                            // 判斷 p1 是否為 Port 格式 (如 P01 或純數字 1~99)
+                            bool isPort = (p1.StartsWith("P", StringComparison.OrdinalIgnoreCase) && p1.Length >= 2 && char.IsDigit(p1[1]))
+                                          || (int.TryParse(p1, out int val) && val > 0 && val <= 100);
+
+                            if (isPort)
+                            {
+                                RaiseEvent(OnScan, new ScanEventArgs(p1, p2));
+                            }
+                            else
+                            {
+                                // 混合模式自動分配：IN,Barcode,WorkNo
+                                RaiseEvent(OnScan, new ScanEventArgs(null, p1, p2));
+                            }
+                        }
                     }
                     else if (parts.Length == 2)
                     {
-                        string barcode = parts[1];
+                        string barcode = parts[1].Trim();
                         RaiseEvent(OnScan, new ScanEventArgs(null, barcode)); // PortID 傳 null 表示自動分配
                     }
                     break;

@@ -312,69 +312,52 @@ namespace APSSimulator
 
         
 
-                private async Task ExecuteBatchStockInRequests()
+        private async Task ExecuteBatchStockInRequests()
+        {
+            DataTable dt = (DataTable)dgvAutoSimOrders.DataSource;
+            if (dt == null) return;
 
+            var tasks = new List<Task>();
+            foreach (DataRow row in dt.Rows)
+            {
+                string cstId = row["carrier_id"].ToString();
+                string workNo = row["work_no"].ToString();
+                string nextStep = row["next_step_id"].ToString();
+
+                bool isInitial = !_carrierStatuses.ContainsKey(cstId) && nextStep != "END";
+                bool isReturn = _carrierStatuses.ContainsKey(cstId) && _carrierStatuses[cstId] == "製程完成";
+
+                if (isInitial || isReturn)
                 {
+                    _carrierStatuses[cstId] = "請求入庫中...";
 
-                    DataTable dt = (DataTable)dgvAutoSimOrders.DataSource;
-
-                    if (dt == null) return;
-
-        
-
-                    var tasks = new List<Task>();
-
-                    foreach (DataRow row in dt.Rows) {
-
-                        string cstId = row["carrier_id"].ToString();
-
-                        string nextStep = row["next_step_id"].ToString();
-
-                        
-
-                        bool isInitial = !_carrierStatuses.ContainsKey(cstId) && nextStep != "END";
-
-                        bool isReturn = _carrierStatuses.ContainsKey(cstId) && _carrierStatuses[cstId] == "製程完成";
-
-        
-
-                        if (isInitial || isReturn)
-
-                        {
-
-                            // 標記為正在請求中，避免重複發送
-
-                            _carrierStatuses[cstId] = "請求入庫中...";
-
-                            AppendAutoSimLog($"[入庫請求] 向 APS 請求分配儲位: {cstId}");
-
-                            tasks.Add(_apsClient.SendCommandAsync($"IN,{cstId}"));
-
-                        }
-
-                    }
-
-        
-
-                    if (tasks.Count > 0)
-
+                    if (AppConfig.InputMode == CarrierInputMode.WorkOrderOnly)
                     {
-
-                        await Task.WhenAll(tasks);
-
-                        this.Invoke(new Action(() => RefreshAutoSimGrid()));
-
+                        AppendAutoSimLog($"[入庫請求(工單模式)] 向 APS 請求分配儲位: {workNo}");
+                        tasks.Add(_apsClient.SendCommandAsync($"IN,{workNo}"));
                     }
-
+                    else if (AppConfig.InputMode == CarrierInputMode.Hybrid)
+                    {
+                        AppendAutoSimLog($"[入庫請求(混合模式)] 向 APS 請求分配儲位: {cstId} (工單: {workNo})");
+                        tasks.Add(_apsClient.SendCommandAsync($"IN,{cstId},{workNo}"));
+                    }
+                    else
+                    {
+                        AppendAutoSimLog($"[入庫請求(條碼綁定)] 向 APS 請求分配儲位: {cstId}");
+                        tasks.Add(_apsClient.SendCommandAsync($"IN,{cstId}"));
+                    }
                 }
+            }
 
-        
+            if (tasks.Count > 0)
+            {
+                await Task.WhenAll(tasks);
+                this.Invoke(new Action(() => RefreshAutoSimGrid()));
+            }
+        }
 
-                // 移除舊的 CheckAndAutoStockIn 與 ExecuteBatchStockInFromCache
-
-                private async Task CheckAndAutoStockIn() { await Task.FromResult(0); }
-
-        
+        // 移除舊的 CheckAndAutoStockIn 與 ExecuteBatchStockInFromCache
+        private async Task CheckAndAutoStockIn() { await Task.FromResult(0); }
 
         private bool CheckAllFinished()
         {
@@ -391,9 +374,25 @@ namespace APSSimulator
             if (targetEqp == "STOCK")
             {
                 string stockCstId = optCstId;
-                if (string.IsNullOrEmpty(stockCstId))
+                if (!string.IsNullOrEmpty(stockCstId))
                 {
-                    stockCstId = _carrierStatuses.FirstOrDefault(x => x.Value == "等待派送" || x.Value == "製程完成").Key;
+                    // 在工單模式下，optCstId 可能是工單號，需對照回真實的 carrier_id
+                    DataTable dtObj = (DataTable)dgvAutoSimOrders.DataSource;
+                    if (dtObj != null)
+                    {
+                        foreach (DataRow r in dtObj.Rows)
+                        {
+                            if (r["carrier_id"].ToString() == stockCstId || r["work_no"].ToString() == stockCstId)
+                            {
+                                stockCstId = r["carrier_id"].ToString();
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    stockCstId = _carrierStatuses.FirstOrDefault(x => x.Value == "等待派送" || x.Value == "製程完成" || x.Value == "請求入庫中...").Key;
                 }
 
                 if (string.IsNullOrEmpty(stockCstId)) stockCstId = "CST-UNKNOWN";
@@ -627,12 +626,34 @@ namespace APSSimulator
             _apsClient = new ApsClient();
             _apsClient.OnLog += (msg) => AppendClientLog(msg);
             
-            _apsClient.OnPortAssigned += (portId, cstId) => {
-                // 收到 APS 分配的儲位
-                _carrierPorts[cstId] = portId;
-                _carrierStatuses[cstId] = "等待派送";
-                AppendAutoSimLog($"[APS 分配] 卡匣 {cstId} 已分配至儲位 {portId}");
+            _apsClient.OnPortAssigned += (portId, incomingId) => {
+                // 收到 APS 分配的儲位 (在工單模式下，incomingId 可能是工單號)
+                string matchedCstId = incomingId;
+                DataTable dtObj = (DataTable)dgvAutoSimOrders.DataSource;
+                if (dtObj != null)
+                {
+                    foreach (DataRow r in dtObj.Rows)
+                    {
+                        if (r["carrier_id"].ToString() == incomingId || r["work_no"].ToString() == incomingId)
+                        {
+                            matchedCstId = r["carrier_id"].ToString();
+                            break;
+                        }
+                    }
+                }
+                _carrierPorts[matchedCstId] = portId;
+                _carrierStatuses[matchedCstId] = "等待派送";
+                AppendAutoSimLog($"[APS 分配] 卡匣 {matchedCstId} 已分配至儲位 {portId}");
                 this.Invoke(new Action(() => RefreshAutoSimGrid()));
+            };
+
+            _apsClient.OnInputModeSynced += (mode) => {
+                this.Invoke(new Action(() => {
+                    string modeDesc = GetModeDescription(mode);
+                    this.Text = $"APS 模擬器 (APS Simulator) - [模式: {modeDesc}]";
+                    AppendClientLog($"[模式同步] 已與主程式同步物料入庫模式: {modeDesc}");
+                    AppendAutoSimLog($"[模式同步] 入庫模式同步為: {modeDesc}");
+                }));
             };
 
             _apsClient.OnMessageReceived += (msg) => {
@@ -758,13 +779,39 @@ namespace APSSimulator
             }
         }
 
+        private string GetModeDescription(CarrierInputMode mode)
+        {
+            switch (mode)
+            {
+                case CarrierInputMode.WorkOrderOnly:
+                    return "僅工單模式 (WorkOrderOnly)";
+                case CarrierInputMode.Hybrid:
+                    return "工單+卡匣混合模式 (Hybrid)";
+                case CarrierInputMode.BarcodeBinding:
+                default:
+                    return "條碼綁定模式 (BarcodeBinding)";
+            }
+        }
+
         private async Task ProcessScanForRow(DataGridViewRow row)
         {
             string port = row.Cells["colPortId"].Value?.ToString();
             string cass = row.Cells["colCassetteId"].Value?.ToString();
+            string workNo = row.Cells["colWorkNo"].Value?.ToString();
             if (!string.IsNullOrEmpty(port) && !string.IsNullOrEmpty(cass))
             {
-                await _apsClient.ScanAsync(port, cass);
+                if (AppConfig.InputMode == CarrierInputMode.WorkOrderOnly)
+                {
+                    await _apsClient.ScanAsync(port, workNo); // 僅工單模式傳送工單號碼
+                }
+                else if (AppConfig.InputMode == CarrierInputMode.Hybrid)
+                {
+                    await _apsClient.ScanAsync(port, cass, workNo); // 混合模式傳送兩者
+                }
+                else
+                {
+                    await _apsClient.ScanAsync(port, cass); // 條碼綁定模式傳送卡匣 ID
+                }
                 row.Cells["colStatus"].Value = "Scanned (On Shelf)";
                 row.DefaultCellStyle.BackColor = Color.LightYellow;
                 await System.Threading.Tasks.Task.Delay(100); 

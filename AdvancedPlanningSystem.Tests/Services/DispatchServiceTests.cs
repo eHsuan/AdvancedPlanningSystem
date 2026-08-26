@@ -37,6 +37,8 @@ namespace AdvancedPlanningSystem.Tests.Services
             _mockRepo.Setup(r => r.GetAllBindings()).Returns(new List<StateBinding>());
             _mockRepo.Setup(r => r.GetAllTransits()).Returns(new List<StateTransit>());
             _mockRepo.Setup(r => r.GetQTimeConfigs()).Returns(new List<ConfigQTime>());
+
+            AppConfig.BypassedPorts = "";
         }
 
         [Fact]

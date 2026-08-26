@@ -32,7 +32,7 @@ namespace AdvancedPlanningSystem
         /// <summary>
         /// 設定 Bypass 停用的 Port 清單 (逗號分隔，例如 "4,6" 或 "P04,P06")
         /// </summary>
-        public static string BypassedPorts = "4,6";
+        public static string BypassedPorts = "";
 
         /// <summary>
         /// 判斷指定的 PortId 或 Port 序號是否被 Bypass 停用
@@ -86,7 +86,7 @@ namespace AdvancedPlanningSystem
         /// </summary>
         public static string MesDefaultEqpNo = "AC3811";
 
-        public static bool ManualMode = true; // 是否啟用手動決策模式
+        public static bool ManualMode = false; // 是否啟用手動決策模式
 
         public static double DueBaseHours = 240.0; // 交期評分基準 (小時)
 

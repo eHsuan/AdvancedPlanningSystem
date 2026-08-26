@@ -21,6 +21,7 @@ namespace APSSimulator.Client
         public event Action<string> OnLog;
         public event Action<string> OnMessageReceived;
         public event Action<string, string> OnPortAssigned; // 新增：接收到分配儲位的事件 (PortId, CstId)
+        public event Action<CarrierInputMode> OnInputModeSynced; // 新增：物料模式同步事件
 
         public bool IsConnected => _client != null && _client.Connected;
 
@@ -108,7 +109,17 @@ namespace APSSimulator.Client
                             string msg = msgs[i].Trim();
                             if (!string.IsNullOrEmpty(msg))
                             {
-                                if (msg.StartsWith("ASSIGNED_PORT,"))
+                                if (msg.StartsWith("SET_INPUT_MODE,"))
+                                {
+                                    var parts = msg.Split(',');
+                                    if (parts.Length >= 2 && int.TryParse(parts[1], out int modeVal))
+                                    {
+                                        AppConfig.InputMode = (CarrierInputMode)modeVal;
+                                        Log($"[Mode Sync] InputMode synced from APS: {AppConfig.InputMode} ({modeVal})");
+                                        OnInputModeSynced?.Invoke(AppConfig.InputMode);
+                                    }
+                                }
+                                else if (msg.StartsWith("ASSIGNED_PORT,"))
                                 {
                                     var parts = msg.Split(',');
                                     if (parts.Length >= 3)
@@ -173,9 +184,16 @@ namespace APSSimulator.Client
             }
         }
 
-        public async Task ScanAsync(string portId, string barcode)
+        public async Task ScanAsync(string portId, string barcode, string workNo = "")
         {
-            await SendCommandAsync($"SCAN,{portId},{barcode};");
+            if (!string.IsNullOrEmpty(workNo))
+            {
+                await SendCommandAsync($"SCAN,{portId},{barcode},{workNo};");
+            }
+            else
+            {
+                await SendCommandAsync($"SCAN,{portId},{barcode};");
+            }
         }
 
         public async Task PickAsync(string portId)

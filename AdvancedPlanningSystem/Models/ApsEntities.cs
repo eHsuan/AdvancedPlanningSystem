@@ -52,6 +52,8 @@ namespace AdvancedPlanningSystem.Models
         public string WaitReason { get; set; }     // 等待原因
         public double DispatchScore { get; set; }  // 派貨分數
         public double TReal { get; set; }          // 真實剩餘時間
+        public double ScoreN2Penalty { get; set; } // N+2 擁塞扣分
+        public string MachNosNext2 { get; set; }   // MES 下兩站設備清單 (字串)
     }
 
     // local_state_binding
@@ -74,6 +76,7 @@ namespace AdvancedPlanningSystem.Models
         public double ScoreEng { get; set; }
         public double ScoreDue { get; set; }
         public double ScoreLead { get; set; }
+        public double ScoreN2Penalty { get; set; } // N+2 擁塞扣分
 
         public double TReal { get; set; }          // 真實剩餘時間 (T_Real)
 
@@ -90,6 +93,7 @@ namespace AdvancedPlanningSystem.Models
         public DateTime? DueDate { get; set; }
         public double T_safe { get; set; }
         public string MachNosNext1 { get; set; }   // MES 下一站設備清單 (字串)
+        public string MachNosNext2 { get; set; }   // MES 下兩站設備清單 (字串)
     }
 
     // local_state_transit
@@ -120,6 +124,7 @@ namespace AdvancedPlanningSystem.Models
         public string customer_delivery_time { get; set; }
         public string route_no { get; set; }
         public string MachNosNext1 { get; set; }
+        public string MachNosNext2 { get; set; }
     }
 
     public class StepTimeResponse

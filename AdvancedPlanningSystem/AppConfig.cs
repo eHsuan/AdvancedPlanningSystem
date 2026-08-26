@@ -111,5 +111,21 @@ namespace AdvancedPlanningSystem
         /// Port 門開啟逾時警報時間 (秒)
         /// </summary>
         public static double PlcDoorOpenAlarmTimeoutSec = 60.0;
+
+        // --- N+2 前瞻派貨與 Q-Time 防護設定 ---
+        /// <summary>
+        /// 是否啟用 N+2 前瞻派貨與跨站 Q-Time 防護
+        /// </summary>
+        public static bool EnableLookAheadN2 = false;
+
+        /// <summary>
+        /// N+2 最少需處於 RUN/IDLE 狀態的機台數量門檻 (低於此數量則硬阻擋派往 N+1)
+        /// </summary>
+        public static int N2MinRunEqpCount = 1;
+
+        /// <summary>
+        /// N+2 下游擁塞扣分權重 (軟性降權係數)
+        /// </summary>
+        public static double N2CongestionWeight = 20000.0;
     }
 }

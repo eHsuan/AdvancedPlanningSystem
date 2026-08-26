@@ -118,7 +118,8 @@ namespace AdvancedPlanningSystem.MES
                                 PreStepOutTime = DateTime.Now.AddHours(-1).ToString("yyyy-MM-ddTHH:mm:ss"),
                                 Urgent = "N",
                                 EstimateProcessEndDate = DateTime.Now.AddDays(2).ToString("yyyy-MM-ddTHH:mm:ss"),
-                                MachNosNext1 = "EQP_01,EQP_02"
+                                MachNosNext1 = "EQP_01,EQP_02",
+                                MachNosNext2 = "EQP_03,EQP_04"
                             });
                         }
                         responseObj = new ApsLotReply
@@ -161,7 +162,9 @@ namespace AdvancedPlanningSystem.MES
                             next_step_id = "STEP_B",
                             prev_out_time = DateTime.Now.AddHours(-1).ToString("yyyy-MM-ddTHH:mm:ss"),
                             priority_type = 2,
-                            due_date = DateTime.Now.AddDays(2).ToString("yyyy-MM-ddTHH:mm:ss")
+                            due_date = DateTime.Now.AddDays(2).ToString("yyyy-MM-ddTHH:mm:ss"),
+                            MachNosNext1 = "EQP_01,EQP_02",
+                            MachNosNext2 = "EQP_03,EQP_04"
                         });
                     }
                     responseObj = list;

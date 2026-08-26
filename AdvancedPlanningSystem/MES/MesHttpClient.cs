@@ -179,7 +179,8 @@ namespace AdvancedPlanningSystem.MES
                     estimate_end_date = ParseToDbTimeStr(l.EstimateProcessEndDate),
                     customer_delivery_time = ParseToDbTimeStr(l.CustomerDeliveryTime),
                     route_no = l.RouteNo,
-                    MachNosNext1 = l.MachNosNext1
+                    MachNosNext1 = l.MachNosNext1,
+                    MachNosNext2 = l.MachNosNext2
                 });
             }
             return list;

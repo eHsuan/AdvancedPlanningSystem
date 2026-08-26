@@ -328,6 +328,15 @@ namespace AdvancedPlanningSystem.Services
                             if (!eqpIds.Contains(eq)) eqpIds.Add(eq);
                         }
                     }
+
+                    if (AppConfig.EnableLookAheadN2 && !string.IsNullOrEmpty(b.MachNosNext2))
+                    {
+                        var next2Eqps = b.MachNosNext2.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim());
+                        foreach (var eq in next2Eqps)
+                        {
+                            if (!eqpIds.Contains(eq)) eqpIds.Add(eq);
+                        }
+                    }
                 }
 
                 if (eqpIds.Any())
@@ -418,7 +427,7 @@ namespace AdvancedPlanningSystem.Services
 
             // 3. 加權評分 (Step 3: Scoring)
             double score = 0;
-            double s_qtime = 0, s_urgent = 0, s_eng = 0, s_due = 0, s_lead = 0;
+            double s_qtime = 0, s_urgent = 0, s_eng = 0, s_due = 0, s_lead = 0, s_n2_penalty = 0;
 
             if (isHold == 0) 
             {
@@ -462,6 +471,41 @@ namespace AdvancedPlanningSystem.Services
                     s_lead = leadMin * 10.0;
                     score += s_lead;
                 }
+
+                // N+2 軟性擁塞降權 (Soft Score Penalty)
+                if (AppConfig.EnableLookAheadN2 && !string.IsNullOrEmpty(orderInfo.MachNosNext2))
+                {
+                    var n2Eqps = orderInfo.MachNosNext2.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).Distinct().ToList();
+                    if (n2Eqps.Count > 0)
+                    {
+                        int totalN2Wip = 0;
+                        int totalN2MaxWip = 0;
+                        lock (_cacheLock)
+                        {
+                            foreach (var eq in n2Eqps)
+                            {
+                                if (_cachedWip.ContainsKey(eq))
+                                {
+                                    totalN2Wip += _cachedWip[eq].current_wip_qty;
+                                    totalN2MaxWip += _cachedWip[eq].max_wip_qty;
+                                }
+                                else
+                                {
+                                    var eqCfg = _repo.GetEqpConfig(eq);
+                                    totalN2MaxWip += (eqCfg?.MaxWipQty ?? 10);
+                                }
+                            }
+                        }
+
+                        if (totalN2MaxWip > 0)
+                        {
+                            double congestionRatio = Math.Min(1.0, (double)totalN2Wip / totalN2MaxWip);
+                            s_n2_penalty = congestionRatio * AppConfig.N2CongestionWeight;
+                            score -= s_n2_penalty;
+                            LogHelper.Score.Debug($"  - N+2 Congestion Penalty: WIP={totalN2Wip}/{totalN2MaxWip} (Ratio={congestionRatio:P1}), Penalty={s_n2_penalty:F2}");
+                        }
+                    }
+                }
             }
 
             var existing = _repo.GetBinding(port.CarrierId);
@@ -482,6 +526,7 @@ namespace AdvancedPlanningSystem.Services
                 ScoreEng = Math.Round(s_eng, 2),
                 ScoreDue = Math.Round(s_due, 2),
                 ScoreLead = Math.Round(s_lead, 2),
+                ScoreN2Penalty = Math.Round(s_n2_penalty, 2),
 
                 TReal = tReal, // 儲存真實剩餘時間供 UI 顯示
 
@@ -489,6 +534,7 @@ namespace AdvancedPlanningSystem.Services
                 IsHold = isHold,
                 WaitReason = existing?.WaitReason ?? "",
                 MachNosNext1 = orderInfo.MachNosNext1,
+                MachNosNext2 = orderInfo.MachNosNext2,
                 BindTime = existing?.BindTime ?? DateTime.Now.ToString("yyyyMMddHHmmss"),
                 DispatchTime = existing?.DispatchTime 
             };

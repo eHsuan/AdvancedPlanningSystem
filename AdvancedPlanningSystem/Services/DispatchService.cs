@@ -143,6 +143,57 @@ namespace AdvancedPlanningSystem.Services
                         }
                     }
 
+                    // --- [N+2 Look-ahead & Q-Time Guard 檢查] ---
+                    var n2BlockedList = new List<StateBinding>();
+                    var validCassetteList = new List<StateBinding>();
+
+                    if (AppConfig.EnableLookAheadN2)
+                    {
+                        foreach (var c in cassetteList)
+                        {
+                            if (!string.IsNullOrEmpty(c.MachNosNext2))
+                            {
+                                var n2Eqps = c.MachNosNext2.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).Distinct().ToList();
+                                int activeN2Count = 0;
+                                foreach (var eq in n2Eqps)
+                                {
+                                    if (statusDict.ContainsKey(eq))
+                                    {
+                                        var s = statusDict[eq];
+                                        if (s.status == "RUN" || s.status == "IDLE") activeN2Count++;
+                                    }
+                                }
+
+                                if (activeN2Count < AppConfig.N2MinRunEqpCount)
+                                {
+                                    n2BlockedList.Add(c);
+                                    if (string.IsNullOrEmpty(c.DispatchTime))
+                                    {
+                                        string n2Reason = "N+2 All Eqp DOWN (Q-Time Guard)";
+                                        if (c.WaitReason != n2Reason)
+                                        {
+                                            c.WaitReason = n2Reason;
+                                            _repo.InsertBinding(c);
+                                            LogHelper.Dispatch.Warn($"[N+2 Guard] Carrier {c.CarrierId} blocked: All N+2 equipment ({string.Join(",", n2Eqps)}) are DOWN/inactive.");
+                                        }
+                                    }
+                                    continue;
+                                }
+                            }
+                            validCassetteList.Add(c);
+                        }
+
+                        if (validCassetteList.Count == 0)
+                        {
+                            LogHelper.Dispatch.Info($"    - All {cassetteList.Count} carriers in group {nextStep} blocked by N+2 Q-Time Guard.");
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        validCassetteList = cassetteList;
+                    }
+
                     // --- [Wait Analysis] ---
                     int totalEqp = availableEqps.Count;
                     int downCount = 0;
@@ -179,7 +230,7 @@ namespace AdvancedPlanningSystem.Services
                     foreach (var eqpId in availableEqps)
                     {
                         int dispatchedCount = dispatchedButNotPicked.ContainsKey(eqpId) ? dispatchedButNotPicked[eqpId] : 0;
-                        await ProcessEqpDispatchAsync(eqpId, cassetteList, wipDict, statusDict, allTransits, qTimeConfigs, dispatchedCount);
+                        await ProcessEqpDispatchAsync(eqpId, validCassetteList, wipDict, statusDict, allTransits, qTimeConfigs, dispatchedCount);
                     }
 
                     // --- [Wait Reason Update] ---
@@ -188,7 +239,7 @@ namespace AdvancedPlanningSystem.Services
                     else if (downCount == totalEqp) reason = "All Eqp DOWN";
                     else if (downCount + fullCount == totalEqp) reason = "All Eqp FULL";
 
-                    foreach (var c in cassetteList)
+                    foreach (var c in validCassetteList)
                     {
                         if (string.IsNullOrEmpty(c.DispatchTime))
                         {
@@ -314,9 +365,21 @@ namespace AdvancedPlanningSystem.Services
 
                 LogHelper.Dispatch.Debug($"        - WIP Check: MES={mesWip}, Transit={transitCount}, Dispatched={dispatchedCount} | Total={currentTotalWip}/{maxWip}");
 
-                if (currentTotalWip >= maxWip) return;
-
                 var availableForThisEqp = potentialCassettes.Where(c => string.IsNullOrEmpty(c.DispatchTime)).ToList();
+                if (AppConfig.EnableLookAheadN2)
+                {
+                    availableForThisEqp = availableForThisEqp.Where(c => {
+                        if (string.IsNullOrEmpty(c.MachNosNext2)) return true;
+                        var n2List = c.MachNosNext2.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).Distinct().ToList();
+                        int activeCount = 0;
+                        foreach (var eq in n2List)
+                        {
+                            if (statusDict.ContainsKey(eq) && (statusDict[eq].status == "RUN" || statusDict[eq].status == "IDLE"))
+                                activeCount++;
+                        }
+                        return activeCount >= AppConfig.N2MinRunEqpCount;
+                    }).ToList();
+                }
                 if (availableForThisEqp.Count == 0) return;
 
                 bool shouldDispatch = false; 

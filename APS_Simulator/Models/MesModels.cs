@@ -53,6 +53,12 @@ namespace APSSimulator.Models
 
         [JsonProperty("route_no")]
         public string RouteNo { get; set; }
+
+        [JsonProperty("MachNosNext1")]
+        public string MachNosNext1 { get; set; }
+
+        [JsonProperty("MachNosNext2")]
+        public string MachNosNext2 { get; set; }
     }
 
     // 對應 /steptime/all 回應

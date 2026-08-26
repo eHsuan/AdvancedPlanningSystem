@@ -104,7 +104,14 @@ namespace AdvancedPlanningSystem
             lblValDue.Text = binding.ScoreDue.ToString("N0");
             lblValLead.Text = binding.ScoreLead.ToString("N0");
 
-            lblTotalScore.Text = binding.DispatchScore.ToString("N0");
+            if (binding.ScoreN2Penalty > 0)
+            {
+                lblTotalScore.Text = $"{binding.DispatchScore:N0} (N+2 擁塞: -{binding.ScoreN2Penalty:N0})";
+            }
+            else
+            {
+                lblTotalScore.Text = binding.DispatchScore.ToString("N0");
+            }
         }
 
         private void DisplayQueueInfo(StateBinding currentBinding)

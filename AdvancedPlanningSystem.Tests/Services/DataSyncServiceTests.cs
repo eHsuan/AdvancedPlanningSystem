@@ -157,5 +157,45 @@ namespace AdvancedPlanningSystem.Tests.Services
             Assert.Equal("RUN", cachedStatus["EQP01"].status);
             Assert.Equal("120", cachedStatus["EQP01"].duration);
         }
+
+        [Fact]
+        public void CalculateScore_N2Enabled_ShouldApplyCongestionPenalty()
+        {
+            // Arrange
+            AppConfig.EnableLookAheadN2 = true;
+            AppConfig.N2CongestionWeight = 20000.0;
+
+            var port = new StatePort { CarrierId = "CST_N2_PENALTY", LotId = "LOT_N2", PortId = "P01" };
+            var order = new OrderInfoResponse 
+            { 
+                WorkNo = "LOT_N2", 
+                step_id = "STEP1", 
+                next_step_id = "STEP2",
+                prev_out_time = DateTime.Now.AddMinutes(-30).ToString("yyyyMMddHHmmss"), 
+                priority_type = 0,
+                MachNosNext1 = "EQP_N1",
+                MachNosNext2 = "EQP_N2"
+            };
+
+            _service._cachedWip = new Dictionary<string, WipInfoResponse>
+            {
+                { "EQP_N2", new WipInfoResponse { eq_id = "EQP_N2", current_wip_qty = 10, max_wip_qty = 10 } } // 100% 擁塞
+            };
+
+            StateBinding capturedBinding = null;
+            _mockRepo.Setup(r => r.InsertBinding(It.IsAny<StateBinding>()))
+                     .Callback<StateBinding>(b => capturedBinding = b);
+
+            // Act
+            _service.ProcessBindingSyncAndScore(port, order);
+
+            // Assert
+            Assert.NotNull(capturedBinding);
+            Assert.Equal(20000.0, capturedBinding.ScoreN2Penalty);
+            Assert.Equal("EQP_N2", capturedBinding.MachNosNext2);
+
+            // 清除狀態
+            AppConfig.EnableLookAheadN2 = false;
+        }
     }
 }

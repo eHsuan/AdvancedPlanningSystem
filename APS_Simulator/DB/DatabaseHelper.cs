@@ -130,7 +130,7 @@ namespace APSSimulator.DB
             }
         }
 
-        public static void GenerateRandomOrders(int count)
+        public static void GenerateRandomOrders(int count, bool isN2Aligned = false)
         {
             var random = new Random();
             var routeList = new System.Collections.Generic.List<dynamic>();
@@ -163,13 +163,22 @@ namespace APSSimulator.DB
                             (work_no, carrier_id, step_id, next_step_id, next2_step_id, mach_nos_next1, mach_nos_next2, prev_out_time, priority_type, due_date, route_id, current_seq_no) 
                             VALUES (@wn, @cid, @sid, @nid, @n2id, @m1, @m2, @prev, @pri, @due, '03SEC', @cseq)";
 
+                        // 若為 N+2 對齊模式，預先固定一套完整的站點組合
+                        int fixedIdx = 0;
+                        if (isN2Aligned)
+                        {
+                            // 優先挑選具有次次站 (非 END) 的站點
+                            int maxValidIdx = (routeList.Count >= 3) ? routeList.Count - 2 : routeList.Count - 1;
+                            fixedIdx = random.Next(0, maxValidIdx);
+                        }
+
                         for (int i = 0; i < count; i++)
                         {
                             string wn = "2P" + RandomAlphanumeric(10, random);
                             string cid = RandomAlphanumeric(6, random);
                             
-                            // 隨機選一個步驟，必須有下一個步驟
-                            int idx = random.Next(0, routeList.Count - 1);
+                            // 站點選擇：N+2 對齊模式固定站點，一般模式隨機選站
+                            int idx = isN2Aligned ? fixedIdx : random.Next(0, routeList.Count - 1);
                             var current = routeList[idx];
                             var next = routeList[idx + 1];
                             string next2 = (idx + 2 < routeList.Count) ? routeList[idx + 2].StepId : "END";

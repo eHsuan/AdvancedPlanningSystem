@@ -569,9 +569,19 @@ namespace APSSimulator
                     int count;
                     if (int.TryParse(input, out count) && count > 0)
                     {
-                        DatabaseHelper.GenerateRandomOrders(count);
+                        var result_N2 = MessageBox.Show(
+                            "是否要生成 N+2 模擬資料？\n(是：每筆資料具有相同的目前站點、下一站及次次站；否：各工單隨機選站)",
+                            "N+2 模擬資料生成",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Question);
+
+                        bool isN2 = (result_N2 == DialogResult.Yes);
+
+                        DatabaseHelper.GenerateRandomOrders(count, isN2);
                         RefreshAutoSimGrid(); // 更新介面顯示
-                        AppendClientLog($"已重新生成 {count} 筆測試工單。");
+                        AppendClientLog(isN2 
+                            ? $"已重新生成 {count} 筆 N+2 對齊測試工單 (各工單站點與次站、次次站皆一致)。" 
+                            : $"已重新生成 {count} 筆隨機測試工單。");
                         DatabaseHelper.SyncExternalDbFromMesOrders();
                         AppendClientLog("ExternalDB 測試資料同步完成。");
 

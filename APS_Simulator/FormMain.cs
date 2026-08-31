@@ -44,6 +44,8 @@ namespace APSSimulator
                 using (var conn = new SQLiteConnection(_dbConnStr))
                 {
                     conn.Open();
+                    DatabaseHelper.EnsureOrdersTableColumns(conn);
+
                     using (var adapter = new SQLiteDataAdapter("SELECT * FROM mock_mes_orders", conn))
                     {
                         DataTable dt = new DataTable();
@@ -146,7 +148,7 @@ namespace APSSimulator
                     ISheet sheet = wb.CreateSheet("CurrentOrders");
 
                     // 標題行 (跳過第一欄「目前狀態」)
-                    string[] headers = { "work_no", "carrier_id", "step_id", "next_step_id", "prev_out_time", "priority_type", "due_date", "route_id", "current_seq_no" };
+                    string[] headers = { "work_no", "carrier_id", "step_id", "next_step_id", "next2_step_id", "mach_nos_next1", "mach_nos_next2", "prev_out_time", "priority_type", "due_date", "route_id", "current_seq_no" };
                     IRow headerRow = sheet.CreateRow(0);
                     for (int i = 0; i < headers.Length; i++)
                     {
@@ -937,6 +939,8 @@ namespace APSSimulator
                 using (var conn = new SQLiteConnection(DatabaseHelper.ConnectionString))
                 {
                     conn.Open();
+                    DatabaseHelper.EnsureOrdersTableColumns(conn);
+
                     // 1. 取得目前該工單對應的下一站 (即將進入的這一站) 資訊
                     string sqlGetThisStep = @"
                         SELECT r.seq_no, r.step_id, o.route_id
@@ -956,23 +960,40 @@ namespace APSSimulator
                                 string thisStepId = reader["step_id"].ToString();
                                 string routeId = reader["route_id"].ToString();
 
-                                // 2. 計算再下一站 (Next Step of Next Step)
+                                // 2. 計算再下一站 (N+1) 與再下二站 (N+2)
                                 string nextStepId = "END";
-                                string sqlGetNext = "SELECT step_id FROM mock_mes_route_def WHERE route_id = @rid AND seq_no > @seq ORDER BY seq_no ASC LIMIT 1";
-                                using (var nextCmd = new SQLiteCommand(sqlGetNext, conn))
+                                string next2StepId = "END";
+                                string sqlGetNext2 = "SELECT step_id FROM mock_mes_route_def WHERE route_id = @rid AND seq_no > @seq ORDER BY seq_no ASC LIMIT 2";
+                                using (var nextCmd = new SQLiteCommand(sqlGetNext2, conn))
                                 {
                                     nextCmd.Parameters.AddWithValue("@rid", routeId);
                                     nextCmd.Parameters.AddWithValue("@seq", thisSeq);
-                                    var result = nextCmd.ExecuteScalar();
-                                    if (result != null) nextStepId = result.ToString();
+                                    using (var r = nextCmd.ExecuteReader())
+                                    {
+                                        if (r.Read()) nextStepId = r["step_id"].ToString();
+                                        if (r.Read()) next2StepId = r["step_id"].ToString();
+                                    }
                                 }
 
+                                string machNext1 = DatabaseHelper.GetDefaultEqpsForStep(nextStepId);
+                                string machNext2 = DatabaseHelper.GetDefaultEqpsForStep(next2StepId);
+
                                 // 3. 執行更新
-                                string sqlUpdate = "UPDATE mock_mes_orders SET step_id = @sid, next_step_id = @nid, current_seq_no = @seq WHERE work_no = @wn";
+                                string sqlUpdate = @"UPDATE mock_mes_orders 
+                                    SET step_id = @sid, 
+                                        next_step_id = @nid, 
+                                        next2_step_id = @n2id, 
+                                        mach_nos_next1 = @m1, 
+                                        mach_nos_next2 = @m2, 
+                                        current_seq_no = @seq 
+                                    WHERE work_no = @wn";
                                 using (var updCmd = new SQLiteCommand(sqlUpdate, conn))
                                 {
                                     updCmd.Parameters.AddWithValue("@sid", thisStepId);
                                     updCmd.Parameters.AddWithValue("@nid", nextStepId);
+                                    updCmd.Parameters.AddWithValue("@n2id", next2StepId);
+                                    updCmd.Parameters.AddWithValue("@m1", machNext1);
+                                    updCmd.Parameters.AddWithValue("@m2", machNext2);
                                     updCmd.Parameters.AddWithValue("@seq", thisSeq);
                                     updCmd.Parameters.AddWithValue("@wn", workNo);
                                     updCmd.ExecuteNonQuery();
@@ -1020,7 +1041,7 @@ namespace APSSimulator
             using (var conn = new SQLiteConnection(DatabaseHelper.ConnectionString))
             {
                 conn.Open();
-                // 借用 MockMesRepository 來抓最新資料 (含計算後的 NextStepId)
+                // 借用 MockMesRepository 來抓最新資料 (含計算後的 NextStepId, Next2StepId)
                 var repo = new APSSimulator.DB.MockMesRepository();
                 var orders = repo.GetOrders(conn, new List<string> { workNo });
                 if (orders.Count > 0)
@@ -1028,6 +1049,9 @@ namespace APSSimulator
                     var o = orders[0];
                     row.Cells["colCurrentStep"].Value = o.StepId;
                     row.Cells["colNextStep"].Value = o.NextStepId;
+                    row.Cells["colMachNosNext1"].Value = o.MachNosNext1;
+                    row.Cells["colNext2Step"].Value = o.Next2StepId;
+                    row.Cells["colMachNosNext2"].Value = o.MachNosNext2;
                 }
             }
         }
@@ -1038,32 +1062,26 @@ namespace APSSimulator
             using (var conn = new SQLiteConnection(DatabaseHelper.ConnectionString))
             {
                 conn.Open();
-                string sql = "SELECT * FROM mock_mes_orders";
-                using (var cmd = new SQLiteCommand(sql, conn))
-                using (var reader = cmd.ExecuteReader())
+                var repo = new APSSimulator.DB.MockMesRepository();
+                var orders = repo.GetOrders(conn, null);
+                int pIndex = 1;
+                foreach (var o in orders)
                 {
-                    int pIndex = 1;
-                    while (reader.Read())
-                    {
-                        string workNo = reader["work_no"].ToString();
-                        string carrier = reader["carrier_id"].ToString();
-                        string step = reader["step_id"].ToString();
-                        string next = reader["next_step_id"].ToString(); // Note: This might be inaccurate if dynamic
-                        
-                        // Assign a virtual port for testing
-                        string portId = $"P{pIndex:D2}";
-                        pIndex++;
+                    string portId = $"P{pIndex:D2}";
+                    pIndex++;
 
-                        int idx = dgvTestList.Rows.Add();
-                        var row = dgvTestList.Rows[idx];
-                        row.Cells["colSelect"].Value = true; // Default selected
-                        row.Cells["colPortId"].Value = portId;
-                        row.Cells["colCassetteId"].Value = carrier;
-                        row.Cells["colWorkNo"].Value = workNo;
-                        row.Cells["colCurrentStep"].Value = step;
-                        row.Cells["colNextStep"].Value = next;
-                        row.Cells["colStatus"].Value = "Idle";
-                    }
+                    int idx = dgvTestList.Rows.Add();
+                    var row = dgvTestList.Rows[idx];
+                    row.Cells["colSelect"].Value = true; // Default selected
+                    row.Cells["colPortId"].Value = portId;
+                    row.Cells["colCassetteId"].Value = o.CarrierId;
+                    row.Cells["colWorkNo"].Value = o.WorkOrderNumber;
+                    row.Cells["colCurrentStep"].Value = o.StepId;
+                    row.Cells["colNextStep"].Value = o.NextStepId;
+                    row.Cells["colMachNosNext1"].Value = o.MachNosNext1;
+                    row.Cells["colNext2Step"].Value = o.Next2StepId;
+                    row.Cells["colMachNosNext2"].Value = o.MachNosNext2;
+                    row.Cells["colStatus"].Value = "Idle";
                 }
             }
         }

@@ -164,11 +164,12 @@ namespace APSSimulator.Server
                                     WorkCenterNo = o.StepId,
                                     WorkCenterName = "Mock Center",
                                     WCNext1 = o.NextStepId,
+                                    WCNext2 = o.Next2StepId,
                                     PreStepOutTime = DateTime.TryParse(o.PrevOutTime, out var t) ? t.ToString("yyyy-MM-dd HH:mm:ss") : DateTime.Now.AddHours(-1).ToString("yyyy-MM-dd HH:mm:ss"),
                                     Urgent = o.PriorityType > 0 ? "Y" : "N",
                                     EstimateProcessEndDate = DateTime.TryParse(o.DueDate, out var d) ? d.ToString("yyyy-MM-dd HH:mm:ss") : DateTime.Now.AddDays(2).ToString("yyyy-MM-dd HH:mm:ss"),
-                                    MachNosNext1 = string.IsNullOrEmpty(o.MachNosNext1) ? "LF0003,LF0014" : o.MachNosNext1,
-                                    MachNosNext2 = string.IsNullOrEmpty(o.MachNosNext2) ? "DR0026,DR0009" : o.MachNosNext2
+                                    MachNosNext1 = string.IsNullOrEmpty(o.MachNosNext1) ? DatabaseHelper.GetDefaultEqpsForStep(o.NextStepId) : o.MachNosNext1,
+                                    MachNosNext2 = string.IsNullOrEmpty(o.MachNosNext2) ? DatabaseHelper.GetDefaultEqpsForStep(o.Next2StepId) : o.MachNosNext2
                                 });
                             }
                             var reply = new { Result = "success", APSInfo_ByLot_Result = JsonConvert.SerializeObject(list) };

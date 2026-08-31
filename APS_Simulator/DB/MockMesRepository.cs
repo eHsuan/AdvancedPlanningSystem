@@ -11,6 +11,7 @@ namespace APSSimulator.DB
         {
             var list = new List<OrderInfoResponse>();
             // 使用傳入的 conn，不需再 Open/Dispose
+            DatabaseHelper.EnsureOrdersTableColumns(conn);
             
             string sql = "SELECT * FROM mock_mes_orders"; 
             
@@ -27,10 +28,14 @@ namespace APSSimulator.DB
                     int currSeq = reader["current_seq_no"] == DBNull.Value ? 0 : Convert.ToInt32(reader["current_seq_no"]);
                     string currStep = reader["step_id"] == DBNull.Value ? "" : reader["step_id"].ToString();
 
-                    string nextStep = GetNextStep(conn, routeId, currSeq);
+                    GetNextSteps(conn, routeId, currSeq, out string nextStep, out string next2Step);
 
-                    // 注意: 新 Schema 沒有 lot_id, part_no, quantity, status
-                    // 為了相容 Model，我們給預設值，或盡量從現有欄位對應
+                    string mach1 = reader["mach_nos_next1"] != DBNull.Value ? reader["mach_nos_next1"].ToString() : "";
+                    if (string.IsNullOrEmpty(mach1)) mach1 = DatabaseHelper.GetDefaultEqpsForStep(nextStep);
+
+                    string mach2 = reader["mach_nos_next2"] != DBNull.Value ? reader["mach_nos_next2"].ToString() : "";
+                    if (string.IsNullOrEmpty(mach2)) mach2 = DatabaseHelper.GetDefaultEqpsForStep(next2Step);
+
                     list.Add(new OrderInfoResponse
                     {
                         WorkOrderNumber = wo,
@@ -41,6 +46,9 @@ namespace APSSimulator.DB
                         Status = "Released",
                         StepId = currStep,
                         NextStepId = nextStep,
+                        Next2StepId = next2Step,
+                        MachNosNext1 = mach1,
+                        MachNosNext2 = mach2,
                         RouteId = routeId,
                         CurrentSeqNo = currSeq,
                         PriorityType = reader["priority_type"] == DBNull.Value ? 0 : Convert.ToInt32(reader["priority_type"]),
@@ -52,23 +60,28 @@ namespace APSSimulator.DB
             return list;
         }
 
-        private string GetNextStep(SQLiteConnection conn, string routeId, int currentSeq)
+        private void GetNextSteps(SQLiteConnection conn, string routeId, int currentSeq, out string nextStep, out string next2Step)
         {
-            if (string.IsNullOrEmpty(routeId)) return null;
+            nextStep = "END";
+            next2Step = "END";
+            if (string.IsNullOrEmpty(routeId)) return;
 
             string sql = @"
                 SELECT step_id 
                 FROM mock_mes_route_def 
                 WHERE route_id = @rid AND seq_no > @seq 
                 ORDER BY seq_no ASC 
-                LIMIT 1";
+                LIMIT 2";
             
             using (var cmd = new SQLiteCommand(sql, conn))
             {
                 cmd.Parameters.AddWithValue("@rid", routeId);
                 cmd.Parameters.AddWithValue("@seq", currentSeq);
-                object result = cmd.ExecuteScalar();
-                return result != null ? result.ToString() : "END";
+                using (var r = cmd.ExecuteReader())
+                {
+                    if (r.Read()) nextStep = r["step_id"].ToString();
+                    if (r.Read()) next2Step = r["step_id"].ToString();
+                }
             }
         }
     }

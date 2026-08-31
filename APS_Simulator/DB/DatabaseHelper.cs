@@ -25,6 +25,65 @@ namespace APSSimulator.DB
             ResetDatabase();
         }
 
+        public static void EnsureOrdersTableColumns(SQLiteConnection conn)
+        {
+            try
+            {
+                var columns = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                using (var cmd = new SQLiteCommand("PRAGMA table_info(mock_mes_orders);", conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        columns.Add(reader["name"].ToString());
+                    }
+                }
+
+                if (!columns.Contains("next2_step_id"))
+                {
+                    using (var cmd = new SQLiteCommand("ALTER TABLE mock_mes_orders ADD COLUMN next2_step_id TEXT;", conn))
+                        cmd.ExecuteNonQuery();
+                }
+                if (!columns.Contains("mach_nos_next1"))
+                {
+                    using (var cmd = new SQLiteCommand("ALTER TABLE mock_mes_orders ADD COLUMN mach_nos_next1 TEXT;", conn))
+                        cmd.ExecuteNonQuery();
+                }
+                if (!columns.Contains("mach_nos_next2"))
+                {
+                    using (var cmd = new SQLiteCommand("ALTER TABLE mock_mes_orders ADD COLUMN mach_nos_next2 TEXT;", conn))
+                        cmd.ExecuteNonQuery();
+                }
+            }
+            catch { }
+        }
+
+        public static string GetDefaultEqpsForStep(string stepId)
+        {
+            if (string.IsNullOrEmpty(stepId) || stepId == "END") return "";
+            
+            stepId = stepId.ToUpper();
+            if (stepId.StartsWith("UPET")) return "ET0023,ET0026";
+            if (stepId.StartsWith("UPLA")) return "DR0026,DR0009";
+            if (stepId.StartsWith("UPDR")) return "DL0017,DS0003";
+            if (stepId.StartsWith("UPCL")) return "CL0201,CL0022";
+            if (stepId.StartsWith("UPRO") || stepId.StartsWith("UPBO")) return "CL0200";
+            if (stepId.StartsWith("UPSP")) return "SP0002,SP0004";
+            if (stepId.StartsWith("UPLM") || stepId.StartsWith("UPPA") || stepId.StartsWith("UPRM")) return "LF0003,LF0014";
+            if (stepId.StartsWith("UPPR")) return "PR0254,PR0518";
+            if (stepId.StartsWith("UPEX")) return "EX0028,EX0044";
+            if (stepId.StartsWith("UPDE")) return "DE0025,DE0005";
+            if (stepId.StartsWith("UPPL")) return "PL0084,PL0007,PL0088";
+            if (stepId.StartsWith("UPDF")) return "ST0012";
+            if (stepId.StartsWith("UPOV")) return "OV0805,OV1241";
+            if (stepId.StartsWith("UPSC") || stepId.StartsWith("UPQC")) return "VC0680,VC0497";
+            if (stepId.StartsWith("UPDB") || stepId.StartsWith("UPST") || stepId.StartsWith("UPRE")) return "SM0006,SM0014,SM0054";
+            if (stepId.StartsWith("UPSL")) return "CU0551,CU0646";
+            if (stepId.StartsWith("UPTE") || stepId.StartsWith("UPPK")) return "TP1660,TP1661,TP1793";
+
+            return "LF0003,LF0014";
+        }
+
         public static void SyncExternalDbFromMesOrders()
         {
             // 1. 確保外部資料庫存在
@@ -101,8 +160,8 @@ namespace APSSimulator.DB
                     try
                     {
                         string insSql = @"INSERT INTO mock_mes_orders 
-                            (work_no, carrier_id, step_id, next_step_id, prev_out_time, priority_type, due_date, route_id, current_seq_no) 
-                            VALUES (@wn, @cid, @sid, @nid, @prev, @pri, @due, '03SEC', @cseq)";
+                            (work_no, carrier_id, step_id, next_step_id, next2_step_id, mach_nos_next1, mach_nos_next2, prev_out_time, priority_type, due_date, route_id, current_seq_no) 
+                            VALUES (@wn, @cid, @sid, @nid, @n2id, @m1, @m2, @prev, @pri, @due, '03SEC', @cseq)";
 
                         for (int i = 0; i < count; i++)
                         {
@@ -113,6 +172,9 @@ namespace APSSimulator.DB
                             int idx = random.Next(0, routeList.Count - 1);
                             var current = routeList[idx];
                             var next = routeList[idx + 1];
+                            string next2 = (idx + 2 < routeList.Count) ? routeList[idx + 2].StepId : "END";
+                            string machNext1 = GetDefaultEqpsForStep(next.StepId);
+                            string machNext2 = GetDefaultEqpsForStep(next2);
 
                             string prevOut = DateTime.Now.AddMinutes(-random.Next(1, 101)).ToString("yyyyMMddHHmmss");
                             string dueDate = DateTime.Now.AddDays(random.Next(1, 11)).ToString("yyyyMMddHHmmss");
@@ -124,6 +186,9 @@ namespace APSSimulator.DB
                                 cmd.Parameters.AddWithValue("@cid", cid);
                                 cmd.Parameters.AddWithValue("@sid", current.StepId);
                                 cmd.Parameters.AddWithValue("@nid", next.StepId);
+                                cmd.Parameters.AddWithValue("@n2id", next2);
+                                cmd.Parameters.AddWithValue("@m1", machNext1);
+                                cmd.Parameters.AddWithValue("@m2", machNext2);
                                 cmd.Parameters.AddWithValue("@prev", prevOut);
                                 cmd.Parameters.AddWithValue("@pri", priority);
                                 cmd.Parameters.AddWithValue("@due", dueDate);
@@ -168,8 +233,8 @@ namespace APSSimulator.DB
                     try
                     {
                         string insSql = @"INSERT INTO mock_mes_orders 
-                            (work_no, carrier_id, step_id, next_step_id, prev_out_time, priority_type, due_date, route_id, current_seq_no) 
-                            VALUES (@wn, @cid, @sid, @nid, @prev, @pri, @due, '03SEC', @cseq)";
+                            (work_no, carrier_id, step_id, next_step_id, next2_step_id, mach_nos_next1, mach_nos_next2, prev_out_time, priority_type, due_date, route_id, current_seq_no) 
+                            VALUES (@wn, @cid, @sid, @nid, @n2id, @m1, @m2, @prev, @pri, @due, '03SEC', @cseq)";
 
                         foreach (var workNo in workNos)
                         {
@@ -182,6 +247,9 @@ namespace APSSimulator.DB
                             int idx = random.Next(0, routeList.Count - 1);
                             var current = routeList[idx];
                             var next = routeList[idx + 1];
+                            string next2 = (idx + 2 < routeList.Count) ? routeList[idx + 2].StepId : "END";
+                            string machNext1 = GetDefaultEqpsForStep(next.StepId);
+                            string machNext2 = GetDefaultEqpsForStep(next2);
 
                             string prevOut = DateTime.Now.AddMinutes(-random.Next(1, 101)).ToString("yyyyMMddHHmmss");
                             string dueDate = DateTime.Now.AddDays(random.Next(1, 11)).ToString("yyyyMMddHHmmss");
@@ -193,6 +261,9 @@ namespace APSSimulator.DB
                                 cmd.Parameters.AddWithValue("@cid", cid);
                                 cmd.Parameters.AddWithValue("@sid", current.StepId);
                                 cmd.Parameters.AddWithValue("@nid", next.StepId);
+                                cmd.Parameters.AddWithValue("@n2id", next2);
+                                cmd.Parameters.AddWithValue("@m1", machNext1);
+                                cmd.Parameters.AddWithValue("@m2", machNext2);
                                 cmd.Parameters.AddWithValue("@prev", prevOut);
                                 cmd.Parameters.AddWithValue("@pri", priority);
                                 cmd.Parameters.AddWithValue("@due", dueDate);
@@ -290,6 +361,9 @@ namespace APSSimulator.DB
                     carrier_id TEXT,
                     step_id TEXT,
                     next_step_id TEXT,
+                    next2_step_id TEXT,
+                    mach_nos_next1 TEXT,
+                    mach_nos_next2 TEXT,
                     prev_out_time TEXT,
                     priority_type INTEGER DEFAULT 0,
                     due_date TEXT,
@@ -683,7 +757,7 @@ namespace APSSimulator.DB
         {
             var random = new Random();
             var sb = new StringBuilder();
-            sb.Append("INSERT INTO mock_mes_orders (work_no, carrier_id, step_id, next_step_id, prev_out_time, priority_type, due_date, route_id, current_seq_no) VALUES ");
+            sb.Append("INSERT INTO mock_mes_orders (work_no, carrier_id, step_id, next_step_id, next2_step_id, mach_nos_next1, mach_nos_next2, prev_out_time, priority_type, due_date, route_id, current_seq_no) VALUES ");
 
             var orders = new[]
             {
@@ -704,7 +778,7 @@ namespace APSSimulator.DB
             {
                 string prevOut = DateTime.Now.AddMinutes(-random.Next(1, 101)).ToString("yyyyMMddHHmmss");
                 string dueDate = DateTime.Now.AddDays(random.Next(1, 10)).ToString("yyyyMMddHHmmss");
-                sb.Append($"('{o.wn}', '{o.cid}', 'UPET002', 'UPET003', '{prevOut}', {o.pri}, '{dueDate}', '03SEC', 5400),");
+                sb.Append($"('{o.wn}', '{o.cid}', 'UPET002', 'UPET003', 'UPET017', 'ET0023,ET0026', 'ET0026', '{prevOut}', {o.pri}, '{dueDate}', '03SEC', 5400),");
             }
 
             if (sb.Length > 0 && sb[sb.Length - 1] == ',')

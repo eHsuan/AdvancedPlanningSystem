@@ -30,6 +30,9 @@ namespace APSSimulator.Models
         [JsonProperty("next_step_id")]
         public string NextStepId { get; set; }
 
+        [JsonProperty("next2_step_id")]
+        public string Next2StepId { get; set; }
+
         [JsonProperty("route_id")] // 協議沒明確列出，但內部邏輯可能需要
         public string RouteId { get; set; }
 

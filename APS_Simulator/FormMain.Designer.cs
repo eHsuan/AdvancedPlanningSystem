@@ -51,6 +51,9 @@ namespace APSSimulator
             this.colWorkNo = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colCurrentStep = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colNextStep = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colMachNosNext1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colNext2Step = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colMachNosNext2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colTargetEqp = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colStatus = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colAction = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -285,6 +288,9 @@ namespace APSSimulator
             this.colWorkNo,
             this.colCurrentStep,
             this.colNextStep,
+            this.colMachNosNext1,
+            this.colNext2Step,
+            this.colMachNosNext2,
             this.colTargetEqp,
             this.colStatus,
             this.colAction});
@@ -328,8 +334,26 @@ namespace APSSimulator
             // 
             // colNextStep
             // 
-            this.colNextStep.HeaderText = "下一站";
+            this.colNextStep.HeaderText = "下一站 (N+1)";
             this.colNextStep.Name = "colNextStep";
+            // 
+            // colMachNosNext1
+            // 
+            this.colMachNosNext1.HeaderText = "下一站機台 (N+1)";
+            this.colMachNosNext1.Name = "colMachNosNext1";
+            this.colMachNosNext1.Width = 120;
+            // 
+            // colNext2Step
+            // 
+            this.colNext2Step.HeaderText = "下二站 (N+2)";
+            this.colNext2Step.Name = "colNext2Step";
+            this.colNext2Step.Width = 100;
+            // 
+            // colMachNosNext2
+            // 
+            this.colMachNosNext2.HeaderText = "下二站機台 (N+2)";
+            this.colMachNosNext2.Name = "colMachNosNext2";
+            this.colMachNosNext2.Width = 120;
             // 
             // colTargetEqp
             // 
@@ -761,6 +785,9 @@ namespace APSSimulator
         private System.Windows.Forms.DataGridViewTextBoxColumn colWorkNo;
         private System.Windows.Forms.DataGridViewTextBoxColumn colCurrentStep;
         private System.Windows.Forms.DataGridViewTextBoxColumn colNextStep;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colMachNosNext1;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colNext2Step;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colMachNosNext2;
         private System.Windows.Forms.DataGridViewTextBoxColumn colTargetEqp;
         private System.Windows.Forms.DataGridViewTextBoxColumn colStatus;
         private System.Windows.Forms.DataGridViewTextBoxColumn colAction;

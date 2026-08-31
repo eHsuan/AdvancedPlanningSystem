@@ -59,6 +59,7 @@ namespace APSSimulator
             this.colAction = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.ctxMenuRow = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.menuScan = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuPlace = new System.Windows.Forms.ToolStripMenuItem();
             this.menuPick = new System.Windows.Forms.ToolStripMenuItem();
             this.menuEnterEq = new System.Windows.Forms.ToolStripMenuItem();
             this.txtClientLog = new System.Windows.Forms.TextBox();
@@ -67,6 +68,7 @@ namespace APSSimulator
             this.btnDeselectAll = new System.Windows.Forms.Button();
             this.btnEnterEq = new System.Windows.Forms.Button();
             this.btnBatchPick = new System.Windows.Forms.Button();
+            this.btnBatchPlace = new System.Windows.Forms.Button();
             this.btnBatchScan = new System.Windows.Forms.Button();
             this.btnLoadDefault = new System.Windows.Forms.Button();
             this.grpClientConfig = new System.Windows.Forms.GroupBox();
@@ -377,29 +379,37 @@ namespace APSSimulator
             // 
             this.ctxMenuRow.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuScan,
+            this.menuPlace,
             this.menuPick,
             this.menuEnterEq});
             this.ctxMenuRow.Name = "ctxMenuRow";
-            this.ctxMenuRow.Size = new System.Drawing.Size(179, 70);
+            this.ctxMenuRow.Size = new System.Drawing.Size(185, 92);
             // 
             // menuScan
             // 
             this.menuScan.Name = "menuScan";
-            this.menuScan.Size = new System.Drawing.Size(178, 22);
+            this.menuScan.Size = new System.Drawing.Size(184, 22);
             this.menuScan.Text = "單獨入庫 (Scan)";
             this.menuScan.Click += new System.EventHandler(this.menuScan_Click);
+            // 
+            // menuPlace
+            // 
+            this.menuPlace.Name = "menuPlace";
+            this.menuPlace.Size = new System.Drawing.Size(184, 22);
+            this.menuPlace.Text = "單獨立置/置入 (Place)";
+            this.menuPlace.Click += new System.EventHandler(this.menuPlace_Click);
             // 
             // menuPick
             // 
             this.menuPick.Name = "menuPick";
-            this.menuPick.Size = new System.Drawing.Size(178, 22);
+            this.menuPick.Size = new System.Drawing.Size(184, 22);
             this.menuPick.Text = "單獨取走 (Pick)";
             this.menuPick.Click += new System.EventHandler(this.menuPick_Click);
             // 
             // menuEnterEq
             // 
             this.menuEnterEq.Name = "menuEnterEq";
-            this.menuEnterEq.Size = new System.Drawing.Size(178, 22);
+            this.menuEnterEq.Size = new System.Drawing.Size(184, 22);
             this.menuEnterEq.Text = "進入機台 (Track-In)";
             this.menuEnterEq.Click += new System.EventHandler(this.menuEnterEq_Click);
             // 
@@ -419,6 +429,7 @@ namespace APSSimulator
             this.grpPersonOp.Controls.Add(this.btnDeselectAll);
             this.grpPersonOp.Controls.Add(this.btnEnterEq);
             this.grpPersonOp.Controls.Add(this.btnBatchPick);
+            this.grpPersonOp.Controls.Add(this.btnBatchPlace);
             this.grpPersonOp.Controls.Add(this.btnBatchScan);
             this.grpPersonOp.Controls.Add(this.btnLoadDefault);
             this.grpPersonOp.Controls.Add(this.grpClientConfig);
@@ -432,57 +443,70 @@ namespace APSSimulator
             // 
             // btnSelectAll
             // 
-            this.btnSelectAll.Location = new System.Drawing.Point(20, 70);
+            this.btnSelectAll.Location = new System.Drawing.Point(10, 65);
             this.btnSelectAll.Name = "btnSelectAll";
-            this.btnSelectAll.Size = new System.Drawing.Size(60, 25);
+            this.btnSelectAll.Size = new System.Drawing.Size(48, 26);
             this.btnSelectAll.TabIndex = 11;
             this.btnSelectAll.Text = "全選";
             this.btnSelectAll.UseVisualStyleBackColor = true;
             // 
             // btnDeselectAll
             // 
-            this.btnDeselectAll.Location = new System.Drawing.Point(85, 70);
+            this.btnDeselectAll.Location = new System.Drawing.Point(62, 65);
             this.btnDeselectAll.Name = "btnDeselectAll";
-            this.btnDeselectAll.Size = new System.Drawing.Size(60, 25);
+            this.btnDeselectAll.Size = new System.Drawing.Size(48, 26);
             this.btnDeselectAll.TabIndex = 12;
-            this.btnDeselectAll.Text = "全取消";
+            this.btnDeselectAll.Text = "取消";
             this.btnDeselectAll.UseVisualStyleBackColor = true;
             // 
-            // btnEnterEq
+            // btnLoadDefault
             // 
-            this.btnEnterEq.BackColor = System.Drawing.Color.Orange;
-            this.btnEnterEq.Location = new System.Drawing.Point(410, 25);
-            this.btnEnterEq.Name = "btnEnterEq";
-            this.btnEnterEq.Size = new System.Drawing.Size(120, 40);
-            this.btnEnterEq.TabIndex = 10;
-            this.btnEnterEq.Text = "批量進入機台";
-            this.btnEnterEq.UseVisualStyleBackColor = false;
-            // 
-            // btnBatchPick
-            // 
-            this.btnBatchPick.BackColor = System.Drawing.Color.LightGreen;
-            this.btnBatchPick.Location = new System.Drawing.Point(280, 25);
-            this.btnBatchPick.Name = "btnBatchPick";
-            this.btnBatchPick.Size = new System.Drawing.Size(120, 40);
-            this.btnBatchPick.TabIndex = 9;
-            this.btnBatchPick.Text = "批量取走 (PICK)";
-            this.btnBatchPick.UseVisualStyleBackColor = false;
+            this.btnLoadDefault.Location = new System.Drawing.Point(10, 22);
+            this.btnLoadDefault.Name = "btnLoadDefault";
+            this.btnLoadDefault.Size = new System.Drawing.Size(100, 38);
+            this.btnLoadDefault.TabIndex = 7;
+            this.btnLoadDefault.Text = "載入預設列表";
+            this.btnLoadDefault.UseVisualStyleBackColor = true;
             // 
             // btnBatchScan
             // 
             this.btnBatchScan.BackColor = System.Drawing.Color.LightBlue;
-            this.btnBatchScan.Location = new System.Drawing.Point(150, 25);
+            this.btnBatchScan.Location = new System.Drawing.Point(115, 22);
             this.btnBatchScan.Name = "btnBatchScan";
-            this.btnBatchScan.Size = new System.Drawing.Size(120, 40);
+            this.btnBatchScan.Size = new System.Drawing.Size(100, 38);
             this.btnBatchScan.TabIndex = 8;
             this.btnBatchScan.Text = "批量入庫 (SCAN)";
             this.btnBatchScan.UseVisualStyleBackColor = false;
             // 
-            // btnLoadDefault
+            // btnBatchPlace
             // 
-            this.btnLoadDefault.Location = new System.Drawing.Point(20, 25);
-            this.btnLoadDefault.Name = "btnLoadDefault";
-            this.btnLoadDefault.Size = new System.Drawing.Size(120, 40);
+            this.btnBatchPlace.BackColor = System.Drawing.Color.SandyBrown;
+            this.btnBatchPlace.Location = new System.Drawing.Point(220, 22);
+            this.btnBatchPlace.Name = "btnBatchPlace";
+            this.btnBatchPlace.Size = new System.Drawing.Size(100, 38);
+            this.btnBatchPlace.TabIndex = 13;
+            this.btnBatchPlace.Text = "批量置入 (PLACE)";
+            this.btnBatchPlace.UseVisualStyleBackColor = false;
+            // 
+            // btnBatchPick
+            // 
+            this.btnBatchPick.BackColor = System.Drawing.Color.LightGreen;
+            this.btnBatchPick.Location = new System.Drawing.Point(325, 22);
+            this.btnBatchPick.Name = "btnBatchPick";
+            this.btnBatchPick.Size = new System.Drawing.Size(100, 38);
+            this.btnBatchPick.TabIndex = 9;
+            this.btnBatchPick.Text = "批量取走 (PICK)";
+            this.btnBatchPick.UseVisualStyleBackColor = false;
+            // 
+            // btnEnterEq
+            // 
+            this.btnEnterEq.BackColor = System.Drawing.Color.Orange;
+            this.btnEnterEq.Location = new System.Drawing.Point(430, 22);
+            this.btnEnterEq.Name = "btnEnterEq";
+            this.btnEnterEq.Size = new System.Drawing.Size(105, 38);
+            this.btnEnterEq.TabIndex = 10;
+            this.btnEnterEq.Text = "批量進入機台";
+            this.btnEnterEq.UseVisualStyleBackColor = false;
             this.btnLoadDefault.TabIndex = 7;
             this.btnLoadDefault.Text = "載入預設列表";
             this.btnLoadDefault.UseVisualStyleBackColor = true;
@@ -826,8 +850,10 @@ namespace APSSimulator
         private System.Windows.Forms.NumericUpDown numMesPort;
         private System.Windows.Forms.Button btnSelectAll;
         private System.Windows.Forms.Button btnDeselectAll;
+        private System.Windows.Forms.Button btnBatchPlace;
         private System.Windows.Forms.ContextMenuStrip ctxMenuRow;
         private System.Windows.Forms.ToolStripMenuItem menuScan;
+        private System.Windows.Forms.ToolStripMenuItem menuPlace;
         private System.Windows.Forms.ToolStripMenuItem menuPick;
         private System.Windows.Forms.ToolStripMenuItem menuEnterEq;
     }

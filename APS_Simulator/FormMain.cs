@@ -732,6 +732,14 @@ namespace APSSimulator
                 }
             };
 
+            btnBatchPlace.Click += async (s, e) => {
+                foreach (DataGridViewRow row in dgvTestList.Rows)
+                {
+                    if (row.IsNewRow || !Convert.ToBoolean(row.Cells["colSelect"].Value)) continue;
+                    await ProcessPlaceForRow(row);
+                }
+            };
+
             btnBatchPick.Click += async (s, e) => {
                 foreach (DataGridViewRow row in dgvTestList.Rows)
                 {
@@ -830,6 +838,18 @@ namespace APSSimulator
             }
         }
 
+        private async Task ProcessPlaceForRow(DataGridViewRow row)
+        {
+            string port = row.Cells["colPortId"].Value?.ToString();
+            if (!string.IsNullOrEmpty(port))
+            {
+                await _apsClient.PlaceAsync(port);
+                row.Cells["colStatus"].Value = "Placed (Occupied)";
+                row.DefaultCellStyle.BackColor = Color.LightYellow;
+                await System.Threading.Tasks.Task.Delay(100);
+            }
+        }
+
         private async Task ProcessPickForRow(DataGridViewRow row)
         {
             string port = row.Cells["colPortId"].Value?.ToString();
@@ -895,6 +915,11 @@ namespace APSSimulator
         private async void menuScan_Click(object sender, EventArgs e)
         {
             if (dgvTestList.SelectedRows.Count > 0) await ProcessScanForRow(dgvTestList.SelectedRows[0]);
+        }
+
+        private async void menuPlace_Click(object sender, EventArgs e)
+        {
+            if (dgvTestList.SelectedRows.Count > 0) await ProcessPlaceForRow(dgvTestList.SelectedRows[0]);
         }
 
         private async void menuPick_Click(object sender, EventArgs e)

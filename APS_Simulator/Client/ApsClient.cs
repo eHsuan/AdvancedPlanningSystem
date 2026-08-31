@@ -201,6 +201,11 @@ namespace APSSimulator.Client
             await SendCommandAsync($"PICK,{portId};");
         }
 
+        public async Task PlaceAsync(string portId)
+        {
+            await SendCommandAsync($"PLACE,{portId};");
+        }
+
         private void Log(string msg)
         {
             OnLog?.Invoke(msg);

@@ -96,7 +96,7 @@ namespace AdvancedPlanningSystem
         // public static string ConnectionString = "...";
 
         // PLC 設定
-        public static bool PlcEnabled = true;
+        public static bool PlcEnabled = false;
         public static string PlcIp = "192.168.1.10";
         public static int PlcPort = 6000;
         public static string PlcBarcodeBaseAddress = "D1000";

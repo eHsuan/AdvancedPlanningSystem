@@ -1110,6 +1110,42 @@ namespace APSSimulator
                         cmd.Parameters.AddWithValue("@id", eqpId);
                         cmd.ExecuteNonQuery();
                     }
+
+                    // 取得更新後的 WIP 並即時更新 UI 卡片
+                    string qrySql = "SELECT current_wip_qty FROM mock_mes_equipments WHERE eqp_id = @id";
+                    using (var qCmd = new SQLiteCommand(qrySql, conn))
+                    {
+                        qCmd.Parameters.AddWithValue("@id", eqpId);
+                        object val = qCmd.ExecuteScalar();
+                        if (val != null)
+                        {
+                            int newWip = Convert.ToInt32(val);
+                            if (flowLayoutPanelMachines.InvokeRequired)
+                            {
+                                flowLayoutPanelMachines.Invoke(new Action(() => {
+                                    foreach (Control c in flowLayoutPanelMachines.Controls)
+                                    {
+                                        if (c is MachineControl mc && mc.EqpId == eqpId)
+                                        {
+                                            mc.UpdateWipDisplay(newWip);
+                                            break;
+                                        }
+                                    }
+                                }));
+                            }
+                            else
+                            {
+                                foreach (Control c in flowLayoutPanelMachines.Controls)
+                                {
+                                    if (c is MachineControl mc && mc.EqpId == eqpId)
+                                    {
+                                        mc.UpdateWipDisplay(newWip);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -1197,7 +1233,7 @@ namespace APSSimulator
             using (var conn = new SQLiteConnection(DatabaseHelper.ConnectionString))
             {
                 conn.Open();
-                string sql = "UPDATE mock_mes_equipments SET status = @s WHERE eqp_id = @id";
+                string sql = "UPDATE mock_mes_equipments SET status = @s, status_duration = 0 WHERE eqp_id = @id";
                 using (var cmd = new SQLiteCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@s", status);

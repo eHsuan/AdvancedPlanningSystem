@@ -1,6 +1,7 @@
 using System;
 using System.Data.SQLite;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace APSSimulator.DB
@@ -65,7 +66,7 @@ namespace APSSimulator.DB
             stepId = stepId.ToUpper();
             if (stepId.StartsWith("UPET")) return "ET0023,ET0026";
             if (stepId.StartsWith("UPLA")) return "DR0026,DR0009";
-            if (stepId.StartsWith("UPDR")) return "DL0017,DS0003";
+            if (stepId.StartsWith("UPDR") || stepId.StartsWith("UPO2")) return "DL0017,DS0003";
             if (stepId.StartsWith("UPCL")) return "CL0201,CL0022";
             if (stepId.StartsWith("UPRO") || stepId.StartsWith("UPBO")) return "CL0200";
             if (stepId.StartsWith("UPSP")) return "SP0002,SP0004";
@@ -151,10 +152,26 @@ namespace APSSimulator.DB
 
                 if (routeList.Count < 2) return;
 
-                // 2. 清空舊工單
+                // 2. 建立具備有效機台對應的站點索引清單
+                var validIndices = new System.Collections.Generic.List<int>();
+                for (int j = 0; j < routeList.Count - 1; j++)
+                {
+                    string nextStep = routeList[j + 1].StepId;
+                    string m1 = GetDefaultEqpsForStep(nextStep);
+                    if (!string.IsNullOrEmpty(m1))
+                    {
+                        validIndices.Add(j);
+                    }
+                }
+                if (validIndices.Count == 0)
+                {
+                    for (int j = 0; j < routeList.Count - 1; j++) validIndices.Add(j);
+                }
+
+                // 3. 清空舊工單
                 using (var cmd = new SQLiteCommand("DELETE FROM mock_mes_orders", conn)) { cmd.ExecuteNonQuery(); }
 
-                // 3. 生成並插入
+                // 4. 生成並插入
                 using (var trans = conn.BeginTransaction())
                 {
                     try
@@ -167,9 +184,12 @@ namespace APSSimulator.DB
                         int fixedIdx = 0;
                         if (isN2Aligned)
                         {
-                            // 優先挑選具有次次站 (非 END) 的站點
-                            int maxValidIdx = (routeList.Count >= 3) ? routeList.Count - 2 : routeList.Count - 1;
-                            fixedIdx = random.Next(0, maxValidIdx);
+                            var n2Candidates = validIndices.Where(i => i + 2 < routeList.Count && !string.IsNullOrEmpty(GetDefaultEqpsForStep(routeList[i + 2].StepId))).ToList();
+                            if (n2Candidates.Count > 0)
+                            {
+                                validIndices = n2Candidates;
+                            }
+                            fixedIdx = random.Next(0, validIndices.Count);
                         }
 
                         for (int i = 0; i < count; i++)
@@ -177,8 +197,8 @@ namespace APSSimulator.DB
                             string wn = "2P" + RandomAlphanumeric(10, random);
                             string cid = RandomAlphanumeric(6, random);
                             
-                            // 站點選擇：N+2 對齊模式固定站點，一般模式隨機選站
-                            int idx = isN2Aligned ? fixedIdx : random.Next(0, routeList.Count - 1);
+                            // 站點選擇：N+2 對齊模式固定站點，一般模式從有效站點列表中隨機選站
+                            int idx = isN2Aligned ? validIndices[fixedIdx] : validIndices[random.Next(0, validIndices.Count)];
                             var current = routeList[idx];
                             var next = routeList[idx + 1];
                             string next2 = (idx + 2 < routeList.Count) ? routeList[idx + 2].StepId : "END";
@@ -233,6 +253,21 @@ namespace APSSimulator.DB
 
                 if (routeList.Count < 2) return;
 
+                var validIndices = new System.Collections.Generic.List<int>();
+                for (int j = 0; j < routeList.Count - 1; j++)
+                {
+                    string nextStep = routeList[j + 1].StepId;
+                    string m1 = GetDefaultEqpsForStep(nextStep);
+                    if (!string.IsNullOrEmpty(m1))
+                    {
+                        validIndices.Add(j);
+                    }
+                }
+                if (validIndices.Count == 0)
+                {
+                    for (int j = 0; j < routeList.Count - 1; j++) validIndices.Add(j);
+                }
+
                 // 2. 清空舊工單
                 using (var cmd = new SQLiteCommand("DELETE FROM mock_mes_orders", conn)) { cmd.ExecuteNonQuery(); }
 
@@ -252,8 +287,8 @@ namespace APSSimulator.DB
                             
                             string cid = RandomAlphanumeric(6, random);
                             
-                            // 隨機選一個步驟，必須有下一個步驟
-                            int idx = random.Next(0, routeList.Count - 1);
+                            // 從有效站點列表中隨機選站
+                            int idx = validIndices[random.Next(0, validIndices.Count)];
                             var current = routeList[idx];
                             var next = routeList[idx + 1];
                             string next2 = (idx + 2 < routeList.Count) ? routeList[idx + 2].StepId : "END";

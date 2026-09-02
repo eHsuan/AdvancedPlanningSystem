@@ -26,6 +26,9 @@ namespace AdvancedPlanningSystem
                 log4net.Config.XmlConfigurator.Configure();
             }
 
+            // [Configuration] 載入外部 appsettings.json 設定
+            AppConfig.Load();
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new FormMain());

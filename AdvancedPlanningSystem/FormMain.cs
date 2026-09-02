@@ -59,12 +59,6 @@ namespace AdvancedPlanningSystem
             preAssignTimer.Tick += (s, e) => CheckPreAssignTimeouts();
             preAssignTimer.Start();
 
-            // Bind button events
-            this.btnGlobalMonitor.Click += BtnGlobalMonitor_Click;
-            this.btnTransitMonitor.Click += (s, e) => new TransitMonitorForm().Show();
-            this.btnEqpMonitor.Click += (s, e) => new EqpMonitorForm().Show();
-            this.btnSystemTest.Click += (s, e) => new TestForm(_mesService, _plcService).Show();
-
             // Start UI Refresh Timer (1s interval)
             var uiTimer = new Timer();
             uiTimer.Interval = 1000;
@@ -181,10 +175,25 @@ namespace AdvancedPlanningSystem
             InitializeCommunications();
         }
 
-        private void BtnGlobalMonitor_Click(object sender, EventArgs e)
+        private void btnGlobalMonitor_Click(object sender, EventArgs e)
         {
             GlobalMonitorForm monitorForm = new GlobalMonitorForm();
             monitorForm.Show();
+        }
+
+        private void btnTransitMonitor_Click(object sender, EventArgs e)
+        {
+            new TransitMonitorForm().Show();
+        }
+
+        private void btnEqpMonitor_Click(object sender, EventArgs e)
+        {
+            new EqpMonitorForm().Show();
+        }
+
+        private void btnSystemTest_Click(object sender, EventArgs e)
+        {
+            new TestForm(_mesService, _plcService).Show();
         }
 
         public void GenerateShelfGrid(int rows, int cols, int targetCount)

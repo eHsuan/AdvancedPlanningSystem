@@ -60,22 +60,76 @@ namespace AdvancedPlanningSystem
             // pnlHeader
             // 
             pnlHeader.BackColor = System.Drawing.Color.DarkGray;
-            pnlHeader.Controls.Add(btnStockIn);
             pnlHeader.Controls.Add(lblModeDisplay);
-            pnlHeader.Controls.Add(btnSystemTest);
-            pnlHeader.Controls.Add(btnManualSync);
-            pnlHeader.Controls.Add(flpLegend);
-            pnlHeader.Controls.Add(btnGlobalMonitor);
-            pnlHeader.Controls.Add(btnTransitMonitor);
-            pnlHeader.Controls.Add(btnEqpMonitor);
             pnlHeader.Controls.Add(pnlSimStatus);
             pnlHeader.Controls.Add(lblSimStatus);
+            pnlHeader.Controls.Add(btnManualSync);
+            pnlHeader.Controls.Add(btnStockIn);
+            pnlHeader.Controls.Add(btnSystemTest);
+            pnlHeader.Controls.Add(flpLegend);
+            pnlHeader.Controls.Add(btnEqpMonitor);
+            pnlHeader.Controls.Add(btnTransitMonitor);
+            pnlHeader.Controls.Add(btnGlobalMonitor);
             pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
             pnlHeader.Location = new System.Drawing.Point(0, 0);
             pnlHeader.Margin = new System.Windows.Forms.Padding(4);
             pnlHeader.Name = "pnlHeader";
-            pnlHeader.Size = new System.Drawing.Size(2240, 75);
+            pnlHeader.Size = new System.Drawing.Size(1920, 75);
             pnlHeader.TabIndex = 0;
+            // 
+            // lblModeDisplay
+            // 
+            lblModeDisplay.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left;
+            lblModeDisplay.AutoSize = true;
+            lblModeDisplay.Font = new System.Drawing.Font("微軟正黑體", 10F, System.Drawing.FontStyle.Bold);
+            lblModeDisplay.ForeColor = System.Drawing.Color.Yellow;
+            lblModeDisplay.Location = new System.Drawing.Point(12, 28);
+            lblModeDisplay.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblModeDisplay.Name = "lblModeDisplay";
+            lblModeDisplay.Size = new System.Drawing.Size(160, 18);
+            lblModeDisplay.TabIndex = 10;
+            lblModeDisplay.Text = "[模式: 僅工單 (WO Only)]";
+            // 
+            // pnlSimStatus
+            // 
+            pnlSimStatus.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left;
+            pnlSimStatus.BackColor = System.Drawing.Color.Red;
+            pnlSimStatus.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            pnlSimStatus.Location = new System.Drawing.Point(185, 27);
+            pnlSimStatus.Margin = new System.Windows.Forms.Padding(4);
+            pnlSimStatus.Name = "pnlSimStatus";
+            pnlSimStatus.Size = new System.Drawing.Size(20, 20);
+            pnlSimStatus.TabIndex = 5;
+            // 
+            // lblSimStatus
+            // 
+            lblSimStatus.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left;
+            lblSimStatus.AutoSize = true;
+            lblSimStatus.Font = new System.Drawing.Font("微軟正黑體", 10F, System.Drawing.FontStyle.Bold);
+            lblSimStatus.ForeColor = System.Drawing.Color.White;
+            lblSimStatus.Location = new System.Drawing.Point(212, 28);
+            lblSimStatus.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblSimStatus.Name = "lblSimStatus";
+            lblSimStatus.Size = new System.Drawing.Size(125, 18);
+            lblSimStatus.TabIndex = 6;
+            lblSimStatus.Text = "Simulator Offline";
+            // 
+            // btnManualSync
+            // 
+            btnManualSync.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnManualSync.BackColor = System.Drawing.Color.Orange;
+            btnManualSync.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            btnManualSync.Font = new System.Drawing.Font("微軟正黑體", 9.5F, System.Drawing.FontStyle.Bold);
+            btnManualSync.ForeColor = System.Drawing.Color.Black;
+            btnManualSync.Location = new System.Drawing.Point(495, 15);
+            btnManualSync.Margin = new System.Windows.Forms.Padding(4);
+            btnManualSync.Name = "btnManualSync";
+            btnManualSync.Size = new System.Drawing.Size(130, 45);
+            btnManualSync.TabIndex = 9;
+            btnManualSync.Text = "Manual Decision";
+            btnManualSync.UseVisualStyleBackColor = false;
+            btnManualSync.Visible = false;
+            btnManualSync.Click += btnManualSync_Click;
             // 
             // btnStockIn
             // 
@@ -84,54 +138,27 @@ namespace AdvancedPlanningSystem
             btnStockIn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             btnStockIn.Font = new System.Drawing.Font("微軟正黑體", 10F, System.Drawing.FontStyle.Bold);
             btnStockIn.ForeColor = System.Drawing.Color.White;
-            btnStockIn.Location = new System.Drawing.Point(924, 16);
+            btnStockIn.Location = new System.Drawing.Point(635, 15);
             btnStockIn.Margin = new System.Windows.Forms.Padding(4);
             btnStockIn.Name = "btnStockIn";
-            btnStockIn.Size = new System.Drawing.Size(210, 45);
+            btnStockIn.Size = new System.Drawing.Size(195, 45);
             btnStockIn.TabIndex = 11;
             btnStockIn.Text = "📥 物料入庫 (Stock In)";
             btnStockIn.UseVisualStyleBackColor = false;
             btnStockIn.Click += btnStockIn_Click;
             // 
-            // lblModeDisplay
-            // 
-            lblModeDisplay.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left;
-            lblModeDisplay.AutoSize = true;
-            lblModeDisplay.Font = new System.Drawing.Font("微軟正黑體", 10F, System.Drawing.FontStyle.Bold);
-            lblModeDisplay.ForeColor = System.Drawing.Color.Yellow;
-            lblModeDisplay.Location = new System.Drawing.Point(13, 28);
-            lblModeDisplay.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            lblModeDisplay.Name = "lblModeDisplay";
-            lblModeDisplay.Size = new System.Drawing.Size(110, 18);
-            lblModeDisplay.TabIndex = 10;
-            lblModeDisplay.Text = "[模式: 條碼綁定]";
-            // 
             // btnSystemTest
             // 
             btnSystemTest.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            btnSystemTest.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            btnSystemTest.Location = new System.Drawing.Point(1144, 16);
+            btnSystemTest.Font = new System.Drawing.Font("微軟正黑體", 10F, System.Drawing.FontStyle.Bold);
+            btnSystemTest.Location = new System.Drawing.Point(840, 15);
             btnSystemTest.Margin = new System.Windows.Forms.Padding(4);
             btnSystemTest.Name = "btnSystemTest";
-            btnSystemTest.Size = new System.Drawing.Size(132, 45);
+            btnSystemTest.Size = new System.Drawing.Size(120, 45);
             btnSystemTest.TabIndex = 8;
             btnSystemTest.Text = "System Test";
             btnSystemTest.UseVisualStyleBackColor = true;
-            // 
-            // btnManualSync
-            // 
-            btnManualSync.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            btnManualSync.BackColor = System.Drawing.Color.Orange;
-            btnManualSync.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            btnManualSync.Location = new System.Drawing.Point(811, 8);
-            btnManualSync.Margin = new System.Windows.Forms.Padding(4);
-            btnManualSync.Name = "btnManualSync";
-            btnManualSync.Size = new System.Drawing.Size(105, 60);
-            btnManualSync.TabIndex = 9;
-            btnManualSync.Text = "Manual Decision";
-            btnManualSync.UseVisualStyleBackColor = false;
-            btnManualSync.Visible = false;
-            btnManualSync.Click += btnManualSync_Click;
+            btnSystemTest.Click += btnSystemTest_Click;
             // 
             // flpLegend
             // 
@@ -149,7 +176,7 @@ namespace AdvancedPlanningSystem
             flpLegend.Controls.Add(lblLegendEmpty);
             flpLegend.Controls.Add(pnlColorEmpty);
             flpLegend.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            flpLegend.Location = new System.Drawing.Point(1284, 19);
+            flpLegend.Location = new System.Drawing.Point(970, 19);
             flpLegend.Margin = new System.Windows.Forms.Padding(4);
             flpLegend.Name = "flpLegend";
             flpLegend.Size = new System.Drawing.Size(525, 41);
@@ -266,63 +293,44 @@ namespace AdvancedPlanningSystem
             pnlColorEmpty.Size = new System.Drawing.Size(17, 18);
             pnlColorEmpty.TabIndex = 7;
             // 
-            // btnGlobalMonitor
+            // btnEqpMonitor
             // 
-            btnGlobalMonitor.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            btnGlobalMonitor.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            btnGlobalMonitor.Location = new System.Drawing.Point(2090, 15);
-            btnGlobalMonitor.Margin = new System.Windows.Forms.Padding(4);
-            btnGlobalMonitor.Name = "btnGlobalMonitor";
-            btnGlobalMonitor.Size = new System.Drawing.Size(140, 45);
-            btnGlobalMonitor.TabIndex = 1;
-            btnGlobalMonitor.Text = "Global Rank";
-            btnGlobalMonitor.UseVisualStyleBackColor = true;
+            btnEqpMonitor.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnEqpMonitor.Font = new System.Drawing.Font("微軟正黑體", 10F, System.Drawing.FontStyle.Bold);
+            btnEqpMonitor.Location = new System.Drawing.Point(1505, 15);
+            btnEqpMonitor.Margin = new System.Windows.Forms.Padding(4);
+            btnEqpMonitor.Name = "btnEqpMonitor";
+            btnEqpMonitor.Size = new System.Drawing.Size(120, 45);
+            btnEqpMonitor.TabIndex = 4;
+            btnEqpMonitor.Text = "EQ Monitor";
+            btnEqpMonitor.UseVisualStyleBackColor = true;
+            btnEqpMonitor.Click += btnEqpMonitor_Click;
             // 
             // btnTransitMonitor
             // 
             btnTransitMonitor.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            btnTransitMonitor.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            btnTransitMonitor.Location = new System.Drawing.Point(1947, 15);
+            btnTransitMonitor.Font = new System.Drawing.Font("微軟正黑體", 10F, System.Drawing.FontStyle.Bold);
+            btnTransitMonitor.Location = new System.Drawing.Point(1635, 15);
             btnTransitMonitor.Margin = new System.Windows.Forms.Padding(4);
             btnTransitMonitor.Name = "btnTransitMonitor";
-            btnTransitMonitor.Size = new System.Drawing.Size(136, 45);
+            btnTransitMonitor.Size = new System.Drawing.Size(130, 45);
             btnTransitMonitor.TabIndex = 3;
             btnTransitMonitor.Text = "Trans Monitor";
             btnTransitMonitor.UseVisualStyleBackColor = true;
+            btnTransitMonitor.Click += btnTransitMonitor_Click;
             // 
-            // btnEqpMonitor
+            // btnGlobalMonitor
             // 
-            btnEqpMonitor.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            btnEqpMonitor.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            btnEqpMonitor.Location = new System.Drawing.Point(1818, 15);
-            btnEqpMonitor.Margin = new System.Windows.Forms.Padding(4);
-            btnEqpMonitor.Name = "btnEqpMonitor";
-            btnEqpMonitor.Size = new System.Drawing.Size(122, 45);
-            btnEqpMonitor.TabIndex = 4;
-            btnEqpMonitor.Text = "EQ Monitor ";
-            btnEqpMonitor.UseVisualStyleBackColor = true;
-            // 
-            // pnlSimStatus
-            // 
-            pnlSimStatus.BackColor = System.Drawing.Color.Red;
-            pnlSimStatus.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            pnlSimStatus.Location = new System.Drawing.Point(133, 26);
-            pnlSimStatus.Margin = new System.Windows.Forms.Padding(4);
-            pnlSimStatus.Name = "pnlSimStatus";
-            pnlSimStatus.Size = new System.Drawing.Size(23, 24);
-            pnlSimStatus.TabIndex = 5;
-            // 
-            // lblSimStatus
-            // 
-            lblSimStatus.AutoSize = true;
-            lblSimStatus.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            lblSimStatus.ForeColor = System.Drawing.Color.White;
-            lblSimStatus.Location = new System.Drawing.Point(156, 29);
-            lblSimStatus.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            lblSimStatus.Name = "lblSimStatus";
-            lblSimStatus.Size = new System.Drawing.Size(129, 17);
-            lblSimStatus.TabIndex = 6;
-            lblSimStatus.Text = "Simulator Offline";
+            btnGlobalMonitor.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnGlobalMonitor.Font = new System.Drawing.Font("微軟正黑體", 10F, System.Drawing.FontStyle.Bold);
+            btnGlobalMonitor.Location = new System.Drawing.Point(1775, 15);
+            btnGlobalMonitor.Margin = new System.Windows.Forms.Padding(4);
+            btnGlobalMonitor.Name = "btnGlobalMonitor";
+            btnGlobalMonitor.Size = new System.Drawing.Size(130, 45);
+            btnGlobalMonitor.TabIndex = 1;
+            btnGlobalMonitor.Text = "Global Rank";
+            btnGlobalMonitor.UseVisualStyleBackColor = true;
+            btnGlobalMonitor.Click += btnGlobalMonitor_Click;
             // 
             // pnlGrid
             // 
@@ -331,7 +339,7 @@ namespace AdvancedPlanningSystem
             pnlGrid.Location = new System.Drawing.Point(0, 75);
             pnlGrid.Margin = new System.Windows.Forms.Padding(4);
             pnlGrid.Name = "pnlGrid";
-            pnlGrid.Size = new System.Drawing.Size(2240, 742);
+            pnlGrid.Size = new System.Drawing.Size(1920, 681);
             pnlGrid.TabIndex = 1;
             // 
             // tlpShelf
@@ -362,7 +370,7 @@ namespace AdvancedPlanningSystem
             tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
             tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
             tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
-            tlpShelf.Size = new System.Drawing.Size(2240, 742);
+            tlpShelf.Size = new System.Drawing.Size(1920, 681);
             tlpShelf.TabIndex = 0;
             // 
             // lstLog
@@ -371,17 +379,17 @@ namespace AdvancedPlanningSystem
             lstLog.Font = new System.Drawing.Font("Consolas", 10F);
             lstLog.FormattingEnabled = true;
             lstLog.ItemHeight = 15;
-            lstLog.Location = new System.Drawing.Point(0, 817);
+            lstLog.Location = new System.Drawing.Point(0, 756);
             lstLog.Margin = new System.Windows.Forms.Padding(4);
             lstLog.Name = "lstLog";
-            lstLog.Size = new System.Drawing.Size(2240, 244);
+            lstLog.Size = new System.Drawing.Size(1920, 244);
             lstLog.TabIndex = 2;
             // 
             // FormMain
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(2240, 1061);
+            ClientSize = new System.Drawing.Size(1920, 1000);
             Controls.Add(pnlGrid);
             Controls.Add(lstLog);
             Controls.Add(pnlHeader);

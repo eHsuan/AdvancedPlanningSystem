@@ -15,12 +15,16 @@ namespace AdvancedPlanningSystem
         [STAThread]
         static void Main()
         {
-            // [Security] 啟用 TLS 1.2 並保持向下相容 (Bitwise OR)
-            // 解決 .NET 4.5.2 預設只開啟 SSL3/TLS1.0 的問題
-            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12; // | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
-
-            // [Logging] 初始化 log4net
-            log4net.Config.XmlConfigurator.Configure();
+            // [Logging] 初始化 log4net (從 App.config 或執行目錄載入)
+            string appConfigPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "App.config");
+            if (System.IO.File.Exists(appConfigPath))
+            {
+                log4net.Config.XmlConfigurator.Configure(new System.IO.FileInfo(appConfigPath));
+            }
+            else
+            {
+                log4net.Config.XmlConfigurator.Configure();
+            }
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);

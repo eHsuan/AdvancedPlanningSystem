@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using AdvancedPlanningSystem.MES;
 using AdvancedPlanningSystem.Models;
-using System.Web.Script.Serialization;
+using Newtonsoft.Json;
 
 namespace AdvancedPlanningSystem
 {
@@ -17,7 +17,6 @@ namespace AdvancedPlanningSystem
     {
         private IMesService _mesService;
         private AdvancedPlanningSystem.Services.PlcService _plcService;
-        private JavaScriptSerializer _jsonSerializer;
 
         private TabPage tabPageRawJson;
         private TextBox txtRawJsonInput;
@@ -56,7 +55,6 @@ namespace AdvancedPlanningSystem
             InitializeComponent();
             _mesService = mesService;
             _plcService = plcService;
-            _jsonSerializer = new JavaScriptSerializer();
             SetupRawJsonTab();
 
             if (AppConfig.ManualMode)
@@ -74,51 +72,7 @@ namespace AdvancedPlanningSystem
         {
             try
             {
-                // Basic JSON serialization
-                string json = _jsonSerializer.Serialize(obj);
-                
-                // Manual pretty-printing for better readability
-                var sb = new StringBuilder();
-                int indent = 0;
-                bool inString = false;
-                
-                foreach (char c in json)
-                {
-                    if (c == '"') inString = !inString;
-                    
-                    if (!inString)
-                    {
-                        if (c == '{' || c == '[')
-                        {
-                            sb.Append(c);
-                            sb.Append(Environment.NewLine);
-                            indent++;
-                            sb.Append(new string(' ', indent * 2));
-                        }
-                        else if (c == '}' || c == ']')
-                        {
-                            sb.Append(Environment.NewLine);
-                            indent--;
-                            sb.Append(new string(' ', indent * 2));
-                            sb.Append(c);
-                        }
-                        else if (c == ',')
-                        {
-                            sb.Append(c);
-                            sb.Append(Environment.NewLine);
-                            sb.Append(new string(' ', indent * 2));
-                        }
-                        else
-                        {
-                            sb.Append(c);
-                        }
-                    }
-                    else
-                    {
-                        sb.Append(c);
-                    }
-                }
-                return sb.ToString();
+                return JsonConvert.SerializeObject(obj, Formatting.Indented);
             }
             catch (Exception ex)
             {
@@ -335,7 +289,7 @@ namespace AdvancedPlanningSystem
             if (string.IsNullOrEmpty(raw)) return;
             try
             {
-                var obj = _jsonSerializer.DeserializeObject(raw);
+                var obj = JsonConvert.DeserializeObject(raw);
                 txtRawJsonInput.Text = FormatJson(obj);
                 Log("[Format] JSON body formatted successfully.");
             }
@@ -409,7 +363,7 @@ namespace AdvancedPlanningSystem
 
                     try
                     {
-                        var parsedJson = _jsonSerializer.DeserializeObject(jsonToDecode);
+                        var parsedJson = JsonConvert.DeserializeObject(jsonToDecode);
                         txtOutput.AppendText($"=== Response Body ==={Environment.NewLine}{FormatJson(parsedJson)}{Environment.NewLine}");
                     }
                     catch

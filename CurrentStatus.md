@@ -2,9 +2,9 @@
 
 ## 1. 專案概況
 *   **專案名稱**：AdvancedPlanningSystem (APS)
-*   **目標框架**：.NET Framework 4.5.2
+*   **目標框架**：.NET 8 (LTS) (C# 12 / Windows Forms)
 *   **應用類型**：Windows Forms (WinForms)
-*   **目前階段**：**功能完整的資料驅動系統 (Data-Driven)**
+*   **目前階段**：**功能完整的資料驅動系統 (Data-Driven, 現代化 .NET 8 架構)**
 
 ## 2. 核心架構進度 (Architecture Status)
 

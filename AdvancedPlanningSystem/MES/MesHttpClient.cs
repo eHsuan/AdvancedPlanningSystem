@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web.Script.Serialization;
+using Newtonsoft.Json;
 using AdvancedPlanningSystem.Models;
 
 namespace AdvancedPlanningSystem.MES
@@ -12,14 +12,12 @@ namespace AdvancedPlanningSystem.MES
     {
         private readonly HttpClient _httpClient;
         private readonly string _baseUrl;
-        private readonly JavaScriptSerializer _serializer;
 
         public MesHttpClient(string baseUrl)
         {
             _baseUrl = baseUrl.TrimEnd('/');
             _httpClient = new HttpClient();
             _httpClient.Timeout = TimeSpan.FromSeconds(10); 
-            _serializer = new JavaScriptSerializer();
         }
 
         private async Task<T> GetAsync<T>(string endpoint)
@@ -36,7 +34,7 @@ namespace AdvancedPlanningSystem.MES
             {
                 try
                 {
-                    var wrapper = _serializer.Deserialize<MesApiResponse<T>>(responseJson);
+                    var wrapper = JsonConvert.DeserializeObject<MesApiResponse<T>>(responseJson);
                     if (wrapper != null && wrapper.Data != null)
                     {
                         return wrapper.Data;
@@ -44,7 +42,7 @@ namespace AdvancedPlanningSystem.MES
                 }
                 catch { }
 
-                return _serializer.Deserialize<T>(responseJson);
+                return JsonConvert.DeserializeObject<T>(responseJson);
             }
             
             // Throw exception if not success
@@ -54,7 +52,7 @@ namespace AdvancedPlanningSystem.MES
         private async Task<T> PostAsync<T>(string endpoint, object data)
         {
             string url = $"{_baseUrl}{endpoint}";
-            string json = _serializer.Serialize(data);
+            string json = JsonConvert.SerializeObject(data);
             LogHelper.MES.Info($"[MES POST] {url} Body: {json}");
 
             HttpResponseMessage response;
@@ -91,7 +89,7 @@ namespace AdvancedPlanningSystem.MES
 
                 try
                 {
-                    var wrapper = _serializer.Deserialize<MesApiResponse<T>>(jsonToDecode);
+                    var wrapper = JsonConvert.DeserializeObject<MesApiResponse<T>>(jsonToDecode);
                     if (wrapper != null && wrapper.Data != null)
                     {
                         return wrapper.Data;
@@ -99,7 +97,7 @@ namespace AdvancedPlanningSystem.MES
                 }
                 catch { }
 
-                return _serializer.Deserialize<T>(jsonToDecode);
+                return JsonConvert.DeserializeObject<T>(jsonToDecode);
             }
             
             // Throw exception if not success
@@ -139,7 +137,7 @@ namespace AdvancedPlanningSystem.MES
             }
 
             if (string.IsNullOrEmpty(reply.APSInfo_ByEqp_Result)) return new List<ApsEqpInfo>();
-            return _serializer.Deserialize<List<ApsEqpInfo>>(reply.APSInfo_ByEqp_Result) ?? new List<ApsEqpInfo>();
+            return JsonConvert.DeserializeObject<List<ApsEqpInfo>>(reply.APSInfo_ByEqp_Result) ?? new List<ApsEqpInfo>();
         }
 
         public async Task<List<OrderInfoResponse>> GetOrderInfoBatchAsync(List<string> workNos)
@@ -162,7 +160,7 @@ namespace AdvancedPlanningSystem.MES
             }
 
             if (string.IsNullOrEmpty(reply.APSInfo_ByLot_Result)) return new List<OrderInfoResponse>();
-            var lotInfos = _serializer.Deserialize<List<ApsLotInfo>>(reply.APSInfo_ByLot_Result) ?? new List<ApsLotInfo>();
+            var lotInfos = JsonConvert.DeserializeObject<List<ApsLotInfo>>(reply.APSInfo_ByLot_Result) ?? new List<ApsLotInfo>();
 
             var list = new List<OrderInfoResponse>();
             foreach (var l in lotInfos)
@@ -210,7 +208,7 @@ namespace AdvancedPlanningSystem.MES
             }
 
             if (string.IsNullOrEmpty(reply.APSInfo_QTime_Result)) return new List<QTimeLimitResponse>();
-            var rawQTimes = _serializer.Deserialize<List<ApsQTimeInfo>>(reply.APSInfo_QTime_Result) ?? new List<ApsQTimeInfo>();
+            var rawQTimes = JsonConvert.DeserializeObject<List<ApsQTimeInfo>>(reply.APSInfo_QTime_Result) ?? new List<ApsQTimeInfo>();
 
             var list = new List<QTimeLimitResponse>();
             foreach (var q in rawQTimes)

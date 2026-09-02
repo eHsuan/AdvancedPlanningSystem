@@ -28,373 +28,375 @@ namespace AdvancedPlanningSystem
         /// </summary>
         private void InitializeComponent()
         {
-            this.pnlHeader = new System.Windows.Forms.Panel();
-            this.btnSystemTest = new System.Windows.Forms.Button();
-            this.btnManualSync = new System.Windows.Forms.Button();
-            this.flpLegend = new System.Windows.Forms.FlowLayoutPanel();
-            this.lblLegendError = new System.Windows.Forms.Label();
-            this.pnlColorError = new System.Windows.Forms.Panel();
-            this.lblLegendDispatching = new System.Windows.Forms.Label();
-            this.pnlColorDispatching = new System.Windows.Forms.Panel();
-            this.lblLegendOccupied = new System.Windows.Forms.Label();
-            this.pnlColorOccupied = new System.Windows.Forms.Panel();
-            this.lblLegendFinish = new System.Windows.Forms.Label();
-            this.pnlColorFinish = new System.Windows.Forms.Panel();
-            this.lblLegendEmpty = new System.Windows.Forms.Label();
-            this.pnlColorEmpty = new System.Windows.Forms.Panel();
-            this.btnGlobalMonitor = new System.Windows.Forms.Button();
-            this.btnTransitMonitor = new System.Windows.Forms.Button();
-            this.btnEqpMonitor = new System.Windows.Forms.Button();
-            this.lblTitle = new System.Windows.Forms.Label();
-            this.pnlSimStatus = new System.Windows.Forms.Panel();
-            this.lblSimStatus = new System.Windows.Forms.Label();
-            this.pnlGrid = new System.Windows.Forms.Panel();
-            this.tlpShelf = new System.Windows.Forms.TableLayoutPanel();
-            this.lstLog = new System.Windows.Forms.ListBox();
-            this.lblModeDisplay = new System.Windows.Forms.Label();
-            this.btnStockIn = new System.Windows.Forms.Button();
-            this.pnlHeader.SuspendLayout();
-            this.flpLegend.SuspendLayout();
-            this.pnlGrid.SuspendLayout();
-            this.SuspendLayout();
+            pnlHeader = new System.Windows.Forms.Panel();
+            btnStockIn = new System.Windows.Forms.Button();
+            lblModeDisplay = new System.Windows.Forms.Label();
+            btnSystemTest = new System.Windows.Forms.Button();
+            btnManualSync = new System.Windows.Forms.Button();
+            flpLegend = new System.Windows.Forms.FlowLayoutPanel();
+            lblLegendError = new System.Windows.Forms.Label();
+            pnlColorError = new System.Windows.Forms.Panel();
+            lblLegendDispatching = new System.Windows.Forms.Label();
+            pnlColorDispatching = new System.Windows.Forms.Panel();
+            lblLegendOccupied = new System.Windows.Forms.Label();
+            pnlColorOccupied = new System.Windows.Forms.Panel();
+            lblLegendFinish = new System.Windows.Forms.Label();
+            pnlColorFinish = new System.Windows.Forms.Panel();
+            lblLegendEmpty = new System.Windows.Forms.Label();
+            pnlColorEmpty = new System.Windows.Forms.Panel();
+            btnGlobalMonitor = new System.Windows.Forms.Button();
+            btnTransitMonitor = new System.Windows.Forms.Button();
+            btnEqpMonitor = new System.Windows.Forms.Button();
+            pnlSimStatus = new System.Windows.Forms.Panel();
+            lblSimStatus = new System.Windows.Forms.Label();
+            pnlGrid = new System.Windows.Forms.Panel();
+            tlpShelf = new System.Windows.Forms.TableLayoutPanel();
+            lstLog = new System.Windows.Forms.ListBox();
+            pnlHeader.SuspendLayout();
+            flpLegend.SuspendLayout();
+            pnlGrid.SuspendLayout();
+            SuspendLayout();
             // 
             // pnlHeader
             // 
-            this.pnlHeader.BackColor = System.Drawing.Color.DarkGray;
-            this.pnlHeader.Controls.Add(this.btnStockIn);
-            this.pnlHeader.Controls.Add(this.lblModeDisplay);
-            this.pnlHeader.Controls.Add(this.btnSystemTest);
-            this.pnlHeader.Controls.Add(this.btnManualSync);
-            this.pnlHeader.Controls.Add(this.flpLegend);
-            this.pnlHeader.Controls.Add(this.btnGlobalMonitor);
-            this.pnlHeader.Controls.Add(this.btnTransitMonitor);
-            this.pnlHeader.Controls.Add(this.btnEqpMonitor);
-            this.pnlHeader.Controls.Add(this.lblTitle);
-            this.pnlHeader.Controls.Add(this.pnlSimStatus);
-            this.pnlHeader.Controls.Add(this.lblSimStatus);
-            this.pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlHeader.Location = new System.Drawing.Point(0, 0);
-            this.pnlHeader.Name = "pnlHeader";
-            this.pnlHeader.Size = new System.Drawing.Size(1920, 60);
-            this.pnlHeader.TabIndex = 0;
-            // 
-            // lblModeDisplay
-            // 
-            this.lblModeDisplay.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblModeDisplay.AutoSize = true;
-            this.lblModeDisplay.Font = new System.Drawing.Font("Microsoft JhengHei", 10F, System.Drawing.FontStyle.Bold);
-            this.lblModeDisplay.ForeColor = System.Drawing.Color.Yellow;
-            this.lblModeDisplay.Location = new System.Drawing.Point(680, 20);
-            this.lblModeDisplay.Name = "lblModeDisplay";
-            this.lblModeDisplay.Size = new System.Drawing.Size(120, 18);
-            this.lblModeDisplay.TabIndex = 10;
-            this.lblModeDisplay.Text = "[模式: 條碼綁定]";
+            pnlHeader.BackColor = System.Drawing.Color.DarkGray;
+            pnlHeader.Controls.Add(btnStockIn);
+            pnlHeader.Controls.Add(lblModeDisplay);
+            pnlHeader.Controls.Add(btnSystemTest);
+            pnlHeader.Controls.Add(btnManualSync);
+            pnlHeader.Controls.Add(flpLegend);
+            pnlHeader.Controls.Add(btnGlobalMonitor);
+            pnlHeader.Controls.Add(btnTransitMonitor);
+            pnlHeader.Controls.Add(btnEqpMonitor);
+            pnlHeader.Controls.Add(pnlSimStatus);
+            pnlHeader.Controls.Add(lblSimStatus);
+            pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
+            pnlHeader.Location = new System.Drawing.Point(0, 0);
+            pnlHeader.Margin = new System.Windows.Forms.Padding(4);
+            pnlHeader.Name = "pnlHeader";
+            pnlHeader.Size = new System.Drawing.Size(2240, 75);
+            pnlHeader.TabIndex = 0;
             // 
             // btnStockIn
             // 
-            this.btnStockIn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnStockIn.BackColor = System.Drawing.Color.ForestGreen;
-            this.btnStockIn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnStockIn.Font = new System.Drawing.Font("Microsoft JhengHei", 10F, System.Drawing.FontStyle.Bold);
-            this.btnStockIn.ForeColor = System.Drawing.Color.White;
-            this.btnStockIn.Location = new System.Drawing.Point(860, 12);
-            this.btnStockIn.Name = "btnStockIn";
-            this.btnStockIn.Size = new System.Drawing.Size(180, 36);
-            this.btnStockIn.TabIndex = 11;
-            this.btnStockIn.Text = "📥 物料入庫 (Stock In)";
-            this.btnStockIn.UseVisualStyleBackColor = false;
-            this.btnStockIn.Click += new System.EventHandler(this.btnStockIn_Click);
+            btnStockIn.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnStockIn.BackColor = System.Drawing.Color.ForestGreen;
+            btnStockIn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            btnStockIn.Font = new System.Drawing.Font("微軟正黑體", 10F, System.Drawing.FontStyle.Bold);
+            btnStockIn.ForeColor = System.Drawing.Color.White;
+            btnStockIn.Location = new System.Drawing.Point(924, 16);
+            btnStockIn.Margin = new System.Windows.Forms.Padding(4);
+            btnStockIn.Name = "btnStockIn";
+            btnStockIn.Size = new System.Drawing.Size(210, 45);
+            btnStockIn.TabIndex = 11;
+            btnStockIn.Text = "📥 物料入庫 (Stock In)";
+            btnStockIn.UseVisualStyleBackColor = false;
+            btnStockIn.Click += btnStockIn_Click;
+            // 
+            // lblModeDisplay
+            // 
+            lblModeDisplay.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            lblModeDisplay.AutoSize = true;
+            lblModeDisplay.Font = new System.Drawing.Font("微軟正黑體", 10F, System.Drawing.FontStyle.Bold);
+            lblModeDisplay.ForeColor = System.Drawing.Color.Yellow;
+            lblModeDisplay.Location = new System.Drawing.Point(13, 28);
+            lblModeDisplay.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblModeDisplay.Name = "lblModeDisplay";
+            lblModeDisplay.Size = new System.Drawing.Size(110, 18);
+            lblModeDisplay.TabIndex = 10;
+            lblModeDisplay.Text = "[模式: 條碼綁定]";
             // 
             // btnSystemTest
             // 
-            this.btnSystemTest.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnSystemTest.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.btnSystemTest.Location = new System.Drawing.Point(1056, 13);
-            this.btnSystemTest.Name = "btnSystemTest";
-            this.btnSystemTest.Size = new System.Drawing.Size(113, 36);
-            this.btnSystemTest.TabIndex = 8;
-            this.btnSystemTest.Text = "System Test";
-            this.btnSystemTest.UseVisualStyleBackColor = true;
+            btnSystemTest.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnSystemTest.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
+            btnSystemTest.Location = new System.Drawing.Point(1144, 16);
+            btnSystemTest.Margin = new System.Windows.Forms.Padding(4);
+            btnSystemTest.Name = "btnSystemTest";
+            btnSystemTest.Size = new System.Drawing.Size(132, 45);
+            btnSystemTest.TabIndex = 8;
+            btnSystemTest.Text = "System Test";
+            btnSystemTest.UseVisualStyleBackColor = true;
             // 
             // btnManualSync
             // 
-            this.btnManualSync.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnManualSync.BackColor = System.Drawing.Color.Orange;
-            this.btnManualSync.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.btnManualSync.Location = new System.Drawing.Point(543, 5);
-            this.btnManualSync.Name = "btnManualSync";
-            this.btnManualSync.Size = new System.Drawing.Size(90, 48);
-            this.btnManualSync.TabIndex = 9;
-            this.btnManualSync.Text = "Manual Decision";
-            this.btnManualSync.UseVisualStyleBackColor = false;
-            this.btnManualSync.Visible = false;
-            this.btnManualSync.Click += new System.EventHandler(this.btnManualSync_Click);
+            btnManualSync.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnManualSync.BackColor = System.Drawing.Color.Orange;
+            btnManualSync.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
+            btnManualSync.Location = new System.Drawing.Point(811, 8);
+            btnManualSync.Margin = new System.Windows.Forms.Padding(4);
+            btnManualSync.Name = "btnManualSync";
+            btnManualSync.Size = new System.Drawing.Size(105, 60);
+            btnManualSync.TabIndex = 9;
+            btnManualSync.Text = "Manual Decision";
+            btnManualSync.UseVisualStyleBackColor = false;
+            btnManualSync.Visible = false;
+            btnManualSync.Click += btnManualSync_Click;
             // 
             // flpLegend
             // 
-            this.flpLegend.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.flpLegend.AutoSize = true;
-            this.flpLegend.BackColor = System.Drawing.Color.Transparent;
-            this.flpLegend.Controls.Add(this.lblLegendError);
-            this.flpLegend.Controls.Add(this.pnlColorError);
-            this.flpLegend.Controls.Add(this.lblLegendDispatching);
-            this.flpLegend.Controls.Add(this.pnlColorDispatching);
-            this.flpLegend.Controls.Add(this.lblLegendOccupied);
-            this.flpLegend.Controls.Add(this.pnlColorOccupied);
-            this.flpLegend.Controls.Add(this.lblLegendFinish);
-            this.flpLegend.Controls.Add(this.pnlColorFinish);
-            this.flpLegend.Controls.Add(this.lblLegendEmpty);
-            this.flpLegend.Controls.Add(this.pnlColorEmpty);
-            this.flpLegend.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.flpLegend.Location = new System.Drawing.Point(1101, 15);
-            this.flpLegend.Name = "flpLegend";
-            this.flpLegend.Size = new System.Drawing.Size(450, 33);
-            this.flpLegend.TabIndex = 2;
-            this.flpLegend.WrapContents = false;
+            flpLegend.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            flpLegend.AutoSize = true;
+            flpLegend.BackColor = System.Drawing.Color.Transparent;
+            flpLegend.Controls.Add(lblLegendError);
+            flpLegend.Controls.Add(pnlColorError);
+            flpLegend.Controls.Add(lblLegendDispatching);
+            flpLegend.Controls.Add(pnlColorDispatching);
+            flpLegend.Controls.Add(lblLegendOccupied);
+            flpLegend.Controls.Add(pnlColorOccupied);
+            flpLegend.Controls.Add(lblLegendFinish);
+            flpLegend.Controls.Add(pnlColorFinish);
+            flpLegend.Controls.Add(lblLegendEmpty);
+            flpLegend.Controls.Add(pnlColorEmpty);
+            flpLegend.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            flpLegend.Location = new System.Drawing.Point(1284, 19);
+            flpLegend.Margin = new System.Windows.Forms.Padding(4);
+            flpLegend.Name = "flpLegend";
+            flpLegend.Size = new System.Drawing.Size(525, 41);
+            flpLegend.TabIndex = 2;
+            flpLegend.WrapContents = false;
             // 
             // lblLegendError
             // 
-            this.lblLegendError.AutoSize = true;
-            this.lblLegendError.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
-            this.lblLegendError.ForeColor = System.Drawing.Color.White;
-            this.lblLegendError.Location = new System.Drawing.Point(400, 5);
-            this.lblLegendError.Margin = new System.Windows.Forms.Padding(0, 5, 5, 0);
-            this.lblLegendError.Name = "lblLegendError";
-            this.lblLegendError.Size = new System.Drawing.Size(45, 15);
-            this.lblLegendError.TabIndex = 0;
-            this.lblLegendError.Text = "HOLD";
+            lblLegendError.AutoSize = true;
+            lblLegendError.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
+            lblLegendError.ForeColor = System.Drawing.Color.White;
+            lblLegendError.Location = new System.Drawing.Point(474, 6);
+            lblLegendError.Margin = new System.Windows.Forms.Padding(0, 6, 6, 0);
+            lblLegendError.Name = "lblLegendError";
+            lblLegendError.Size = new System.Drawing.Size(45, 15);
+            lblLegendError.TabIndex = 0;
+            lblLegendError.Text = "HOLD";
             // 
             // pnlColorError
             // 
-            this.pnlColorError.BackColor = System.Drawing.Color.Red;
-            this.pnlColorError.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlColorError.Location = new System.Drawing.Point(375, 6);
-            this.pnlColorError.Margin = new System.Windows.Forms.Padding(0, 6, 10, 0);
-            this.pnlColorError.Name = "pnlColorError";
-            this.pnlColorError.Size = new System.Drawing.Size(15, 15);
-            this.pnlColorError.TabIndex = 1;
+            pnlColorError.BackColor = System.Drawing.Color.Red;
+            pnlColorError.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            pnlColorError.Location = new System.Drawing.Point(445, 8);
+            pnlColorError.Margin = new System.Windows.Forms.Padding(0, 8, 12, 0);
+            pnlColorError.Name = "pnlColorError";
+            pnlColorError.Size = new System.Drawing.Size(17, 18);
+            pnlColorError.TabIndex = 1;
             // 
             // lblLegendDispatching
             // 
-            this.lblLegendDispatching.AutoSize = true;
-            this.lblLegendDispatching.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
-            this.lblLegendDispatching.ForeColor = System.Drawing.Color.White;
-            this.lblLegendDispatching.Location = new System.Drawing.Point(324, 5);
-            this.lblLegendDispatching.Margin = new System.Windows.Forms.Padding(0, 5, 5, 0);
-            this.lblLegendDispatching.Name = "lblLegendDispatching";
-            this.lblLegendDispatching.Size = new System.Drawing.Size(46, 15);
-            this.lblLegendDispatching.TabIndex = 2;
-            this.lblLegendDispatching.Text = "MOVE";
+            lblLegendDispatching.AutoSize = true;
+            lblLegendDispatching.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
+            lblLegendDispatching.ForeColor = System.Drawing.Color.White;
+            lblLegendDispatching.Location = new System.Drawing.Point(393, 6);
+            lblLegendDispatching.Margin = new System.Windows.Forms.Padding(0, 6, 6, 0);
+            lblLegendDispatching.Name = "lblLegendDispatching";
+            lblLegendDispatching.Size = new System.Drawing.Size(46, 15);
+            lblLegendDispatching.TabIndex = 2;
+            lblLegendDispatching.Text = "MOVE";
             // 
             // pnlColorDispatching
             // 
-            this.pnlColorDispatching.BackColor = System.Drawing.Color.LimeGreen;
-            this.pnlColorDispatching.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlColorDispatching.Location = new System.Drawing.Point(299, 6);
-            this.pnlColorDispatching.Margin = new System.Windows.Forms.Padding(0, 6, 10, 0);
-            this.pnlColorDispatching.Name = "pnlColorDispatching";
-            this.pnlColorDispatching.Size = new System.Drawing.Size(15, 15);
-            this.pnlColorDispatching.TabIndex = 3;
+            pnlColorDispatching.BackColor = System.Drawing.Color.LimeGreen;
+            pnlColorDispatching.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            pnlColorDispatching.Location = new System.Drawing.Point(364, 8);
+            pnlColorDispatching.Margin = new System.Windows.Forms.Padding(0, 8, 12, 0);
+            pnlColorDispatching.Name = "pnlColorDispatching";
+            pnlColorDispatching.Size = new System.Drawing.Size(17, 18);
+            pnlColorDispatching.TabIndex = 3;
             // 
             // lblLegendOccupied
             // 
-            this.lblLegendOccupied.AutoSize = true;
-            this.lblLegendOccupied.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
-            this.lblLegendOccupied.ForeColor = System.Drawing.Color.White;
-            this.lblLegendOccupied.Location = new System.Drawing.Point(255, 5);
-            this.lblLegendOccupied.Margin = new System.Windows.Forms.Padding(0, 5, 5, 0);
-            this.lblLegendOccupied.Name = "lblLegendOccupied";
-            this.lblLegendOccupied.Size = new System.Drawing.Size(39, 15);
-            this.lblLegendOccupied.TabIndex = 4;
-            this.lblLegendOccupied.Text = "WAIT";
+            lblLegendOccupied.AutoSize = true;
+            lblLegendOccupied.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
+            lblLegendOccupied.ForeColor = System.Drawing.Color.White;
+            lblLegendOccupied.Location = new System.Drawing.Point(319, 6);
+            lblLegendOccupied.Margin = new System.Windows.Forms.Padding(0, 6, 6, 0);
+            lblLegendOccupied.Name = "lblLegendOccupied";
+            lblLegendOccupied.Size = new System.Drawing.Size(39, 15);
+            lblLegendOccupied.TabIndex = 4;
+            lblLegendOccupied.Text = "WAIT";
             // 
             // pnlColorOccupied
             // 
-            this.pnlColorOccupied.BackColor = System.Drawing.Color.SkyBlue;
-            this.pnlColorOccupied.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlColorOccupied.Location = new System.Drawing.Point(230, 6);
-            this.pnlColorOccupied.Margin = new System.Windows.Forms.Padding(0, 6, 10, 0);
-            this.pnlColorOccupied.Name = "pnlColorOccupied";
-            this.pnlColorOccupied.Size = new System.Drawing.Size(15, 15);
-            this.pnlColorOccupied.TabIndex = 5;
+            pnlColorOccupied.BackColor = System.Drawing.Color.SkyBlue;
+            pnlColorOccupied.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            pnlColorOccupied.Location = new System.Drawing.Point(290, 8);
+            pnlColorOccupied.Margin = new System.Windows.Forms.Padding(0, 8, 12, 0);
+            pnlColorOccupied.Name = "pnlColorOccupied";
+            pnlColorOccupied.Size = new System.Drawing.Size(17, 18);
+            pnlColorOccupied.TabIndex = 5;
             // 
             // lblLegendFinish
             // 
-            this.lblLegendFinish.AutoSize = true;
-            this.lblLegendFinish.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
-            this.lblLegendFinish.ForeColor = System.Drawing.Color.White;
-            this.lblLegendFinish.Location = new System.Drawing.Point(179, 5);
-            this.lblLegendFinish.Margin = new System.Windows.Forms.Padding(0, 5, 5, 0);
-            this.lblLegendFinish.Name = "lblLegendFinish";
-            this.lblLegendFinish.Size = new System.Drawing.Size(46, 15);
-            this.lblLegendFinish.TabIndex = 8;
-            this.lblLegendFinish.Text = "DONE";
+            lblLegendFinish.AutoSize = true;
+            lblLegendFinish.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
+            lblLegendFinish.ForeColor = System.Drawing.Color.White;
+            lblLegendFinish.Location = new System.Drawing.Point(238, 6);
+            lblLegendFinish.Margin = new System.Windows.Forms.Padding(0, 6, 6, 0);
+            lblLegendFinish.Name = "lblLegendFinish";
+            lblLegendFinish.Size = new System.Drawing.Size(46, 15);
+            lblLegendFinish.TabIndex = 8;
+            lblLegendFinish.Text = "DONE";
             // 
             // pnlColorFinish
             // 
-            this.pnlColorFinish.BackColor = System.Drawing.Color.MediumPurple;
-            this.pnlColorFinish.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlColorFinish.Location = new System.Drawing.Point(154, 6);
-            this.pnlColorFinish.Margin = new System.Windows.Forms.Padding(0, 6, 10, 0);
-            this.pnlColorFinish.Name = "pnlColorFinish";
-            this.pnlColorFinish.Size = new System.Drawing.Size(15, 15);
-            this.pnlColorFinish.TabIndex = 9;
+            pnlColorFinish.BackColor = System.Drawing.Color.MediumPurple;
+            pnlColorFinish.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            pnlColorFinish.Location = new System.Drawing.Point(209, 8);
+            pnlColorFinish.Margin = new System.Windows.Forms.Padding(0, 8, 12, 0);
+            pnlColorFinish.Name = "pnlColorFinish";
+            pnlColorFinish.Size = new System.Drawing.Size(17, 18);
+            pnlColorFinish.TabIndex = 9;
             // 
             // lblLegendEmpty
             // 
-            this.lblLegendEmpty.AutoSize = true;
-            this.lblLegendEmpty.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
-            this.lblLegendEmpty.ForeColor = System.Drawing.Color.White;
-            this.lblLegendEmpty.Location = new System.Drawing.Point(96, 5);
-            this.lblLegendEmpty.Margin = new System.Windows.Forms.Padding(0, 5, 5, 0);
-            this.lblLegendEmpty.Name = "lblLegendEmpty";
-            this.lblLegendEmpty.Size = new System.Drawing.Size(53, 15);
-            this.lblLegendEmpty.TabIndex = 6;
-            this.lblLegendEmpty.Text = "EMPTY";
+            lblLegendEmpty.AutoSize = true;
+            lblLegendEmpty.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
+            lblLegendEmpty.ForeColor = System.Drawing.Color.White;
+            lblLegendEmpty.Location = new System.Drawing.Point(150, 6);
+            lblLegendEmpty.Margin = new System.Windows.Forms.Padding(0, 6, 6, 0);
+            lblLegendEmpty.Name = "lblLegendEmpty";
+            lblLegendEmpty.Size = new System.Drawing.Size(53, 15);
+            lblLegendEmpty.TabIndex = 6;
+            lblLegendEmpty.Text = "EMPTY";
             // 
             // pnlColorEmpty
             // 
-            this.pnlColorEmpty.BackColor = System.Drawing.Color.LightGray;
-            this.pnlColorEmpty.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlColorEmpty.Location = new System.Drawing.Point(71, 6);
-            this.pnlColorEmpty.Margin = new System.Windows.Forms.Padding(0, 6, 10, 0);
-            this.pnlColorEmpty.Name = "pnlColorEmpty";
-            this.pnlColorEmpty.Size = new System.Drawing.Size(15, 15);
-            this.pnlColorEmpty.TabIndex = 7;
+            pnlColorEmpty.BackColor = System.Drawing.Color.LightGray;
+            pnlColorEmpty.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            pnlColorEmpty.Location = new System.Drawing.Point(121, 8);
+            pnlColorEmpty.Margin = new System.Windows.Forms.Padding(0, 8, 12, 0);
+            pnlColorEmpty.Name = "pnlColorEmpty";
+            pnlColorEmpty.Size = new System.Drawing.Size(17, 18);
+            pnlColorEmpty.TabIndex = 7;
             // 
             // btnGlobalMonitor
             // 
-            this.btnGlobalMonitor.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnGlobalMonitor.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.btnGlobalMonitor.Location = new System.Drawing.Point(1791, 12);
-            this.btnGlobalMonitor.Name = "btnGlobalMonitor";
-            this.btnGlobalMonitor.Size = new System.Drawing.Size(120, 36);
-            this.btnGlobalMonitor.TabIndex = 1;
-            this.btnGlobalMonitor.Text = "Global Rank";
-            this.btnGlobalMonitor.UseVisualStyleBackColor = true;
+            btnGlobalMonitor.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnGlobalMonitor.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
+            btnGlobalMonitor.Location = new System.Drawing.Point(2090, 15);
+            btnGlobalMonitor.Margin = new System.Windows.Forms.Padding(4);
+            btnGlobalMonitor.Name = "btnGlobalMonitor";
+            btnGlobalMonitor.Size = new System.Drawing.Size(140, 45);
+            btnGlobalMonitor.TabIndex = 1;
+            btnGlobalMonitor.Text = "Global Rank";
+            btnGlobalMonitor.UseVisualStyleBackColor = true;
             // 
             // btnTransitMonitor
             // 
-            this.btnTransitMonitor.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnTransitMonitor.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.btnTransitMonitor.Location = new System.Drawing.Point(1669, 12);
-            this.btnTransitMonitor.Name = "btnTransitMonitor";
-            this.btnTransitMonitor.Size = new System.Drawing.Size(117, 36);
-            this.btnTransitMonitor.TabIndex = 3;
-            this.btnTransitMonitor.Text = "Trans Monitor";
-            this.btnTransitMonitor.UseVisualStyleBackColor = true;
+            btnTransitMonitor.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnTransitMonitor.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
+            btnTransitMonitor.Location = new System.Drawing.Point(1947, 15);
+            btnTransitMonitor.Margin = new System.Windows.Forms.Padding(4);
+            btnTransitMonitor.Name = "btnTransitMonitor";
+            btnTransitMonitor.Size = new System.Drawing.Size(136, 45);
+            btnTransitMonitor.TabIndex = 3;
+            btnTransitMonitor.Text = "Trans Monitor";
+            btnTransitMonitor.UseVisualStyleBackColor = true;
             // 
             // btnEqpMonitor
             // 
-            this.btnEqpMonitor.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnEqpMonitor.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.btnEqpMonitor.Location = new System.Drawing.Point(1558, 12);
-            this.btnEqpMonitor.Name = "btnEqpMonitor";
-            this.btnEqpMonitor.Size = new System.Drawing.Size(105, 36);
-            this.btnEqpMonitor.TabIndex = 4;
-            this.btnEqpMonitor.Text = "EQ Monitor ";
-            this.btnEqpMonitor.UseVisualStyleBackColor = true;
-            // 
-            // lblTitle
-            // 
-            this.lblTitle.AutoSize = true;
-            this.lblTitle.Font = new System.Drawing.Font("Microsoft Sans Serif", 20.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblTitle.ForeColor = System.Drawing.Color.White;
-            this.lblTitle.Location = new System.Drawing.Point(12, 13);
-            this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(369, 31);
-            this.lblTitle.TabIndex = 0;
-            this.lblTitle.Text = "Advanced Planning System";
+            btnEqpMonitor.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnEqpMonitor.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
+            btnEqpMonitor.Location = new System.Drawing.Point(1818, 15);
+            btnEqpMonitor.Margin = new System.Windows.Forms.Padding(4);
+            btnEqpMonitor.Name = "btnEqpMonitor";
+            btnEqpMonitor.Size = new System.Drawing.Size(122, 45);
+            btnEqpMonitor.TabIndex = 4;
+            btnEqpMonitor.Text = "EQ Monitor ";
+            btnEqpMonitor.UseVisualStyleBackColor = true;
             // 
             // pnlSimStatus
             // 
-            this.pnlSimStatus.BackColor = System.Drawing.Color.Red;
-            this.pnlSimStatus.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlSimStatus.Location = new System.Drawing.Point(389, 18);
-            this.pnlSimStatus.Name = "pnlSimStatus";
-            this.pnlSimStatus.Size = new System.Drawing.Size(20, 20);
-            this.pnlSimStatus.TabIndex = 5;
+            pnlSimStatus.BackColor = System.Drawing.Color.Red;
+            pnlSimStatus.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            pnlSimStatus.Location = new System.Drawing.Point(133, 26);
+            pnlSimStatus.Margin = new System.Windows.Forms.Padding(4);
+            pnlSimStatus.Name = "pnlSimStatus";
+            pnlSimStatus.Size = new System.Drawing.Size(23, 24);
+            pnlSimStatus.TabIndex = 5;
             // 
             // lblSimStatus
             // 
-            this.lblSimStatus.AutoSize = true;
-            this.lblSimStatus.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.lblSimStatus.ForeColor = System.Drawing.Color.White;
-            this.lblSimStatus.Location = new System.Drawing.Point(409, 20);
-            this.lblSimStatus.Name = "lblSimStatus";
-            this.lblSimStatus.Size = new System.Drawing.Size(129, 17);
-            this.lblSimStatus.TabIndex = 6;
-            this.lblSimStatus.Text = "Simulator Offline";
+            lblSimStatus.AutoSize = true;
+            lblSimStatus.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
+            lblSimStatus.ForeColor = System.Drawing.Color.White;
+            lblSimStatus.Location = new System.Drawing.Point(156, 29);
+            lblSimStatus.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblSimStatus.Name = "lblSimStatus";
+            lblSimStatus.Size = new System.Drawing.Size(129, 17);
+            lblSimStatus.TabIndex = 6;
+            lblSimStatus.Text = "Simulator Offline";
             // 
             // pnlGrid
             // 
-            this.pnlGrid.Controls.Add(this.tlpShelf);
-            this.pnlGrid.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlGrid.Location = new System.Drawing.Point(0, 60);
-            this.pnlGrid.Name = "pnlGrid";
-            this.pnlGrid.Size = new System.Drawing.Size(1920, 802);
-            this.pnlGrid.TabIndex = 1;
+            pnlGrid.Controls.Add(tlpShelf);
+            pnlGrid.Dock = System.Windows.Forms.DockStyle.Fill;
+            pnlGrid.Location = new System.Drawing.Point(0, 75);
+            pnlGrid.Margin = new System.Windows.Forms.Padding(4);
+            pnlGrid.Name = "pnlGrid";
+            pnlGrid.Size = new System.Drawing.Size(2240, 742);
+            pnlGrid.TabIndex = 1;
             // 
             // tlpShelf
             // 
-            this.tlpShelf.BackColor = System.Drawing.SystemColors.ControlLight;
-            this.tlpShelf.ColumnCount = 11;
-            this.tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
-            this.tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
-            this.tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
-            this.tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
-            this.tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
-            this.tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
-            this.tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
-            this.tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
-            this.tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
-            this.tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
-            this.tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
-            this.tlpShelf.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tlpShelf.Location = new System.Drawing.Point(0, 0);
-            this.tlpShelf.Name = "tlpShelf";
-            this.tlpShelf.RowCount = 8;
-            this.tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
-            this.tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
-            this.tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
-            this.tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
-            this.tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
-            this.tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
-            this.tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
-            this.tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
-            this.tlpShelf.Size = new System.Drawing.Size(1920, 802);
-            this.tlpShelf.TabIndex = 0;
+            tlpShelf.BackColor = System.Drawing.SystemColors.ControlLight;
+            tlpShelf.ColumnCount = 11;
+            tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
+            tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
+            tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
+            tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
+            tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
+            tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
+            tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
+            tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
+            tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
+            tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
+            tlpShelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 9.09F));
+            tlpShelf.Dock = System.Windows.Forms.DockStyle.Fill;
+            tlpShelf.Location = new System.Drawing.Point(0, 0);
+            tlpShelf.Margin = new System.Windows.Forms.Padding(4);
+            tlpShelf.Name = "tlpShelf";
+            tlpShelf.RowCount = 8;
+            tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
+            tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
+            tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
+            tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
+            tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
+            tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
+            tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
+            tlpShelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.5F));
+            tlpShelf.Size = new System.Drawing.Size(2240, 742);
+            tlpShelf.TabIndex = 0;
             // 
             // lstLog
             // 
-            this.lstLog.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.lstLog.Font = new System.Drawing.Font("Consolas", 10F);
-            this.lstLog.FormattingEnabled = true;
-            this.lstLog.ItemHeight = 15;
-            this.lstLog.Location = new System.Drawing.Point(0, 862);
-            this.lstLog.Name = "lstLog";
-            this.lstLog.Size = new System.Drawing.Size(1920, 199);
-            this.lstLog.TabIndex = 2;
+            lstLog.Dock = System.Windows.Forms.DockStyle.Bottom;
+            lstLog.Font = new System.Drawing.Font("Consolas", 10F);
+            lstLog.FormattingEnabled = true;
+            lstLog.ItemHeight = 15;
+            lstLog.Location = new System.Drawing.Point(0, 817);
+            lstLog.Margin = new System.Windows.Forms.Padding(4);
+            lstLog.Name = "lstLog";
+            lstLog.Size = new System.Drawing.Size(2240, 244);
+            lstLog.TabIndex = 2;
             // 
             // FormMain
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1920, 1061);
-            this.Controls.Add(this.pnlGrid);
-            this.Controls.Add(this.lstLog);
-            this.Controls.Add(this.pnlHeader);
-            this.Name = "FormMain";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "APS - Advanced Planning System";
-            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
-            this.Load += new System.EventHandler(this.FormMain_Load);
-            this.pnlHeader.ResumeLayout(false);
-            this.pnlHeader.PerformLayout();
-            this.flpLegend.ResumeLayout(false);
-            this.flpLegend.PerformLayout();
-            this.pnlGrid.ResumeLayout(false);
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            ClientSize = new System.Drawing.Size(2240, 1061);
+            Controls.Add(pnlGrid);
+            Controls.Add(lstLog);
+            Controls.Add(pnlHeader);
+            Margin = new System.Windows.Forms.Padding(4);
+            Name = "FormMain";
+            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            Text = "APS - Advanced Planning System";
+            WindowState = System.Windows.Forms.FormWindowState.Maximized;
+            Load += FormMain_Load;
+            pnlHeader.ResumeLayout(false);
+            pnlHeader.PerformLayout();
+            flpLegend.ResumeLayout(false);
+            flpLegend.PerformLayout();
+            pnlGrid.ResumeLayout(false);
+            ResumeLayout(false);
 
         }
 
@@ -404,7 +406,6 @@ namespace AdvancedPlanningSystem
         private System.Windows.Forms.Button btnGlobalMonitor;
         private System.Windows.Forms.Button btnTransitMonitor;
         private System.Windows.Forms.Button btnEqpMonitor;
-        private System.Windows.Forms.Label lblTitle;
         private System.Windows.Forms.Panel pnlSimStatus;
         private System.Windows.Forms.Label lblSimStatus;
         private System.Windows.Forms.Panel pnlGrid;

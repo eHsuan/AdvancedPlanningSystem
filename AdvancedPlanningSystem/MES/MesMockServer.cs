@@ -4,7 +4,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading;
-using System.Web.Script.Serialization;
+using Newtonsoft.Json;
 using AdvancedPlanningSystem.Models; // Use unified models
 
 namespace AdvancedPlanningSystem.MES
@@ -14,11 +14,9 @@ namespace AdvancedPlanningSystem.MES
         private HttpListener _listener;
         private bool _isRunning = false;
         private Thread _serverThread;
-        private JavaScriptSerializer _serializer;
 
         public MesMockServer()
         {
-            _serializer = new JavaScriptSerializer();
         }
 
         public void Start(int port = 9000)
@@ -77,7 +75,7 @@ namespace AdvancedPlanningSystem.MES
             {
                 if (path.EndsWith("/eqptransaction") || path.EndsWith("/woqry"))
                 {
-                    var reqDict = _serializer.Deserialize<Dictionary<string, object>>(requestBody) ?? new Dictionary<string, object>();
+                    var reqDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(requestBody) ?? new Dictionary<string, object>();
                     if (reqDict.ContainsKey("GetAPSInfo_ByEqp"))
                     {
                         string eqpStr = reqDict["GetAPSInfo_ByEqp"]?.ToString() ?? "";
@@ -100,7 +98,7 @@ namespace AdvancedPlanningSystem.MES
                         responseObj = new ApsEqpReply
                         {
                             Result = "success",
-                            APSInfo_ByEqp_Result = _serializer.Serialize(list)
+                            APSInfo_ByEqp_Result = JsonConvert.SerializeObject(list)
                         };
                     }
                     else if (reqDict.ContainsKey("GetAPSInfo_ByLot"))
@@ -125,7 +123,7 @@ namespace AdvancedPlanningSystem.MES
                         responseObj = new ApsLotReply
                         {
                             Result = "success",
-                            APSInfo_ByLot_Result = _serializer.Serialize(list)
+                            APSInfo_ByLot_Result = JsonConvert.SerializeObject(list)
                         };
                     }
                     else if (reqDict.ContainsKey("GetAPSInfo_QTime"))
@@ -143,14 +141,14 @@ namespace AdvancedPlanningSystem.MES
                         responseObj = new ApsQTimeReply
                         {
                             Result = "success",
-                            APSInfo_QTime_Result = _serializer.Serialize(list)
+                            APSInfo_QTime_Result = JsonConvert.SerializeObject(list)
                         };
                     }
                 }
                 else if (path.EndsWith("/order/batch"))
                 {
                     // Mock: Return info for requested WorkNos
-                    var workNos = _serializer.Deserialize<List<string>>(requestBody) ?? new List<string>();
+                    var workNos = JsonConvert.DeserializeObject<List<string>>(requestBody) ?? new List<string>();
                     var list = new List<OrderInfoResponse>();
                     foreach (var wn in workNos)
                     {
@@ -171,7 +169,7 @@ namespace AdvancedPlanningSystem.MES
                 }
                 else if (path.EndsWith("/wip/batch"))
                 {
-                    var eqps = _serializer.Deserialize<List<string>>(requestBody) ?? new List<string>();
+                    var eqps = JsonConvert.DeserializeObject<List<string>>(requestBody) ?? new List<string>();
                     var list = new List<WipInfoResponse>();
                     foreach (var eq in eqps)
                     {
@@ -181,7 +179,7 @@ namespace AdvancedPlanningSystem.MES
                 }
                 else if (path.EndsWith("/equipment/batch"))
                 {
-                    var eqps = _serializer.Deserialize<List<string>>(requestBody) ?? new List<string>();
+                    var eqps = JsonConvert.DeserializeObject<List<string>>(requestBody) ?? new List<string>();
                     var list = new List<EqStatusResponse>();
                     foreach (var eq in eqps)
                     {
@@ -209,7 +207,7 @@ namespace AdvancedPlanningSystem.MES
                 }
             }
 
-            string responseJson = responseObj != null ? _serializer.Serialize(responseObj) : "{}";
+            string responseJson = responseObj != null ? JsonConvert.SerializeObject(responseObj) : "{}";
             byte[] buffer;
             if (isFormParam && (path.EndsWith("/eqptransaction") || path.EndsWith("/woqry")))
             {

@@ -116,7 +116,7 @@ namespace AdvancedPlanningSystem
         /// <summary>
         /// 是否啟用 N+2 前瞻派貨與跨站 Q-Time 防護
         /// </summary>
-        public static bool EnableLookAheadN2 = false;
+        public static bool EnableLookAheadN2 = true;
 
         /// <summary>
         /// N+2 最少需處於 RUN/IDLE 狀態的機台數量門檻 (低於此數量則硬阻擋派往 N+1)

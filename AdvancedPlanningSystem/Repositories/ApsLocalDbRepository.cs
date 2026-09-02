@@ -78,7 +78,12 @@ namespace AdvancedPlanningSystem.Repositories
                         }
                     } catch { /* 欄位已存在會噴錯，忽略即可 */ }
 
-                    // 自動升級：若舊資料庫沒有 N+2 相關欄位，補上它們
+                    // 自動升級：若舊資料庫沒有 N+1/N+2 相關欄位，補上它們
+                    try {
+                        using (var cmd = new SQLiteCommand("ALTER TABLE local_state_binding ADD COLUMN mach_nos_next1 TEXT", conn)) {
+                            cmd.ExecuteNonQuery();
+                        }
+                    } catch { }
                     try {
                         using (var cmd = new SQLiteCommand("ALTER TABLE local_state_binding ADD COLUMN mach_nos_next2 TEXT", conn)) {
                             cmd.ExecuteNonQuery();
@@ -223,6 +228,7 @@ namespace AdvancedPlanningSystem.Repositories
                     score_eng REAL DEFAULT 0, score_due REAL DEFAULT 0, score_lead REAL DEFAULT 0,
                     treal REAL DEFAULT 0,
                     score_n2_penalty REAL DEFAULT 0,
+                    mach_nos_next1 TEXT,
                     mach_nos_next2 TEXT,
                     priority_type INTEGER DEFAULT 0, is_hold INTEGER DEFAULT 0,
                     wait_reason TEXT, 
@@ -515,11 +521,11 @@ namespace AdvancedPlanningSystem.Repositories
                             (carrier_id, port_id, lot_id, current_step_id, next_step_id, target_eqp_id, 
                              qtime_deadline, dispatch_score, 
                              score_qtime, score_urgent, score_eng, score_due, score_lead, treal,
-                             score_n2_penalty, mach_nos_next2,
+                             score_n2_penalty, mach_nos_next1, mach_nos_next2,
                              priority_type, is_hold, wait_reason, bind_time, dispatch_time)
                             VALUES (@cid, @pid, @lid, @sid, @nid, @teqp, @dead, @score, 
                                     @sq, @su, @se, @sd, @sl, @treal,
-                                    @sn2, @mn2,
+                                    @sn2, @mn1, @mn2,
                                     @pri, @hold, @wreason, @btime, @dtime)
                         ";
                         using (var cmd = new SQLiteCommand(sql, conn))
@@ -539,6 +545,7 @@ namespace AdvancedPlanningSystem.Repositories
                             cmd.Parameters.AddWithValue("@sl", binding.ScoreLead);
                             cmd.Parameters.AddWithValue("@treal", binding.TReal);
                             cmd.Parameters.AddWithValue("@sn2", binding.ScoreN2Penalty);
+                            cmd.Parameters.AddWithValue("@mn1", binding.MachNosNext1 ?? "");
                             cmd.Parameters.AddWithValue("@mn2", binding.MachNosNext2 ?? "");
                             cmd.Parameters.AddWithValue("@pri", binding.PriorityType);
                             cmd.Parameters.AddWithValue("@hold", binding.IsHold);
@@ -816,6 +823,7 @@ namespace AdvancedPlanningSystem.Repositories
                 ScoreLead = safeReadDouble("score_lead"), 
                 TReal = safeReadDouble("treal"),
                 ScoreN2Penalty = safeReadDouble("score_n2_penalty"),
+                MachNosNext1 = safeReadString("mach_nos_next1"),
                 MachNosNext2 = safeReadString("mach_nos_next2"),
                 PriorityType = Convert.ToInt32(reader["priority_type"]), 
                 IsHold = Convert.ToInt32(reader["is_hold"]), 

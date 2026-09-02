@@ -95,7 +95,7 @@ namespace AdvancedPlanningSystem
             // 
             // lblModeDisplay
             // 
-            lblModeDisplay.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            lblModeDisplay.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left;
             lblModeDisplay.AutoSize = true;
             lblModeDisplay.Font = new System.Drawing.Font("微軟正黑體", 10F, System.Drawing.FontStyle.Bold);
             lblModeDisplay.ForeColor = System.Drawing.Color.Yellow;
